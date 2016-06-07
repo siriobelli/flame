@@ -1,0 +1,119 @@
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline
+END
+bspline_iterfit.pro
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_iterfit.pro
+END
+bspline_valu.pro
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_valu.pro
+END
+bspline_action.pro
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_action.pro
+END
+cholesky_solve.pro
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/cholesky_solve.pro
+END
+create_bsplineset.pro
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/create_bsplineset.pro
+END
+bspline_workit.pro
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_workit.pro
+END
+bspline_fit.pro
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_fit.pro
+END
+bspline_bkpts.pro
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_bkpts.pro
+END
+bspline_radial_valu.pro
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_radial_valu.pro
+END
+bspline_psf_action.pro
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_psf_action.pro
+END
+intrv.pro
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/intrv.pro
+END
+fill_bspline.pro
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/fill_bspline.pro
+END
+bspline_maskpoints.pro
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_maskpoints.pro
+END
+bsplvn.pro
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bsplvn.pro
+END
+cholesky_band.pro
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/cholesky_band.pro
+END
+bspline_radial.pro
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_radial.pro
+END
+bvalu.pro
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bvalu.pro
+END
+bvalu_slow.pro
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bvalu_slow.pro
+END
+bspline_indx.pro
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/idlutils/!svn/ver/2006/tags/v5_3_0/pro/bspline/bspline_indx.pro
+END
