@@ -1,5 +1,5 @@
 ;
-; flame_monitor_star, fuel=fuel
+; flame_diagnostics, fuel=fuel
 ;
 ;
 ;
@@ -59,7 +59,7 @@ END
 
 
 
-FUNCTION flame_monitor_star_AorB, frame_filename, fuel=fuel
+FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
   ;
   ; Takes a raw frame and identifies whether the star trace is in the A 
   ; or in the B position, by trying to fit a Gaussian to the spatial profile.
@@ -139,7 +139,7 @@ END
 
 
 
-FUNCTION flame_monitor_star_fit, frame_filename, sky_filename, offset_pos=offset_pos, fuel=fuel
+FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_pos, fuel=fuel
   ;
   ; Takes a frame, subtracts the sky, and fits a Gaussian 
   ; to the spatial profile at the A or B position.
@@ -212,7 +212,7 @@ END
 
 ;****************************************************************
 
-FUNCTION flame_monitor_star_fromdata, fuel
+FUNCTION flame_diagnostics_fromdata, fuel
 
 
   ; identify the science files
@@ -230,7 +230,7 @@ FUNCTION flame_monitor_star_fromdata, fuel
   ; identify A and B frames  
   cgPs_open, fuel.intermediate_dir + 'startrace_identify_AB.ps', /nomatch
     for i_frame=0,fuel.N_frames-1 do begin
-       offset_pos[i_frame] = flame_monitor_star_AorB( science_filenames[i_frame], fuel=fuel )
+       offset_pos[i_frame] = flame_diagnostics_AorB( science_filenames[i_frame], fuel=fuel )
        print, i_frame, ' ', science_filenames[i_frame], ' offset position: ', offset_pos[i_frame]
     endfor
   cgPS_close
@@ -259,7 +259,7 @@ FUNCTION flame_monitor_star_fromdata, fuel
     i_frame_background = closest_frames[ii]   ; this is the frame to use a background
     
     ; fit a Gaussian to the sky-subtracted frame and obtain diagnostics
-    diagnostics_thisframe = flame_monitor_star_fit( science_filenames[i_frame], $
+    diagnostics_thisframe = flame_diagnostics_fit( science_filenames[i_frame], $
       science_filenames[i_frame_background], offset_pos=offset_pos[i_frame], fuel=fuel )
 
     ; add these to the total diagnostics
@@ -277,7 +277,7 @@ END
 ;****************************************************************
 
 
-FUNCTION flame_monitor_star_blind, fuel
+FUNCTION flame_diagnostics_blind, fuel
 
 ;
 ; used when there is no reference star on the slit 
@@ -335,18 +335,18 @@ END
 ;****************************************************************
 
 
-PRO flame_monitor_star, fuel=fuel
+PRO flame_diagnostics, fuel=fuel
 
   
   if fuel.startrace_y_pos[0] GT 0.0 and fuel.startrace_y_pos[1] GT 0.0 then $
 
     ; if a valid reference star position is given, then monitor the star
-    diagnostics = flame_monitor_star_fromdata(fuel) $
+    diagnostics = flame_diagnostics_fromdata(fuel) $
   
   else $
 
     ; otherwise use the dither file to get the offset position for each frame
-    diagnostics = flame_monitor_star_blind(fuel)
+    diagnostics = flame_diagnostics_blind(fuel)
 
 
   ; for simplicity
