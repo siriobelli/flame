@@ -214,6 +214,12 @@ END
 
 FUNCTION flame_diagnostics_fromdata, fuel
 
+;
+; used when there is a reference star on the slit 
+; the trace is fit with a Gaussian profile in each frame
+; and offset, transmission, and seeing are calculated
+;
+
 
   ; identify the science files
   readcol, fuel.science_filelist, science_filenames, format='A'
@@ -337,7 +343,7 @@ END
 
 PRO flame_diagnostics, fuel=fuel
 
-  
+  ; check if a reference star position has been set
   if fuel.startrace_y_pos[0] GT 0.0 and fuel.startrace_y_pos[1] GT 0.0 then $
 
     ; if a valid reference star position is given, then monitor the star
@@ -349,12 +355,11 @@ PRO flame_diagnostics, fuel=fuel
     diagnostics = flame_diagnostics_blind(fuel)
 
 
-  ; for simplicity
-  d = diagnostics  
-
-
   ; diagnostics plots
   ; ------------------
+
+  ; for simplicity
+  d = diagnostics  
 
   cgPS_open, fuel.intermediate_dir + 'diagnostics.ps', /nomatch
   
