@@ -660,7 +660,7 @@ PRO flame_wavelength_calibration_init, fuel=fuel, wavecal_settings=wavecal_setti
 
 	if fuel.band eq 'J' then begin
 		lambda_min = 1.05
-		lambda_max = 1.25
+		lambda_max = 1.45
 	endif
 
 	; WARNING: This is for J band with lambda_c = 1.34 um
