@@ -1,4 +1,3 @@
-; driver for May run data -  mask
 
   ;****************************************************
   ;                 INPUT
@@ -25,19 +24,19 @@
   fuel.reduce_only_oneslit = 0
 
   ; array with y-pixel positions for the traces of the reference star. [0,0] if there is no reference star
-  fuel.startrace_y_pos = [0, 0]
+  fuel.startrace_y_pos = [547, 560]
 
   ; if we don't have a star on the slit then we have to specify the dithering
-  fuel.dither_filelist = 'input/dither.txt'
+  ;fuel.dither_filelist = 'input/dither.txt'
 
   ; for longslit
-  fuel.longslit = 1
-  fuel.longslit_edge = [960, 1090]
+  ;fuel.longslit = 1
+  ;fuel.longslit_edge = [960, 1090]
 
-  ; for this particular dataset
-  fuel.OUTPUT_LAMBDA_0 = 1.12
-  fuel.OUTPUT_LAMBDA_DELTA = 7.5d-5
-  fuel.OUTPUT_LAMBDA_NPIX = 450
+  ; specify the output wavelength grid
+  ;fuel.OUTPUT_LAMBDA_0 = 1.12
+  ;fuel.OUTPUT_LAMBDA_DELTA = 7.5d-5
+  ;fuel.OUTPUT_LAMBDA_NPIX = 450
   
   ; create the fuel structure
   flame_initialize_luci, fuel=fuel
@@ -52,7 +51,7 @@
   ; and dither position for each frame. Also outputs a ps file with the plots.
   
   
-  flame_monitor_star, fuel=fuel
+  flame_diagnostics, fuel=fuel
   
 
   ;****************************************************
