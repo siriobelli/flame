@@ -1,7 +1,7 @@
 PRO flame_do_slitim_readheader, header, pixel_scale=pixel_scale, bottom=bottom, top=top, slit_num=slit_num, slit_name=slit_name, maxwidth_arcsec=maxwidth_arcsec
 ;
 ; return the pixel coordinates of slits as from the header
-;
+; 
 
   ; array of structures that will contain the info for each slit
   slit_hdr = []
