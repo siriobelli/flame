@@ -29,7 +29,6 @@ FUNCTION flame_create_fuel
     linelist_filename: '', $
     pixel_scale : 0.0, $
     xrange_star:[1000, 1200], $
-    maxwidth_arcsec:2.0, $
     output_lambda_0 : 0d, $
     output_lambda_delta : 0d, $
     output_lambda_Npix : 0, $

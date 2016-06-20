@@ -24,7 +24,7 @@
   fuel.reduce_only_oneslit = 0
 
   ; array with y-pixel positions for the traces of the reference star. [0,0] if there is no reference star
-  fuel.startrace_y_pos = [547, 560]
+  fuel.startrace_y_pos = [805, 817]
 
   ; if we don't have a star on the slit then we have to specify the dithering
   ;fuel.dither_filelist = 'input/dither.txt'
@@ -89,7 +89,7 @@
   
   
   ; first identify slits and create slitim.fits
-  flame_do_slitim, fuel=fuel
+  flame_getslits, fuel=fuel
 
   ; then cut out the slits
   flame_cutout_slits, fuel=fuel
@@ -109,7 +109,6 @@
 
 
   flame_sky_subtraction, fuel=fuel
-  
   
 
   ;****************************************************
