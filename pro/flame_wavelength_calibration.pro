@@ -48,7 +48,7 @@ END
 
 PRO flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 	 approx_lambda_central=lambda_central, pix_scale_grid=pix_scale_grid, pix_scale_variation_grid=pix_scale_variation_grid, $
-	 lambda_axis=lambda_axis_output
+	 lambda_axis=lambda_axis_output, title=title
 
 	;
 	; Estimate the wavelength solution by comparing the observed sky spectrum with a model sky spectrum
@@ -131,7 +131,7 @@ PRO flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=mode
 	new_model_flux = interpol( model_flux, model_lambda, lambda_axis)
 	new_model_flux /= max(new_model_flux, /nan)
 	
-	cgplot, lambda_axis, sky-0.05, charsize=1, thick=3, xtit='wavelength (micron)'
+	cgplot, lambda_axis, sky-0.05, charsize=1, thick=3, xtit='wavelength (micron)', title=title
 	cgplot, lambda_axis, new_model_flux, color='red', /overplot, thick=3
 	cgtext, 0.75, 0.80, 'observed sky', charsize=1, /normal
 	cgtext, 0.75, 0.75, 'model sky', charsize=1, /normal, color='red'
@@ -299,7 +299,8 @@ PRO flame_wavelength_accurate_wavecal, slit_filename=slit_filename, $
 	; cross-correlate the observed and model sky spectra and find a good wavelength solution
 	flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 approx_lambda_central=median(approx_lambda_axis), pix_scale_grid=pix_scale_grid, pix_scale_variation_grid=pix_scale_variation_grid, $
-		 lambda_axis=lambda_axis_central_row
+		 lambda_axis=lambda_axis_central_row, title=(strsplit(slit_filename,'/', /extract))[-1]
+
 
 
 	; now fit all the pixel rows
@@ -424,7 +425,7 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-PRO flame_wavelength_approximate_wavecal, slit_filename=slit_filename, $
+PRO flame_wavelength_approximate_wavecal, slit_filename=slit_filename, this_slit=this_slit, $
 	wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis
 	;
 	; Two steps:
@@ -438,6 +439,21 @@ PRO flame_wavelength_approximate_wavecal, slit_filename=slit_filename, $
 
 	model_lambda = wavecal_settings.model_lambda
 	model_flux = wavecal_settings.model_flux
+
+	; select the range of interest for this particular slit
+	range = this_slit.approx_wavelength_hi - this_slit.approx_wavelength_lo
+	w_slit = where( model_lambda GT this_slit.approx_wavelength_lo - 0.5*range $
+		and model_lambda LT this_slit.approx_wavelength_hi + 0.5*range, /null )
+	model_lambda = model_lambda[w_slit]
+	model_flux = model_flux[w_slit]
+
+	; normalize sky model
+	model_flux /= max(model_flux, /nan)
+
+	; for a tidy extrapolation, first and last elements of model should be zeros
+	model_flux[0:5] = 0.
+	model_flux[-5:*] = 0.
+
 
 	; load the slit image
 	;---------------------
@@ -477,14 +493,13 @@ PRO flame_wavelength_approximate_wavecal, slit_filename=slit_filename, $
 	sky_sm /= max(sky_sm)
 	model_flux_sm /= max(model_flux_sm)
 
-	; GRID
 	; there are two parameters that define the wavelength axis: central pixel scale and variation in the pixel scale
-	coarse_pix_scale_grid = 10^(-4.5 + 2.5*dindgen(1000)/999.) ; pixel scale, in micron per pixels
-	pix_scale_variation_grid = [0., 0.005]
+	; first, we assume a constant pixel scale, in micron per pixels:
+	coarse_pix_scale_grid = 10^(-4.5 + 2.5*dindgen(1000)/999.) 
 
 	flame_wavecal_crosscorr, sky=sky_sm, model_lambda=model_lambda, model_flux=model_flux_sm, $
 		 approx_lambda_central=median(model_lambda), pix_scale_grid=coarse_pix_scale_grid, $
-		 lambda_axis=lambda_axis
+		 lambda_axis=lambda_axis, title=(strsplit(slit_filename,'/', /extract))[-1]
 
 	; extract central lambda and pixel scale
 	coarse_lambda_central = median(lambda_axis)
@@ -646,42 +661,6 @@ PRO flame_wavelength_calibration_init, fuel=fuel, wavecal_settings=wavecal_setti
 
 	; read in sky model
 	readcol, fuel.sky_emission_filename, model_lambda, model_flux	; lambda in micron
-
-	; NOT A GOOD IDEA
-	; define the edge of the band using the output wavelength grid
-	lambda_min = fuel.output_lambda_0
-	lambda_max = fuel.output_lambda_0 + fuel.output_lambda_Npix * fuel.output_lambda_delta 
-
-	; WARNING: K band is so difficult that we have to narrow the lambda range.
-	if fuel.band eq 'K' then begin
-		lambda_min = 2.15
-		lambda_max = 2.40
-	endif
-
-	if fuel.band eq 'J' then begin
-		lambda_min = 1.05
-		lambda_max = 1.45
-	endif
-
-	; WARNING: This is for J band with lambda_c = 1.34 um
-	if fuel.band eq 'J' and fuel.tempflag then begin
-		lambda_min = 1.20
-		lambda_max = 1.45
-	endif
-
-	; keep only the relevant part of the sky model
-	w_thisband = where(model_lambda GT lambda_min and $
-			model_lambda LT lambda_max , /null)
-	model_lambda = model_lambda[w_thisband]
-	model_flux = model_flux[w_thisband]
-
-	; normalize sky model
-	model_flux /= max(model_flux, /nan)
-
-	; for a tidy extrapolation, first and last elements of model should be zeros
-	model_flux[0:5] = 0.
-	model_flux[-5:*] = 0.
-
 	
 	; create the wavecal_settings structure
 	wavecal_settings = { $
@@ -730,7 +709,7 @@ PRO flame_wavelength_calibration, fuel=fuel, verbose=verbose
 		print, 'Using the central pixel rows of ', reference_filename
 
 		cgPS_open, fuel.intermediate_dir + 'estimate_wavelength_solution_slit' + strtrim(this_slit.number,2) + '.ps', /nomatch
-			flame_wavelength_approximate_wavecal, slit_filename=reference_filename, $
+			flame_wavelength_approximate_wavecal, slit_filename=reference_filename, this_slit=this_slit, $
 				wavecal_settings=wavecal_settings, approx_lambda_axis = approx_lambda_axis
 		cgPS_close
 

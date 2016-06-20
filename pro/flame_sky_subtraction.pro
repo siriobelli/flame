@@ -59,7 +59,9 @@ PRO flame_sky_subtraction_slit, slit_filename=slit_filename, rectification=recti
 	breakpoints = wavelength_solution[*,N_spatial_pix/2]
 
 	; plot all pixels in a small wavelength range (from 2/4 to 3/4 of entire observed range)
-	cgplot, pixel_wavelength, pixel_flux, psym=3, xra=breakpoints[ [n_elements(breakpoints)*2/4, n_elements(breakpoints)*3/4] ];, yra=[1,100]
+	cgplot, pixel_wavelength, pixel_flux, psym=3, $
+		xra=breakpoints[ [n_elements(breakpoints)*2/4, n_elements(breakpoints)*3/4] ], $
+		title=(strsplit(slit_filename,'/', /extract))[-1]
 
 	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
 		fullbkpt=breakpoints, x2=pixel_ycoord, npoly=5, $

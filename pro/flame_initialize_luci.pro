@@ -1,16 +1,26 @@
 
 PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   slit_num=slit_num, slit_name=slit_name, slit_PA=slit_PA, $
-  bottom=bottom, top=top, target=target
+  bottom=bottom, top=top, target=target, wavelength_lo=wavelength_lo, wavelength_hi=wavelength_hi
 ;
 ; read the header of a LUCI science frame
 ; and for each slit finds or calculate the slit number, name, slit PA, 
-; bottom pixel position, top pixel position, and target pixel position
+; bottom pixel position, top pixel position, target pixel position, 
+; and wavelength at the center of the slit
 ;
 
-  ; only settings: maximum width in arcsec allowed for science slits. 
+  ; only tweakable settings: maximum width in arcsec allowed for science slits. 
   ; slits wider than this value are considered alignment boxes
   maxwidth_arcsec = 2.0
+
+  ; determine appropriate value of conversion factor delta_wavel in micron/mm
+  band = strtrim(fxpar(header, 'FILTER2'),2)
+  case band of
+    'J': delta_wavel = 0.00049
+    'H': delta_wavel = 0.00066
+    'K': delta_wavel = 0.001075
+    else: message, 'I do not have the wavelength scale for this band yet'
+  endcase
 
   ; array of structures that will contain the info for each slit
   slit_hdr = []
@@ -65,6 +75,10 @@ PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   bottom = y_pixels - 0.5*slitheight_pixels
   top = y_pixels + 0.5*slitheight_pixels
   target = y_pixels
+  ; rough wavelength range; mask is roughly 300mm across
+  wavelength_lo = fxpar(header, 'GRATWLEN') - slit_hdr.x_mm * delta_wavel - 150.0*delta_wavel
+  wavelength_hi = fxpar(header, 'GRATWLEN') - slit_hdr.x_mm * delta_wavel + 150.0*delta_wavel
+
 
 END
 
@@ -131,9 +145,10 @@ PRO flame_initialize_luci, fuel=fuel
 
     endcase
 
+  ; read central wavelength 
+  central_wavelength = fxpar(science_header, 'GRATWLEN')
 
   ; read in the slits parameters from the FITS header
-
   ; LONGSLIT ---------------------------------------------------------------------
   if fuel.longslit then begin
     ; get the slit edges from the user
@@ -145,14 +160,16 @@ PRO flame_initialize_luci, fuel=fuel
       PA:!values.d_nan, $
       approx_bottom:fuel.longslit_edge[0], $
       approx_top:fuel.longslit_edge[1], $
-      approx_target:mean(fuel.longslit_edge) }
+      approx_target:mean(fuel.longslit_edge), $
+      approx_wavelength_lo:central_wavelength, $
+      approx_wavelength_hi:central_wavelength }
 
   ; MOS      ---------------------------------------------------------------------
   endif else begin
 
     flame_initialize_luci_slits, science_header, pixel_scale=fuel.pixel_scale, $
       slit_num=slit_num, slit_name=slit_name, slit_PA=slit_PA, $
-      bottom=bottom, top=top, target=target
+      bottom=bottom, top=top, target=target, wavelength_lo=wavelength_lo, wavelength_hi=wavelength_hi
 
     ; create array of slit structures
     slits = []
@@ -165,7 +182,9 @@ PRO flame_initialize_luci, fuel=fuel
         PA:slit_PA[i_slit], $
         approx_bottom:bottom[i_slit], $
         approx_top:top[i_slit], $
-        approx_target:target[i_slit] }
+        approx_target:target[i_slit], $
+        approx_wavelength_lo:wavelength_lo[i_slit], $
+        approx_wavelength_hi:wavelength_hi[i_slit] }
 
       slits = [slits, this_slit]
 
