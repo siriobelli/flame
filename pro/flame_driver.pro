@@ -9,6 +9,7 @@
   fuel.science_filelist = 'input/science.txt'
 
   ; text file containing the list of FITS files with dark frames (used for bad pixel mask)
+  ; if 'none', the default bad pixel mask will be used
   fuel.darks_filelist = 'input/darks.txt'
 
   ; text file containing the list of FITS files with flat field
@@ -24,7 +25,7 @@
   fuel.reduce_only_oneslit = 0
 
   ; array with y-pixel positions for the traces of the reference star. [0,0] if there is no reference star
-  fuel.startrace_y_pos = [805, 817]
+  fuel.startrace_y_pos = [547, 560]
 
   ; if we don't have a star on the slit then we have to specify the dithering
   ;fuel.dither_filelist = 'input/dither.txt'
@@ -64,23 +65,16 @@
 
 
   ;****************************************************
-  ;                 BAD PIXEL MASK
-  ;****************************************************
-  ; generate a bad pixel mask from the dark frames. Should be able to skip and specify a bad pixel mask.
-  
-
-  flame_make_badpix, fuel=fuel
-  
-
-  ;****************************************************
   ;                 DATA CORRECTION
   ;****************************************************
-  ; this step corrects the science frames for linearization and bad pixels
+  ; this step corrects the science frames for linearization and bad pixels and 
+  ; converts from ADU to electrons
+  ; if needed, it also makes a bad pixel mask, otherwise it uses the default one
   ; it will output corrected science frames in the intermediate directory
   
-  
-  flame_correct_data, fuel=fuel
-  
+
+  flame_correct, fuel=fuel
+
   
   ;****************************************************
   ;                 CUTOUT SLITS

@@ -21,7 +21,6 @@ FUNCTION flame_create_fuel
     longslit: 0, $
     longslit_edge: [0,0], $
     N_frames: 0, $
-    badpix_filename : 'badpix.fits', $
     slitim_filename : 'slitim.fits', $
     flame_data_dir : data_dir, $
     sky_emission_filename : data_dir + 'sky_emission_model.dat', $
