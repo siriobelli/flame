@@ -125,6 +125,12 @@ PRO flame_initialize_luci, fuel=fuel
   ; read in the pixel scale 
   fuel.pixel_scale = fxpar(science_header, 'PIXSCALE')  ; arcsec/pixel
 
+  ; read in read-out noise
+  fuel.readnoise = fxpar(science_header, 'RDNOISE')   ; e-/read 
+
+  ; read in gain
+  fuel.gain = fxpar(science_header, 'GAIN')   ; e-/adu
+
   ; set the wavelength grid for the final, resampled spectra (unless it's already been specified)
   if fuel.output_lambda_0 eq 0d then $
     case fuel.band of

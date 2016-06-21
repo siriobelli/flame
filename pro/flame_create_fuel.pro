@@ -28,11 +28,12 @@ FUNCTION flame_create_fuel
     band : '', $
     linelist_filename: '', $
     pixel_scale : 0.0, $
+    readnoise : 0.0, $
+    gain : 0.0, $
     xrange_star:[1000, 1200], $
     output_lambda_0 : 0d, $
     output_lambda_delta : 0d, $
     output_lambda_Npix : 0, $
-    tempflag : 0, $
     corrscience_files : ptr_new(/allocate_heap), $
     diagnostics : ptr_new(/allocate_heap), $
     slits : ptr_new(/allocate_heap) $
