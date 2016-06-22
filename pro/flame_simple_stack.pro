@@ -26,19 +26,22 @@ PRO flame_simple_stack, fuel=fuel
 	if w_A ne !NULL then begin
 		cube_A = dblarr( (size(frame0))[1], (size(frame0))[2], n_elements(w_A) )
 		for i=0,n_elements(w_A)-1 do cube_A[*,*,i] = readfits(filenames[w_A[i]])
-		stack_A = median(cube_A, dimension=3)
+		if n_elements(w_A) eq 1 then stack_A = cube_A $
+		else stack_A = median(cube_A, dimension=3)
 	endif
 
 	if w_B ne !NULL then begin
 		cube_B = dblarr( (size(frame0))[1], (size(frame0))[2], n_elements(w_B) )
 		for i=0,n_elements(w_B)-1 do cube_B[*,*,i] = readfits(filenames[w_B[i]])
-		stack_B = median(cube_B, dimension=3)
+		if n_elements(w_B) eq 1 then stack_B = cube_B $
+		else stack_B = median(cube_B, dimension=3)
 	endif
 
 	if w_X ne !NULL then begin
 		cube_X = dblarr( (size(frame0))[1], (size(frame0))[2], n_elements(w_X) )
 		for i=0,n_elements(w_X)-1 do cube_X[*,*,i] = readfits(filenames[w_X[i]])
-		stack_X = median(cube_X, dimension=3)
+		if n_elements(w_X) eq 1 then stack_x = cube_x $
+		else stack_X = median(cube_X, dimension=3)
 	endif
 
 
