@@ -28,7 +28,7 @@
   fuel.startrace_y_pos = [547, 560]
 
   ; if you want to change the range in x-coordinates used to extract the star traces:
-  ;fuel.xrange_star = [1000, 1200]
+  ;fuel.xrange_star = [100, 500]
 
   ; if we don't have a star on the slit then we have to specify the dithering
   ;fuel.dither_filelist = 'input/dither.txt'
@@ -80,17 +80,12 @@
 
   
   ;****************************************************
-  ;                 CUTOUT SLITS
+  ;               IDENTIFY AND CUTOUT SLITS
   ;****************************************************
-  ; create a fits file for each slit in each frame. They will be in intermediate/slitXX/
   
-  
-  ; first identify slits and create slitim.fits
+
   flame_getslits, fuel=fuel
 
-  ; then cut out the slits
-  flame_cutout_slits, fuel=fuel
-  
   
   ;****************************************************
   ;                 WAVELENGTH CALIBRATION
