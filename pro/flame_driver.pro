@@ -28,7 +28,7 @@
   fuel.startrace_y_pos = [547, 560]
 
   ; if you want to change the range in x-coordinates used to extract the star traces:
-  fuel.xrange_star = [100, 150]
+  ;fuel.xrange_star = [1000, 1200]
 
   ; if we don't have a star on the slit then we have to specify the dithering
   ;fuel.dither_filelist = 'input/dither.txt'

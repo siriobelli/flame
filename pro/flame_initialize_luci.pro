@@ -196,13 +196,10 @@ PRO flame_initialize_luci, fuel=fuel
 
     endfor
 
-    ; if we are reducing only one slit, then exclude all the others 
-    if fuel.reduce_only_oneslit ne 0 then slits = slits[fuel.reduce_only_oneslit-1]
-
   endelse
 
-  ; save the slits in the fuel structure 
-  *fuel.slits = slits
+  ; save the slits in the fuel structure - this is the "slits_fromheader" structure, not "slits"!
+  *fuel.slits_fromheader = slits
 
 
 END

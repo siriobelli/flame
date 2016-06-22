@@ -35,6 +35,7 @@ FUNCTION flame_create_fuel
     output_lambda_Npix : 0, $
     corrscience_files : ptr_new(/allocate_heap), $
     diagnostics : ptr_new(/allocate_heap), $
+    slits_fromheader : ptr_new(/allocate_heap), $
     slits : ptr_new(/allocate_heap) $
     }
       
