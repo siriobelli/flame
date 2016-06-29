@@ -464,8 +464,11 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	; how many pixels on the spatial direction
 	N_spatial_pix = (size(im))[2]
 
-	; sky spectrum: extract along the central 5 pixels 			; NB: NEED TO MAKE SURE THAT THIS IS, INDEED, SKY
+	; sky spectrum: extract along the central 5 pixels 			; NB: NEED TO MAKE SURE THAT THIS IS, INDEED, SKY, AND NOT THE OBJECT
 	sky = median(im[*, N_spatial_pix/2-3 : N_spatial_pix/2+2], dimension=2)
+
+	; get rid of NaNs, which create problems for the cross-correlation
+	sky[where(~finite(sky), /null)] = 0
 
 	; create the x-axis in pixel coordinates
 	pix_axis = dindgen( n_elements(sky) )
@@ -512,7 +515,6 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	print, 'Results of first coarse fit:'
 	print, 'central wavelength: ', coarse_lambda_central, ' micron'
 	print, 'pixel scale: ', coarse_pixel_scale, ' +/- ', coarse_pixel_scale_error, ' micron per pixel'
-
 
 	print, ''
 	print, 'SECOND STEP: refine wavelength solution by using non-uniform wavelength axis'

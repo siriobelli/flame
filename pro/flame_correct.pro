@@ -73,7 +73,7 @@ PRO flame_correct, fuel=fuel
   endif else begin
 
     ; make bad pixel mask 
-    flame_correct_makemask, fuel=fuel
+  ;;  flame_correct_makemask, fuel=fuel
 
   endelse
 
