@@ -6,7 +6,7 @@ by Sirio Belli (MPE) 2016
 
 
 To install: download the flame/ directory and add it to your IDL path.
-The latest versions of the NASA IDL library and the Coyote library are required
+The latest versions of the NASA IDL library, Coyote library, and mpfit library are required.
 
 To run:
 1) copy flame_driver.pro to your working directory
