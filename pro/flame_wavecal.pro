@@ -145,7 +145,7 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-FUNCTION flame_fit_skylines, x=x, y=y, $
+FUNCTION flame_wavecal_skylines, x=x, y=y, $
 	wavelength_axis_guess=wavelength_axis_guess, wavecal_settings=wavecal_settings, $
 	skylines_pixel=skylines_pixel, skylines_wavelength=skylines_wavelength, extra_plot=extra_plot
 
@@ -237,7 +237,7 @@ END
 
 ; ---------------------------------------------------------------------------------------------------------------------------
 
-PRO flame_wavelength_accurate_wavecal, slit_filename=slit_filename, $
+PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 	 wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis, OH_lines=OH_lines
 
 	print, ' '
@@ -338,7 +338,7 @@ PRO flame_wavelength_accurate_wavecal, slit_filename=slit_filename, $
 		this_row /= max(this_row, /nan)
 
 		; fit the emission lines and find the wavelength solution
-		wavelength_axis_for_this_row = flame_fit_skylines( x=pix_axis, y=this_row, $
+		wavelength_axis_for_this_row = flame_wavecal_skylines( x=pix_axis, y=this_row, $
 			wavelength_axis_guess=wavelength_axis_guess, wavecal_settings=wavecal_settings, $
 			skylines_pixel=skylines_pixel, skylines_wavelength=skylines_wavelength, $
 			extra_plot={title:'row ' + strtrim(i_row,2)} )
@@ -425,7 +425,7 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-PRO flame_wavelength_approximate_wavecal, slit_filename=slit_filename, this_slit=this_slit, $
+PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit, $
 	wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis
 	;
 	; Two steps:
@@ -546,7 +546,7 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-PRO flame_wavelength_2D_calibration, filename=filename, slit=slit, OH_lines=OH_lines, fuel=fuel
+PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_lines, fuel=fuel
 ;
 ; This routine calculates the 2D wavelength solution and y-rectification.
 ; These are two mappings from the observed pixel coordinates to the rectified grid
@@ -629,7 +629,7 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-PRO flame_wavelength_calibration_init, fuel=fuel, wavecal_settings=wavecal_settings
+PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 ;
 ; initialize settings and load things
 ; outputs everything into the wavecal_settings structure
@@ -680,7 +680,7 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-PRO flame_wavelength_calibration, fuel=fuel, verbose=verbose
+PRO flame_wavecal, fuel=fuel, verbose=verbose
 
 	start_time = systime(/seconds)
 
@@ -692,7 +692,7 @@ PRO flame_wavelength_calibration, fuel=fuel, verbose=verbose
 	if keyword_set(verbose) then !QUIET = 0 else !QUIET = 1
 
 	; initialization: create wavecal_settings structure
-	flame_wavelength_calibration_init, fuel=fuel, wavecal_settings=wavecal_settings
+	flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 
 	; loop through all slits
 	for i_slit=0, n_elements(slits)-1 do begin 
@@ -709,16 +709,16 @@ PRO flame_wavelength_calibration, fuel=fuel, verbose=verbose
 		print, 'Using the central pixel rows of ', reference_filename
 
 		cgPS_open, fuel.intermediate_dir + 'estimate_wavelength_solution_slit' + strtrim(this_slit.number,2) + '.ps', /nomatch
-			flame_wavelength_approximate_wavecal, slit_filename=reference_filename, this_slit=this_slit, $
+			flame_wavecal_approximate, slit_filename=reference_filename, this_slit=this_slit, $
 				wavecal_settings=wavecal_settings, approx_lambda_axis = approx_lambda_axis
 		cgPS_close
 
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
 
-			flame_wavelength_accurate_wavecal, slit_filename=(*slits[i_slit].filenames)[i_frame], $
+			flame_wavecal_accurate, slit_filename=(*slits[i_slit].filenames)[i_frame], $
 				wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis, OH_lines=OH_lines
 
-			flame_wavelength_2D_calibration, filename=(*slits[i_slit].filenames)[i_frame], slit=this_slit, OH_lines=OH_lines, fuel=fuel
+			flame_wavecal_2D_calibration, filename=(*slits[i_slit].filenames)[i_frame], slit=this_slit, OH_lines=OH_lines, fuel=fuel
 
 		endfor
 

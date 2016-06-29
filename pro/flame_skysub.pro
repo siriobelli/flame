@@ -1,6 +1,6 @@
 
 
-PRO flame_sky_subtraction_slit, slit_filename=slit_filename, rectification=rectification, fuel=fuel
+PRO flame_skysub_slit, slit_filename=slit_filename, rectification=rectification, fuel=fuel
 
 	print, 'Sky subtraction for ', slit_filename
 
@@ -96,7 +96,7 @@ END
 
 
 
-PRO flame_sky_subtraction, fuel=fuel
+PRO flame_skysub, fuel=fuel
 
 	print, ' '
 	print, 'Sky subtraction'
@@ -108,7 +108,7 @@ PRO flame_sky_subtraction, fuel=fuel
  	; loop through all the slits
 	for i_slit=0, n_elements(slits)-1 do $
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do $
-			flame_sky_subtraction_slit, slit_filename=(*slits[i_slit].filenames)[i_frame], $
+			flame_skysub_slit, slit_filename=(*slits[i_slit].filenames)[i_frame], $
 			rectification = (*slits[i_slit].rectification)[i_frame], fuel=fuel
 
 END

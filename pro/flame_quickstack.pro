@@ -1,5 +1,12 @@
 PRO flame_quickstack, fuel=fuel
 
+;
+; Takes the A and B positions from the fuel.diagnostics structure,
+; stacks all the frames in each position, and outputs the difference A-B.
+; Useful for a quick look at the data.
+; If some frames are missing the star trace, also the X position is considered
+;
+
 	; read in the filenames
 	readcol, fuel.science_filelist, filenames, format='A'
 

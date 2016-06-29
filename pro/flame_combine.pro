@@ -68,7 +68,7 @@ END
 ; -------------------------------------------------------------------------------------------
 
 
-PRO flame_combine_frames_oneslit, slit=slit, fuel=fuel
+PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
 	; prefix for output file names
 	filename_prefix = fuel.output_dir + 'slit' + string(slit.number, format='(I02)') + '-' + slit.name
@@ -194,7 +194,7 @@ END
 
 
 
-PRO flame_combine_frames, fuel=fuel
+PRO flame_combine, fuel=fuel
  
 
 	print, ' '
@@ -210,7 +210,7 @@ PRO flame_combine_frames, fuel=fuel
 		this_slit = slits[i_slit]
 		print, 'Combining slit ', this_slit.number, ' - ', this_slit.name
 
-		flame_combine_frames_oneslit, slit=this_slit, fuel=fuel
+		flame_combine_oneslit, slit=this_slit, fuel=fuel
 
 	endfor
 
