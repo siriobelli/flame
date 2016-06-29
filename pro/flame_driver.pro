@@ -1,6 +1,8 @@
 
   ;****************************************************
-  ;                 INPUT
+  ;****************************************************
+  ;                 PART 1: INPUT
+  ;****************************************************
   ;****************************************************
 
   fuel = flame_create_fuel()
@@ -45,14 +47,21 @@
   ; create the fuel structure
   flame_initialize_luci, fuel=fuel
 
-;  help, fuel
+  ; check that everything makes sense
+  ;help, fuel
+
+
+
+  ;****************************************************
+  ;****************************************************
+  ;                 PART 2: DATA REDUCTION
+  ;****************************************************
+  ;****************************************************
 
 
   ;****************************************************
   ;                 MONITOR STAR
   ;****************************************************
-  ; using the star on the reference slit, get seeing, flux, vertical shift,
-  ; and dither position for each frame. Also outputs a ps file with the plots.
   
   
   flame_diagnostics, fuel=fuel
@@ -61,19 +70,14 @@
   ;****************************************************
   ;                 QUICK LOOK
   ;****************************************************
-  ; in order to have a quick look at the data, create the simple A-B stack
   
 
-  flame_simple_stack, fuel=fuel
+  flame_quickstack, fuel=fuel
 
 
   ;****************************************************
   ;                 DATA CORRECTION
   ;****************************************************
-  ; this step corrects the science frames for linearization and bad pixels and 
-  ; converts from ADU to electrons
-  ; if needed, it also makes a bad pixel mask, otherwise it uses the default one
-  ; it will output corrected science frames in the intermediate directory
   
 
   flame_correct, fuel=fuel

@@ -1,4 +1,4 @@
-PRO flame_simple_stack, fuel=fuel
+PRO flame_quickstack, fuel=fuel
 
 	; read in the filenames
 	readcol, fuel.science_filelist, filenames, format='A'
