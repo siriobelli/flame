@@ -364,36 +364,43 @@ PRO flame_diagnostics, fuel=fuel
   cgPS_open, fuel.intermediate_dir + 'diagnostics.ps', /nomatch
   
   ; plot parameters
-  ch = 0.7
-  os = [0.12, 0.12]
-  
+  extra_structure = {noerase:1, xtickformat:'(A1)', charsize:0.7, xsty:1, ynozero:1}
+  x0 = 0.1
+  x1 = 0.95
+  y0 = 0.10
+  y1 = 0.95
+  delta_y = (y1-y0)/5.0
+
   ; check if a reference star was measured
   if where( finite(d.flux), /null) NE !NULL then begin   
     
     ; plot flux
-    cgplot, d.frame_num, d.flux/median(d.flux), psym=-16, _extra = gang_plot_pos(5,1,0, offset=os), charsize=ch, xra=xra, /xsty, ytit='flux / median', /ynozero
+    cgplot, d.frame_num, d.flux/median(d.flux), psym=-16, _extra = extra_structure, xra=xra, $
+    ytit='flux / median', position=[x0,y1-delta_y,x1,y1]
     cgplot, [0, 10000], 1+[0,0], /overplot
 
     ; plot seeing
-    cgplot, d.frame_num, d.seeing, psym=-16, _extra = gang_plot_pos(5,1,1, offset=os), charsize=ch, xra=xra, /xsty, ytit='seeing (arcsec)', /ynozero
+    cgplot, d.frame_num, d.seeing, psym=-16, _extra = extra_structure, xra=xra, $
+    ytit='seeing (arcsec)', position=[x0,y1-2.0*delta_y,x1,y1-delta_y]
 
   endif
 
   ; plot position of A frames
   if where(d.offset_pos eq 'A', /null) ne !NULL then $
     cgplot, d[where(d.offset_pos eq 'A', /null)].frame_num, d[where(d.offset_pos eq 'A', /null)].position, $
-      psym=-16, _extra = gang_plot_pos(5,1,2, offset=os), charsize=ch, xra=xra, /xsty, $
-      ytit='A $\Delta$ y (pixels)', /ynozero
+      psym=-16, _extra = extra_structure, xra=xra, $
+      ytit='A $\Delta$ y (pixels)', position=[x0,y1-3.0*delta_y,x1,y1-2.0*delta_y]
 
   ; plot position of B frames
   if where(d.offset_pos eq 'B', /null) ne !NULL then $
     cgplot, d[where(d.offset_pos eq 'B', /null)].frame_num, d[where(d.offset_pos eq 'B', /null)].position, $
-      psym=-16, _extra = gang_plot_pos(5,1,3, offset=os), charsize=ch, xra=xra, /xsty, $
-      ytit='B $\Delta$ y (pixels)', /ynozero
+      psym=-16, _extra = extra_structure, xra=xra, $
+      ytit='B $\Delta$ y (pixels)', position=[x0,y1-4.0*delta_y,x1,y1-3.0*delta_y]
 
   ; plot airmass
-  cgplot, d.frame_num, d.airmass, psym=-16, _extra = gang_plot_pos(5,1,4, offset=os), charsize=ch, $
-    xra=xra, /xsty, ytit='airmass', /ynozero, xtit='frame number'
+  extra_structure.xtickformat = ''
+  cgplot, d.frame_num, d.airmass, psym=-16, _extra = extra_structure, xra=xra, $
+  ytit='airmass', xtit='frame number', position=[x0,y1-5.0*delta_y,x1,y1-4.0*delta_y]
   
   cgPS_close
   
