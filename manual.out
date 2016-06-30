@@ -1,0 +1,20 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Installation}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Requirements}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Download}{section.2}% 4
+\BOOKMARK [1][-]{section.3}{Setting up the Data Reduction}{}% 5
+\BOOKMARK [2][-]{subsection.3.1}{Standard options}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.2}{Advanced options}{section.3}% 7
+\BOOKMARK [3][-]{subsubsection.3.2.1}{Reduce only one slit}{subsection.3.2}% 8
+\BOOKMARK [3][-]{subsubsection.3.2.2}{Specify the x coordinates for the reference star}{subsection.3.2}% 9
+\BOOKMARK [3][-]{subsubsection.3.2.3}{Longslit observations}{subsection.3.2}% 10
+\BOOKMARK [2][-]{subsection.3.3}{Initialization}{section.3}% 11
+\BOOKMARK [1][-]{section.4}{Running the Data Reduction}{}% 12
+\BOOKMARK [2][-]{subsection.4.1}{flame\137diagnostics}{section.4}% 13
+\BOOKMARK [2][-]{subsection.4.2}{flame\137quickstack}{section.4}% 14
+\BOOKMARK [2][-]{subsection.4.3}{flame\137correct}{section.4}% 15
+\BOOKMARK [2][-]{subsection.4.4}{flame\137getslits}{section.4}% 16
+\BOOKMARK [2][-]{subsection.4.5}{flame\137wavecal}{section.4}% 17
+\BOOKMARK [2][-]{subsection.4.6}{flame\137skysub}{section.4}% 18
+\BOOKMARK [2][-]{subsection.4.7}{flame\137rectify}{section.4}% 19
+\BOOKMARK [2][-]{subsection.4.8}{flame\137combine}{section.4}% 20
