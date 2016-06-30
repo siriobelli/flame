@@ -282,6 +282,9 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 	; normalize the observed spectrum
 	sky /= max(sky, /nan)
 
+	; get rid of NaNs, which create problems for the cross-correlation
+	sky[where(~finite(sky), /null)] = 0
+
 	; set the size of the grid
 	N_pix_scale = 20
 	N_pix_scale_variation = 20
@@ -486,8 +489,8 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	print, '-----------------------------------------------------'
 
 	; let's smooth observed and model sky so that we can get an approximate match
-	sky_sm = gauss_smooth(sky, 5)
-	model_flux_sm = gauss_smooth(model_flux, 5)
+	sky_sm = gauss_smooth(sky, wavecal_settings.smoothing_length)
+	model_flux_sm = gauss_smooth(model_flux, wavecal_settings.smoothing_length)
 
 	; remove continuum variation from the observed sky (important in the K band)
 	sky_sm -= median(sky, 100)
@@ -671,7 +674,8 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 		poly_degree : poly_degree, $
 		Nmin_lines : Nmin_lines, $
 		model_lambda : model_lambda, $
-		model_flux : model_flux $
+		model_flux : model_flux, $
+		smoothing_length : fuel.wavecal_approx_smooth $
 	}
 
 
