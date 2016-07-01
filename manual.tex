@@ -188,7 +188,7 @@ The sole goal of this module is to allow a quick look at the data. This step can
 % ---------------------------------------------------
 \subsection{\texttt{flame\_correct}}
 
-This module apply a number of correction to the raw science frames. First, the bad pixel mask is generated from the input dark frames. If no dark frames were supplied, then the default bad pixel mask, stored in flame/data/, is used.
+This module applies a number of correction to the raw science frames. First, the bad pixel mask is generated from the input dark frames. If no dark frames were supplied, then the default bad pixel mask, stored in flame/data/, is used.
 
 The following corrections are applied:
 \begin{itemize}
@@ -203,11 +203,57 @@ Each of the corrected science frame is then saved in the intermediate directory.
 % ---------------------------------------------------
 \subsection{\texttt{flame\_getslits}}
 
+The module \texttt{flame\_getslits} is responsible for detecting and extracting the individual slits from the multi-object slitmask. To identify the vertical coordinates corresponding to the slit edges, the expected pixel positions are calculated during the initialization are used. Typically the physical position of the mask with respect to the detector is difficult to predict and is not necessarily constant from one night to the other. To account for this, a vertical shift is calculated by identifying the slit edges.
+
+Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure.
+
+The output file slitim.fits is a mask where the value of each pixel is an integer indicating the slit number to which that pixel belongs to, with zero indicating pixels that do not belong to any slit. Also, the file slits.reg is saved, which is a ds9 region file that can be loaded on top of any science frame and will show the slit edges (see Figure \ref{fig:slits}). This can be used both to check the slit detection and also to identify which slit on the science frame corresponds to which target.
+
+Finally, all the slits are extracted from each corrected frame and saved as FITS files. All the files corresponding to the same slit are saved in the directory slitxx, where xx is the slit number.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{slits}
+\caption{Aaa.}
+\label{fig:slits}
+\end{figure}
 
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_wavecal}}
+
+This is the most important and difficult step in the data reduction. An accurate wavelength calibration is not only useful for the scientific interpretation of the data, but is also necessary for a correct sky subtraction. 
+
+For each slit, the wavelength calibration consists of two successive steps.
+
+
+\subsubsection{Approximate Wavelength Calibration}
+
+The first step finds an approximate wavelength calibration for the entire slit, using only the first science frame. The sky spectrum is extracted from the central five pixels of the slit, and is compared to a model spectrum. A very rough wavelength range is calculated from the header during the initialization, and the model sky is trimmed to a reasonable range. The comparison consists of two successive steps:
+\begin{enumerate}
+\item Both the observed and the model sky spectra are smoothed, and a series of values for the pixel scale (in micron per pixel) are tested. At each loop, cross-correlation is used to find the initial wavelength, and the pixel scale that gives the largest value of the cross-correlation is selected.
+\item Once the pixel scale and the initial wavelength are roughly known, a finer comparison is necessary. In this case the spectra are not smoothed, so that the narrow OH lines can be used for a very effective comparison. The relation between $x$ pixel coordinate and wavelength is typically not linear, and a second-order polynomial is used: $\lambda(x) = a_0 + a_1 x + a_2 x^2$. A fine grid of values for $a_1$ and $a_2$ is used, and at each loop cross-correlation is used to determine the best value for $a_0$.
+\end{enumerate}
+
+Two plots, illustrating the two comparisons of observed and model sky spectra, are saved as ps files (estimate\_wavelength\_solution\_slitxx.ps). An example is given in Figure \ref{fig:wavecal_approx}.
+
+
+\begin{figure*}[tbp]
+\begin{minipage}{\textwidth}
+   \centering
+ \includegraphics[width=0.45\textwidth]{wavecal_approx_1}
+   \hspace*{0.01\textwidth}
+ \includegraphics[width=0.45\textwidth]{wavecal_approx_2}
+\end{minipage}
+\caption{Approximate wavelength calibration.}
+\label{fig:wavecal_approx}
+\end{figure*}
+
+
+\subsubsection{Accurate Wavelength Calibration}
+
+After a rough wavelength calibration for the central pixels on the slit is found, a more accurate solution must be found for each pixel row and in each science frame. Starting from the central row, the sky spectrum is extracted and
 
 
 
@@ -215,8 +261,11 @@ Each of the corrected science frame is then saved in the intermediate directory.
 \subsection{\texttt{flame\_skysub}}
 
 
+
+
 % ---------------------------------------------------
 \subsection{\texttt{flame\_rectify}}
+
 
 
 
@@ -228,9 +277,11 @@ Each of the corrected science frame is then saved in the intermediate directory.
 
 % ***********************************************************************************************
 
+\vspace{10mm}
 
+\section*{Credits}
 
-
+\flame\ was written by Sirio Belli with substantial help from Alessandra Contursi for development and testing. Many features were inspired by code written by Eva Wuyts and Ric Davies for the early LUCAS pipeline, and by Nick Konidaris' MOSFIRE DRP. Dave Thompson provided useful information particularly for the LUCI-specific parts.
 
 
 \end{document}
