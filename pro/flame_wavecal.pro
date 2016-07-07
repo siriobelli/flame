@@ -392,6 +392,7 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 
 	; fit a 3rd degree polynomial to the 2D wavelength solution array in order to smooth it
 	; ************* NEED TO DO THIS ROBUSTLY ***********
+	; actually, need to get rid of this, since it is not used anymore
 
 	start_params = [ min(wavelength_solution, /nan), $
 		(max(wavelength_solution, /nan) - min(wavelength_solution, /nan)) / double(N_lambda_pix) , $

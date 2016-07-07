@@ -26,13 +26,14 @@ END
 
 
 
-FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom 
+FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, slit_angle=slit_angle
 
   ;
   ; Given a frame containing bright sky emission lines, it traces the edge of a slit.
   ; One of the two keywords /top and /bottom must be specified
   ; The output is a 1D array with the y-coordinate of the edge at each x position.
   ; Pixels with no detected edges are set to NaN
+  ; If the slit is tilted, slit_angle must be specified
   ; 
 
   ; check keywords
@@ -44,7 +45,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom
   N_pixel_x = sz[1]
 
   ; how big, in the y direction, is the cutout?
-  cutout_size = 60      ; even number please
+  cutout_size = 34      ; even number please
 
   ; of these pixels, we assume that the first ... are certainly inside the slit
   Npix_slit_fiducial = 10
@@ -56,21 +57,31 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom
   ; from now on, the code assumes that we are interested in finding the top edge of a slit
   ; if instead we want the bottom edge, simply flip vertically the cutout 
   if keyword_set(bottom) then cutout = reverse(cutout, 2)
+  if keyword_set(bottom) then slit_angle *= -1.0
 
   ; get rid of negative values and NaNs
   cutout[ where(cutout LT 0.0 or ~finite(cutout), /null) ] = 0.0
 
+  ; if the slit is tilted, undo the tilt so that the OH lines are roughly vertical
+  if slit_angle NE 0.0 then for i_ypixel=0, (size(cutout))[2]-1 do $
+    cutout[*,i_ypixel] = shift( cutout[*,i_ypixel], tan(slit_angle * !PI/180d)*i_ypixel )
+
   ; extract a spectrum from the fiducial slit regions
   sky_spectrum = median(cutout[*,0:Npix_slit_fiducial-1], dimension=2)
+
+  ; subtract the continuum from the sky spectrum (particularly important in the K band)
+  sky_spectrum_padded = [replicate(0d,200), sky_spectrum, replicate(0d,200)]
+  sky_spectrum_continuum = (median(sky_spectrum_padded, 200))[200:-201]
+  sky_spectrum -= sky_spectrum_continuum
 
   ; measure the sky flux in between the OH lines
   mmm, sky_spectrum, level_betweenlines, sigma_betweenlines
 
-  ; consider as a sky line all those pixels that are more than 4 sigma above the normal level of between-lines sky
-  w_OH = where(sky_spectrum GT level_betweenlines + 4.0*sigma_betweenlines, /null)
+  ; consider as a sky line all those pixels that are more than 3 sigma above the normal level of between-lines sky
+  w_OH = where(sky_spectrum GT level_betweenlines + 3.0*sigma_betweenlines, /null)
   if w_OH eq !NULL then w_OH = -1 ; it won't be used anyway
 
-  ; for each pixel column, take the ratio of ech pixel to the fiducial sky value in the slit 
+  ; for each pixel column, take the ratio of each pixel to the fiducial sky value in the slit 
   sky_spectrum_2d = sky_spectrum # replicate(1, cutout_size)
   flux_ratio = cutout / sky_spectrum_2d
   flux_ratio[where(sky_spectrum_2d eq 0.0, /null)] = 1.0
@@ -138,7 +149,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom
   w_uniq = where( w_OH-1 - shift(w_OH,1) NE 0, /null) ; get rid of consecutive pixels
   Nlines = n_elements(w_uniq)
 
-  if Nlines LT 15 then begin
+  if Nlines LT 9 then begin
 
     message, 'I found only ' + strtrim(Nlines,2) + $
       ' OH lines! Edge tracing will be based on sky background.', /informational
@@ -146,6 +157,8 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom
   endif else begin
 
     print, strtrim(Nlines,2) + ' OH lines found. Tracing edge...'
+
+print, approx_edge, keyword_set(top), keyword_set(bottom)
 
     ; select the good edge measurements
     w_ok = cgsetintersection( w_OH, where( y_edge ne 0.0, /null ) )
@@ -160,7 +173,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom
     real_y_edge = cutout_bottom_ycoord + cutout_size - float(y_edge) $
   else $
     real_y_edge = cutout_bottom_ycoord + float(y_edge)
-
+  
   ; return array with the y-coordinates of the edges
   return, real_y_edge
 
@@ -170,18 +183,22 @@ END
 ; ****************************************************************************************
 
 
-PRO flame_getslits_trace, image=image, approx_top=approx_top, approx_bottom=approx_bottom, $
+PRO flame_getslits_trace, image=image, info_fromheader=info_fromheader, yshift=yshift, $
   poly_coeff=poly_coeff, slit_height=slit_height
 ;
 ; traces the top and bottom edges of a slit in the image and return the slit height and the 
 ; coefficients of a polynomial fit describing the *bottom* edge
 ;
 
+  ; apply y shift
+  expected_top = info_fromheader.approx_top - yshift
+  expected_bottom = info_fromheader.approx_bottom - yshift
+
   ; identify top edge
-  top_edge = flame_getslits_trace_edge(image, approx_top, /top )
+  top_edge = flame_getslits_trace_edge(image, expected_top, /top, slit_angle=info_fromheader.PA )
 
   ; identify bottom edge
-  bottom_edge = flame_getslits_trace_edge(image, approx_bottom, /bottom )
+  bottom_edge = flame_getslits_trace_edge(image, expected_bottom, /bottom, slit_angle=info_fromheader.PA )
 
   ; calculate the slit height
   slit_height = median( top_edge - bottom_edge )
@@ -330,8 +347,7 @@ PRO flame_getslits_findedges, fuel=fuel
     info_fromheader = (*fuel.slits_fromheader)[i_slit]
 
     ; trace slit
-    flame_getslits_trace, image=im, approx_top=info_fromheader.approx_top-yshift, $
-      approx_bottom=info_fromheader.approx_bottom-yshift, $
+    flame_getslits_trace, image=im, info_fromheader=info_fromheader, yshift=yshift, $
           poly_coeff=poly_coeff, slit_height=slit_height
 
       ; add new fields to slit structure
