@@ -203,11 +203,11 @@ Each of the corrected science frame is then saved in the intermediate directory.
 % ---------------------------------------------------
 \subsection{\texttt{flame\_getslits}}
 
-The module \texttt{flame\_getslits} is responsible for detecting and extracting the individual slits from the multi-object slitmask. To identify the vertical coordinates corresponding to the slit edges, the expected pixel positions are calculated during the initialization are used. Typically the physical position of the mask with respect to the detector is difficult to predict and is not necessarily constant from one night to the other. To account for this, a vertical shift is calculated by identifying the slit edges.
+The module \texttt{flame\_getslits} is responsible for detecting and extracting the individual slits from the multi-object slitmask. The vertical coordinates corresponding to the slit edges are calculated during the initialization are used. However, the physical position of the mask with respect to the detector is typically difficulat to predict and varies slightly from one night to the other. To account for this, a vertical shift is calculated by identifying the slit edges.
 
-Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure.
+Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure. Note that this procedure is more likely to fail when the slits are short or when there is not much space between one slit and the next one.
 
-The output file slitim.fits is a mask where the value of each pixel is an integer indicating the slit number to which that pixel belongs to, with zero indicating pixels that do not belong to any slit. Also, the file slits.reg is saved, which is a ds9 region file that can be loaded on top of any science frame and will show the slit edges (see Figure \ref{fig:slits}). This can be used both to check the slit detection and also to identify which slit on the science frame corresponds to which target.
+The output file slitim.fits is a mask image where the value of each pixel is an integer indicating the slit number to which that pixel belongs to, with zero indicating pixels that do not belong to any slit. Also, the file slits.reg is saved, which is a ds9 region file that can be loaded on top of any science frame and will show the slit edges (see Figure \ref{fig:slits}). This can be used both to check the slit detection and also to identify which slit on the science frame corresponds to which target.
 
 Finally, all the slits are extracted from each corrected frame and saved as FITS files. All the files corresponding to the same slit are saved in the directory slitxx, where xx is the slit number.
 
@@ -253,7 +253,19 @@ Two plots, illustrating the two comparisons of observed and model sky spectra, a
 
 \subsubsection{Accurate Wavelength Calibration}
 
-After a rough wavelength calibration for the central pixels on the slit is found, a more accurate solution must be found for each pixel row and in each science frame. Starting from the central row, the sky spectrum is extracted and
+The previous procedure gives only a rought wavelength calibration that is valid for the pixel rows at the center of the slits. Since the wavelength solution typically varies with spatial coordinate within the slit (particularly for tilted slits), the calibration needs to be calculated for each individual pixel row.
+
+Initially, the spectrum of the central pixel row is extracted, and the individual OH emission lines are identified using the approximate wavelength solution. The $x$ coordinate (in pixels) of the center of each line is calculated via fitting of a Gaussian profile. The relation between the $x$ coordinate and the expected wavelength is then fit with a low order polynomial (see example in Figure \ref{fig:wavecal_approx}). This procedure is then repeated for the next pixel row, using the wavelength solution from the previous pixel row as first guess. This is always a good assumption as long as the wavelength solution varies smoothly with position, without abrupt changes from one pixel position to the next.
+
+After all the pixel rows have been processed, the final result is a number of $x,y$ coordinates of detected OH lines, with the corresponding expected wavelength.
+
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{wavecal_accurate}
+\caption{Aaa.}
+\label{fig:wavecal_accurate}
+\end{figure}
 
 
 
