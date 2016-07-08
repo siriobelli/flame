@@ -25,6 +25,68 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
+PRO flame_wavecal_writeds9, OH_lines, filename=filename
+;
+; write a ds9 region file with all the OH line detections
+;
+
+  ; extract the wavelength of all identifications
+  line_lambdas = OH_lines[*,0]
+  uniq_lambdas = line_lambdas[UNIQ(line_lambdas, SORT(line_lambdas))]
+
+  ; open file
+  openw, lun, filename, /get_lun
+
+  ; write header
+  printf, lun, '# Region file format: DS9 version 4.1'
+  printf, lun, 'global color=green dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
+  printf, lun, 'image'
+
+  for i_line=0, n_elements(uniq_lambdas)-1 do begin
+
+  	; the wavelength of this OH line
+  	this_lambda = uniq_lambdas[i_line]
+
+  	; select the x and y coordinates for this line
+  	w_thisline = where(OH_lines[*,0] eq this_lambda)
+  	this_x = OH_lines[w_thisline, 1]
+ 	this_y = OH_lines[w_thisline, 2]
+
+ 	; sort points by y coordinate 
+ 	wsort = sort(this_y)
+ 	this_x = this_x[wsort]
+ 	this_y = this_y[wsort]
+ 	
+    ; concatenate points
+    ;all_x = [top_x, reverse(bottom_x)]
+    ;all_y = [top_y, reverse(bottom_y)]
+    all_x = [ this_x, reverse(this_x) ]
+    all_y = [ this_y, reverse(this_y) ]
+
+    ; make the string with all the points
+    all_points = ''
+    for i=0,n_elements(all_x)-2 do all_points += strtrim(all_x[i],2) + ',' + cgnumber_formatter(all_y[i], decimals=1) + ','
+    ; add the last two points without the final comma
+    all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
+
+    ; write the line corresponding to this slit
+    printf, lun, 'polygon(' + all_points + ') # text={' + cgnumber_formatter(this_lambda, decimals=5) + '}'
+
+  endfor
+
+  ; close file
+  free_lun, lun
+
+
+
+
+
+END
+
+
+; ---------------------------------------------------------------------------------------------------------------------------
+
+
 FUNCTION flame_generate_lambda_axis, $
 	N_pixels=N_pixels, lambda_central=lambda_central, delta_lambda=delta_lambda, delta_delta_lambda=delta_delta_lambda
 
@@ -332,6 +394,11 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 
 		; index of the row we are considering now
 		i_row = sorted_rows[counter]
+
+		; skip 2 pixels at the edges to avoid the noisy part
+		if i_row LT 2 or N_spatial_pix-i_row LT 2 then continue
+
+		; print info on the row
 		print, 'row ' + strtrim(i_row, 2) + ' ', format='(a,$)'
 
 		; extract this pixel row from the slit
@@ -422,6 +489,11 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 
 	; output the coordinates of the OH lines 
 	OH_lines = [ [OH_wavelength], [OH_xpixel], [OH_ypixel] ]
+
+	; write a ds9 region file with the identified OH lines 
+	filename_pieces = strsplit(slit_filename, '/', /extract) ; necessary for finding the slit directory
+	filename_pieces[-1] = 'OHlines.reg'
+	flame_wavecal_writeds9, OH_lines, filename =  strjoin(filename_pieces, '/')
 
 END
 
