@@ -25,7 +25,7 @@ FUNCTION flame_create_fuel
     flame_data_dir : data_dir, $
     sky_emission_filename : data_dir + 'sky_emission_model.dat', $
     band : '', $
-    linelist_filename: '', $
+    linelist_filename: data_dir + 'line_list.dat', $
     pixel_scale : 0.0, $
     readnoise : 0.0, $
     gain : 0.0, $

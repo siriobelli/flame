@@ -119,9 +119,6 @@ PRO flame_initialize_luci, fuel=fuel
   science_header = headfits(science_filenames[0])
   fuel.band =  strtrim(fxpar(science_header, 'FILTER2'),2)
 
-  ; choose the file with the line list
-  fuel.linelist_filename = fuel.flame_data_dir + 'line_list_' + fuel.band + '.dat'
-
   ; read in the pixel scale 
   fuel.pixel_scale = fxpar(science_header, 'PIXSCALE')  ; arcsec/pixel
 

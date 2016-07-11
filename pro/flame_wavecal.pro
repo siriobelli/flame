@@ -223,11 +223,21 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 		skylines_pixel = []
 		skylines_chisq = []
 
+		; identify the OH lines that are in this wavelength range
+		w_lines = where(wavecal_settings.line_list GT min(wavelength_axis_guess, /nan) $
+			AND wavecal_settings.line_list LT max(wavelength_axis_guess, /nan), /null )
+
+		; make sure there are OH lines here
+		if w_lines EQ !NULL then message, 'Wavelength range does not contain OH lines?!'
+
+		; keep only the OH lines of interest
+		line_list = wavecal_settings.line_list[w_lines]
+
 		; fit a Gaussian to every sky line
-		for i_line=0,n_elements(wavecal_settings.line_list)-1 do begin
+		for i_line=0,n_elements(line_list)-1 do begin
 
 			; select the region to fit
-			w_fit = where( abs(wavelength_axis_guess-wavecal_settings.line_list[i_line]) LT 0.5*wavecal_settings.lambda_window, /null )
+			w_fit = where( abs(wavelength_axis_guess-line_list[i_line]) LT 0.5*wavecal_settings.lambda_window, /null )
 
 			; check that the region is within the observed range
 			if w_fit eq !NULL then continue
@@ -255,7 +265,7 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 			; check that the Gaussian width makes sense
 			if gauss_param[2] LT 0.0 or gauss_param[2] GT 0.5*n_elements(w_fit) then continue
 
-			skylines_wavelength = [ skylines_wavelength, wavecal_settings.line_list[i_line] ]
+			skylines_wavelength = [ skylines_wavelength, line_list[i_line] ]
 			skylines_pixel = [ skylines_pixel, gauss_param[1] ]
 			skylines_chisq = [ skylines_chisq, chisq ]
 
