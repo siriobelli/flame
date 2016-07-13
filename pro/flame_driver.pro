@@ -11,10 +11,11 @@
   fuel.science_filelist = 'input/science.txt'
 
   ; text file containing the list of FITS files with dark frames (used for bad pixel mask)
-  ; if 'none', the default bad pixel mask will be used
-  fuel.darks_filelist = 'input/darks.txt'
+  ; if 'none', the default dark will be used
+  fuel.darks_filelist = 'none'
 
   ; text file containing the list of FITS files with flat field
+  ; if 'none', the default flat field will be used
   fuel.flats_filelist = 'none'
   
   ; name of the directory where intermediate data products will be saved
@@ -23,11 +24,15 @@
   ; name of the directory where the final output files will be saved
   fuel.output_dir = 'output/'
 
-  ; if 0, then reduce all slits. If n, then reduce slit number n (starting from 1).
-  fuel.reduce_only_oneslit = 0
-
   ; array with y-pixel positions for the traces of the reference star. [0,0] if there is no reference star
-  fuel.startrace_y_pos = [547, 560]
+  fuel.startrace_y_pos = [1283, 1303]
+
+  
+  ; ADVANCED OPTIONS
+  ;**********************************
+
+  ; if 0, then reduce all slits. If n, then reduce slit number n (starting from 1).
+  fuel.reduce_only_oneslit = 4
 
   ; if you want to change the range in x-coordinates used to extract the star traces:
   ;fuel.xrange_star = [100, 500]
@@ -37,13 +42,16 @@
 
   ; for longslit
   ;fuel.longslit = 1
-  ;fuel.longslit_edge = [960, 1090]
+  ;fuel.longslit_edge = [1133, 1179]
 
   ; specify the output wavelength grid
   ;fuel.OUTPUT_LAMBDA_0 = 1.12
   ;fuel.OUTPUT_LAMBDA_DELTA = 7.5d-5
   ;fuel.OUTPUT_LAMBDA_NPIX = 450
   
+  ;**********************************
+
+
   ; create the fuel structure
   flame_initialize_luci, fuel=fuel
 
