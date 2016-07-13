@@ -328,8 +328,8 @@ PRO flame_getslits_findedges, fuel=fuel
         approx_wavelength_lo: info_fromheader.approx_wavelength_lo, $
         approx_wavelength_hi: info_fromheader.approx_wavelength_hi, $
         yshift: !values.d_nan, $
-        height: !values.d_nan, $
-        bottom_poly: !values.d_nan, $
+        height: info_fromheader.approx_top - info_fromheader.approx_bottom, $
+        bottom_poly: info_fromheader.approx_bottom, $
         filenames: ptr_new(/allocate_heap), $
         rectification: ptr_new(/allocate_heap) }
 

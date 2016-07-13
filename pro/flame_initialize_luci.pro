@@ -1,3 +1,30 @@
+FUNCTION flame_initialize_luci_waverange, band=band, central_wl=central_wl, slit_xmm=slit_xmm
+;
+; return the estimated wavelength range for a slit
+;
+
+  ; determine appropriate value of conversion factor delta_wavel in micron/mm
+
+  case band of
+    'J': delta_wavel = 0.00049
+    'H': delta_wavel = 0.00066
+    'K': delta_wavel = 0.001075
+    else: message, 'I do not have the wavelength scale for this band yet'
+  endcase
+
+  ; rough wavelength range; mask is roughly 300mm across
+  lambda_min = central_wl - slit_xmm * delta_wavel - 150.0*delta_wavel
+  lambda_max = central_wl - slit_xmm * delta_wavel + 150.0*delta_wavel
+
+  return, [lambda_min, lambda_max]
+
+END
+
+
+
+;******************************************************************
+
+
 
 PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   slit_num=slit_num, slit_name=slit_name, slit_PA=slit_PA, $
@@ -12,15 +39,6 @@ PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   ; only tweakable settings: maximum width in arcsec allowed for science slits. 
   ; slits wider than this value are considered alignment boxes
   maxwidth_arcsec = 2.0
-
-  ; determine appropriate value of conversion factor delta_wavel in micron/mm
-  band = strtrim(fxpar(header, 'FILTER2'),2)
-  case band of
-    'J': delta_wavel = 0.00049
-    'H': delta_wavel = 0.00066
-    'K': delta_wavel = 0.001075
-    else: message, 'I do not have the wavelength scale for this band yet'
-  endcase
 
   ; array of structures that will contain the info for each slit
   slit_hdr = []
@@ -71,13 +89,31 @@ PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   ; output interesting values
   slit_num = slit_hdr.number
   slit_name = slit_hdr.name
-  slit_PA = SLIT_hdr.angle
+  slit_PA = slit_hdr.angle
   bottom = y_pixels - 0.5*slitheight_pixels
   top = y_pixels + 0.5*slitheight_pixels
   target = y_pixels
-  ; rough wavelength range; mask is roughly 300mm across
-  wavelength_lo = fxpar(header, 'GRATWLEN') - slit_hdr.x_mm * delta_wavel - 150.0*delta_wavel
-  wavelength_hi = fxpar(header, 'GRATWLEN') - slit_hdr.x_mm * delta_wavel + 150.0*delta_wavel
+
+  ; calculate approximate wavelength range
+
+  ; identify band
+  band = strtrim(fxpar(header, 'FILTER2'),2)
+
+  ; identify central wavelength
+  central_wavelength = fxpar(header, 'GRATWLEN')
+
+  ; output wavelength range
+  wavelength_lo = []
+  wavelength_hi = []
+
+  ; rough wavelength range
+  for i_slit=0, n_elements(slit_hdr)-1 do begin
+    lambda_range = flame_initialize_luci_waverange(band=band, central_wl=central_wavelength, slit_xmm=slit_hdr[i_slit].x_mm)
+
+    ; output wavelength range
+    wavelength_lo = [ wavelength_lo, lambda_range[0] ]
+    wavelength_hi = [ wavelength_hi, lambda_range[1] ]
+  endfor
 
 
 END
@@ -156,6 +192,10 @@ PRO flame_initialize_luci, fuel=fuel
   if fuel.longslit then begin
     ; get the slit edges from the user
 
+    ; rough wavelength range (slit should be central, x ~ 150 mm)
+    lambda_range = $
+     flame_initialize_luci_waverange(band=fuel.band, central_wl=central_wavelength, slit_xmm=150.0)
+
     ; create slit structure 
     slits = { $
       number:1, $
@@ -164,8 +204,8 @@ PRO flame_initialize_luci, fuel=fuel
       approx_bottom:fuel.longslit_edge[0], $
       approx_top:fuel.longslit_edge[1], $
       approx_target:mean(fuel.longslit_edge), $
-      approx_wavelength_lo:central_wavelength, $
-      approx_wavelength_hi:central_wavelength }
+      approx_wavelength_lo:lambda_range[0], $
+      approx_wavelength_hi:lambda_range[1] }
 
   ; MOS      ---------------------------------------------------------------------
   endif else begin
