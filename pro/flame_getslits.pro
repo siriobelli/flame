@@ -331,7 +331,10 @@ PRO flame_getslits_findedges, fuel=fuel
         height: info_fromheader.approx_top - info_fromheader.approx_bottom, $
         bottom_poly: info_fromheader.approx_bottom, $
         filenames: ptr_new(/allocate_heap), $
-        rectification: ptr_new(/allocate_heap) }
+        rectification: ptr_new(/allocate_heap), $
+        outlambda_min:0d, $
+        outlambda_delta:0d, $
+        outlambda_Npix:0L }
 
  ; MOS      ---------------------------------------------------------------------
   endif else begin
@@ -361,7 +364,10 @@ PRO flame_getslits_findedges, fuel=fuel
         height: slit_height, $
         bottom_poly: poly_coeff, $
         filenames: ptr_new(/allocate_heap), $
-        rectification: ptr_new(/allocate_heap) }
+        rectification: ptr_new(/allocate_heap), $
+        outlambda_min:0d, $
+        outlambda_delta:0d, $
+        outlambda_Npix:0L }
 
       slits = [slits, this_slit]
 

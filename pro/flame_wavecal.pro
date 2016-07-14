@@ -78,13 +78,12 @@ PRO flame_wavecal_writeds9, OH_lines, filename=filename
   free_lun, lun
 
 
-
-
-
 END
 
 
+
 ; ---------------------------------------------------------------------------------------------------------------------------
+
 
 
 FUNCTION flame_generate_lambda_axis, $
@@ -310,7 +309,8 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 PRO flame_wavecal_accurate, slit_filename=slit_filename, $
-	 wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis, OH_lines=OH_lines
+	 wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis, $
+	 OH_lines=OH_lines, wavelength_solution=wavelength_solution
 
 	print, ' '
 	print, 'Wavelength solution for ', slit_filename
@@ -467,36 +467,6 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 	cgPS_close
 
 
-	; fit a 3rd degree polynomial to the 2D wavelength solution array in order to smooth it
-	; ************* NEED TO DO THIS ROBUSTLY ***********
-	; actually, need to get rid of this, since it is not used anymore
-
-	start_params = [ min(wavelength_solution, /nan), $
-		(max(wavelength_solution, /nan) - min(wavelength_solution, /nan)) / double(N_lambda_pix) , $
-		(median(wavelength_solution[*,-5:-1]) - median(wavelength_solution[*,0:4])) / double(N_spatial_pix) , $
-		1d-5, $
-		1d-5, $
-		1d-5]
-
-	; fit a 3rd degree polynomial to all the OH lines found at each pixel row 
-	fit_params = mpfit2dfun('flame_poly_surface', $
-		OH_xpixel, OH_ypixel, OH_wavelength, replicate(1.0, n_elements(OH_xpixel)), start_params, /quiet)
-
-	; generate the smooth wavelength solution using the best-fit parameters
-	x_coordinate = dindgen(N_lambda_pix) # replicate(1.0, N_spatial_pix)
-	y_coordinate = replicate(1.0, N_lambda_pix) # dindgen(N_spatial_pix)
-	wavelength_solution_smooth = flame_poly_surface(x_coordinate, y_coordinate, fit_params)
-	
-	; output the wavelength solution to a FITS file
-	writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), wavelength_solution_smooth
-	writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), wavelength_solution, /append
-
-	; also, save the individual detection of OH lines
-	lines_im = wavelength_solution
-	lines_im[*] = 0.0
-	for i=0,n_elements(OH_xpixel)-1 do lines_im[OH_xpixel[i], OH_ypixel[i]] = OH_wavelength[i]
-	writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), lines_im, /append
-
 	; output the coordinates of the OH lines 
 	OH_lines = [ [OH_wavelength], [OH_xpixel], [OH_ypixel] ]
 
@@ -504,6 +474,7 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 	filename_pieces = strsplit(slit_filename, '/', /extract) ; necessary for finding the slit directory
 	filename_pieces[-1] = 'OHlines.reg'
 	flame_wavecal_writeds9, OH_lines, filename =  strjoin(filename_pieces, '/')
+
 
 END
 
@@ -634,6 +605,70 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
+PRO flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
+	OH_lines=OH_lines, slit=slit
+
+	; fit a 3rd degree polynomial to the 2D wavelength solution array in order to smooth it
+	; 1. this could be more robust
+	; 2. Is there a better way to set the output wavelength grid?
+
+
+	; how many pixels on the spatial direction
+	N_spatial_pix = (size(wavelength_solution))[2]
+
+	; how many pixels on the wavelength direction
+	N_lambda_pix = (size(wavelength_solution))[1]
+
+	; unpack the OH line detection array
+	OH_wavelength = OH_lines[*,0]
+	OH_xpixel = OH_lines[*,1]
+	OH_ypixel = OH_lines[*,2]
+
+	; guess starting parameters for smooth solution
+	start_params = [ min(wavelength_solution, /nan), $
+		(max(wavelength_solution, /nan) - min(wavelength_solution, /nan)) / double(N_lambda_pix) , $
+		(median(wavelength_solution[*,-5:-1]) - median(wavelength_solution[*,0:4])) / double(N_spatial_pix) , $
+		1d-5, $
+		1d-5, $
+		1d-5]
+
+	; fit a 3rd degree polynomial to all the OH lines found at each pixel row 
+	fit_params = mpfit2dfun('flame_poly_surface', $
+		OH_xpixel, OH_ypixel, OH_wavelength, replicate(1.0, n_elements(OH_xpixel)), start_params, /quiet)
+
+	; generate the smooth wavelength solution using the best-fit parameters
+	x_coordinate = dindgen(N_lambda_pix) # replicate(1.0, N_spatial_pix)
+	y_coordinate = replicate(1.0, N_lambda_pix) # dindgen(N_spatial_pix)
+	wavelength_solution_smooth = flame_poly_surface(x_coordinate, y_coordinate, fit_params)
+
+	; find the wavelength range
+	lambda_min_smooth = min(wavelength_solution_smooth, /nan)
+	lambda_max_smooth = max(wavelength_solution_smooth, /nan)
+
+	; find the median delta lambda
+ 	diff_lambda_smooth = abs( wavelength_solution_smooth - shift(wavelength_solution_smooth,1) )
+ 	diff_lambda_smooth = diff_lambda_smooth[5:-5,*]	; avoid edge effects
+ 	lambda_delta_smooth = median(diff_lambda_smooth)
+
+ 	; find the rounded value for the pixel scale, on a logarithimc scale
+ 	; (the idea here is to try to have the same value for slightly different datasets)
+ 	lambda_delta_out = 10.0^( round(alog10(lambda_delta_smooth)*10.0)/10.0 )
+
+ 	; define lambda range, being a little conservative
+ 	lambda_min = lambda_min_smooth - 10.0*lambda_delta_out
+ 	lambda_max = lambda_max_smooth + 10.0*lambda_delta_out
+
+ 	; save output grid to the slit structure
+ 	slit.outlambda_min = 10.0^( floor(alog10(lambda_min)*100.0)/100.0 )
+	slit.outlambda_delta = lambda_delta_out
+ 	slit.outlambda_Npix = round( (lambda_max - lambda_min) / lambda_delta_out + 0.5 )
+
+END 
+
+
+; ---------------------------------------------------------------------------------------------------------------------------
+
+
 PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_lines, fuel=fuel
 ;
 ; This routine calculates the 2D wavelength solution and y-rectification.
@@ -667,8 +702,8 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_line
 	OH_y = OH_lines[*,2]
 
 	; output lambda axis
-	lambda_0 = fuel.output_lambda_0
-	delta_lambda = fuel.output_lambda_delta
+	lambda_0 = slit.outlambda_min
+	delta_lambda = slit.outlambda_delta
 
 	; translate every OH detection into the new coordinate system
 	OH_lambdax = (OH_lambda - lambda_0)/delta_lambda
@@ -805,9 +840,17 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
 
 			flame_wavecal_accurate, slit_filename=(*slits[i_slit].filenames)[i_frame], $
-				wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis, OH_lines=OH_lines
+				wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis, $
+				OH_lines=OH_lines, wavelength_solution=wavelength_solution
 
-			flame_wavecal_2D_calibration, filename=(*slits[i_slit].filenames)[i_frame], slit=this_slit, OH_lines=OH_lines, fuel=fuel
+			flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
+				OH_lines=OH_lines, slit=this_slit
+
+			flame_wavecal_2D_calibration, filename=(*slits[i_slit].filenames)[i_frame], $
+				slit=this_slit, OH_lines=OH_lines, fuel=fuel
+
+			; update the slit structure with the output wavelength grid of the last frame
+			(*fuel.slits)[i_slit] = this_slit
 
 		endfor
 

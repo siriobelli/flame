@@ -44,11 +44,6 @@
   ;fuel.longslit = 1
   ;fuel.longslit_edge = [1133, 1179]
 
-  ; specify the output wavelength grid
-  ;fuel.OUTPUT_LAMBDA_0 = 1.12
-  ;fuel.OUTPUT_LAMBDA_DELTA = 7.5d-5
-  ;fuel.OUTPUT_LAMBDA_NPIX = 450
-  
   ;**********************************
 
 

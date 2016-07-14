@@ -1,7 +1,7 @@
 
 
 
-PRO flame_rectify_one, filename=filename, rectification=rectification, output_name=output_name, fuel=fuel
+PRO flame_rectify_one, filename=filename, rectification=rectification, output_name=output_name, slit=slit
 
 	print, 'rectifying ', filename
 
@@ -13,9 +13,9 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	N_imy = (size(im))[2]
 
 	; make the new, regular pixel grid
-	lambda_0 = fuel.output_lambda_0
-	delta_lambda = fuel.output_lambda_delta
-	Nx = fuel.output_lambda_Npix
+	lambda_0 = slit.outlambda_min
+	delta_lambda = slit.outlambda_delta
+	Nx = slit.outlambda_Npix
 	Ny = N_imy
 
 	; resample image onto new grid
@@ -76,11 +76,11 @@ PRO flame_rectify, fuel=fuel
 
 			; rectify observed frame
 			flame_rectify_one, filename=filename, rectification=(*this_slit.rectification)[i_frame], $
-				output_name = flame_util_replace_string(filename, '.fits', '_rectified.fits'), fuel=fuel
+				output_name = flame_util_replace_string(filename, '.fits', '_rectified.fits'), slit=this_slit
 
 			; rectify sky-subtracted frame
 			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skysub.fits'), rectification=(*this_slit.rectification)[i_frame], $
-				output_name = flame_util_replace_string(filename, '.fits', '_skysub_rectified.fits'), fuel=fuel
+				output_name = flame_util_replace_string(filename, '.fits', '_skysub_rectified.fits'), slit=this_slit
 
 		endfor
 

@@ -1,6 +1,7 @@
 
 
-PRO flame_skysub_slit, slit_filename=slit_filename, rectification=rectification, fuel=fuel
+PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectification, $
+	lambda_0=lambda_0, delta_lambda=delta_lambda
 
 	print, 'Sky subtraction for ', slit_filename
 
@@ -14,10 +15,6 @@ PRO flame_skysub_slit, slit_filename=slit_filename, rectification=rectification,
 	N_lambda_pix = (size(slit_image))[1]
 
 	; calculate the wavelength solution using the rectification matrices
-
-	; wavelength axis
-	lambda_0 = fuel.output_lambda_0
-	delta_lambda = fuel.output_lambda_delta
 
 	; make the arrays that will have the new coordinate of each pixel
 	lambda = slit_image
@@ -59,7 +56,7 @@ PRO flame_skysub_slit, slit_filename=slit_filename, rectification=rectification,
 	breakpoints = wavelength_solution[*,N_spatial_pix/2]
 
 	; plot all pixels in a small wavelength range (from 2/4 to 3/4 of entire observed range)
-	cgplot, pixel_wavelength, pixel_flux, psym=3, $
+	cgplot, pixel_wavelength, pixel_flux, psym=3, xtit='wavelength (micron)', $
 		xra=breakpoints[ [n_elements(breakpoints)*2/4, n_elements(breakpoints)*3/4] ], $
 		title=(strsplit(slit_filename,'/', /extract))[-1]
 
@@ -71,7 +68,7 @@ PRO flame_skysub_slit, slit_filename=slit_filename, rectification=rectification,
 	wl_axis = min(pixel_wavelength) + (max(pixel_wavelength) - min(pixel_wavelength)) * dindgen( N_lambda_pix * 10 ) / double(N_lambda_pix * 10)
 
 	; overplot the B-spline model at each row
-	cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=0.0001), /overplot, color='red' ; bug: setting i_row=0 is interpreted by bspline_valu as keyword not set
+	cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=0.0001), /overplot, color='red' ; bspline_valu bug: setting i_row=0 is interpreted as keyword not set
 	for i_row=1, N_spatial_pix-1 do cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=i_row), /overplot, color='red'
 
 	; show pixels that were masked out
@@ -107,9 +104,17 @@ PRO flame_skysub, fuel=fuel
 
  	; loop through all the slits
 	for i_slit=0, n_elements(slits)-1 do $
-		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do $
-			flame_skysub_slit, slit_filename=(*slits[i_slit].filenames)[i_frame], $
-			rectification = (*slits[i_slit].rectification)[i_frame], fuel=fuel
+		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
+
+			slit_filename=(*slits[i_slit].filenames)[i_frame]
+			rectification = (*slits[i_slit].rectification)[i_frame]
+			lambda_0 = slits[i_slit].outlambda_min
+			delta_lambda = slits[i_slit].outlambda_delta
+			
+			flame_skysub_oneframe, slit_filename=slit_filename, $
+			rectification=rectification, lambda_0=lambda_0, delta_lambda=delta_lambda
+
+		endfor
 
 END
 

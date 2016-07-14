@@ -4,6 +4,7 @@ FUNCTION flame_initialize_luci_waverange, band=band, central_wl=central_wl, slit
 ;
 
   ; determine appropriate value of conversion factor delta_wavel in micron/mm
+  ; these are probably different when using the ARGOS camera!
 
   case band of
     'J': delta_wavel = 0.00049
@@ -163,26 +164,6 @@ PRO flame_initialize_luci, fuel=fuel
 
   ; read in gain
   fuel.gain = fxpar(science_header, 'GAIN')   ; e-/adu
-
-  ; set the wavelength grid for the final, resampled spectra (unless it's already been specified)
-  if fuel.output_lambda_0 eq 0d then $
-    case fuel.band of
-
-      'J': begin
-        fuel.output_lambda_0 = 1.13d           ; wavelength for the first pixel, in micron
-        fuel.output_lambda_delta = 0.75d-4     ; micron per pixel
-        fuel.output_lambda_Npix =  3200        ; number of pixels (determines wavelength range)
-      end
-
-      'K': begin
-        fuel.output_lambda_0 = 1.90d           ; wavelength for the first pixel, in micron
-        fuel.output_lambda_delta = 1.5d-4      ; micron per pixel
-        fuel.output_lambda_Npix =  4200        ; number of pixels (determines wavelength range)
-      end
-
-      else: message, fuel.band + ' band not supported yet'
-
-    endcase
 
   ; read central wavelength 
   central_wavelength = fxpar(science_header, 'GRATWLEN')
