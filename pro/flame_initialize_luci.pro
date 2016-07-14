@@ -1,17 +1,19 @@
-FUNCTION flame_initialize_luci_waverange, band=band, central_wl=central_wl, slit_xmm=slit_xmm
+FUNCTION flame_initialize_luci_waverange, band=band, central_wl=central_wl, slit_xmm=slit_xmm, camera=camera
 ;
 ; return the estimated wavelength range for a slit
 ;
 
   ; determine appropriate value of conversion factor delta_wavel in micron/mm
-  ; these are probably different when using the ARGOS camera!
-
+  
   case band of
     'J': delta_wavel = 0.00049
     'H': delta_wavel = 0.00066
     'K': delta_wavel = 0.001075
     else: message, 'I do not have the wavelength scale for this band yet'
   endcase
+
+  ; for ARGOS 
+  if strlowcase(camera) eq 'n3.75 camera' then delta_wavel *= 2.0
 
   ; rough wavelength range; mask is roughly 300mm across
   lambda_min = central_wl - slit_xmm * delta_wavel - 150.0*delta_wavel
@@ -103,13 +105,16 @@ PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   ; identify central wavelength
   central_wavelength = fxpar(header, 'GRATWLEN')
 
+  ; read camera
+  camera = fxpar(header, 'CAMERA')
+
   ; output wavelength range
   wavelength_lo = []
   wavelength_hi = []
 
   ; rough wavelength range
   for i_slit=0, n_elements(slit_hdr)-1 do begin
-    lambda_range = flame_initialize_luci_waverange(band=band, central_wl=central_wavelength, slit_xmm=slit_hdr[i_slit].x_mm)
+    lambda_range = flame_initialize_luci_waverange(band=band, central_wl=central_wavelength, slit_xmm=slit_hdr[i_slit].x_mm, camera=camera)
 
     ; output wavelength range
     wavelength_lo = [ wavelength_lo, lambda_range[0] ]
@@ -168,6 +173,10 @@ PRO flame_initialize_luci, fuel=fuel
   ; read central wavelength 
   central_wavelength = fxpar(science_header, 'GRATWLEN')
 
+  ; read camera
+  camera = fxpar(science_header, 'CAMERA')
+
+
   ; read in the slits parameters from the FITS header
   ; LONGSLIT ---------------------------------------------------------------------
   if fuel.longslit then begin
@@ -175,7 +184,7 @@ PRO flame_initialize_luci, fuel=fuel
 
     ; rough wavelength range (slit should be central, x ~ 150 mm)
     lambda_range = $
-     flame_initialize_luci_waverange(band=fuel.band, central_wl=central_wavelength, slit_xmm=150.0)
+     flame_initialize_luci_waverange(band=fuel.band, central_wl=central_wavelength, slit_xmm=150.0, camera=camera)
 
     ; create slit structure 
     slits = { $

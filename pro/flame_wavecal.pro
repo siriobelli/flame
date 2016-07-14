@@ -250,7 +250,7 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 			endif 
 
 			; Gaussian fit
-			junk = gaussfit(  x[w_fit], y[w_fit], gauss_param, nterms=4, chisq=chisq )
+			junk = gaussfit( x[w_fit], y[w_fit], gauss_param, nterms=4, sigma=gauss_err, chisq=chisq )
 
 			; check that chi square makes sense
 			if ~finite(chisq) then continue
@@ -258,11 +258,14 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 			; check that the peak of the Gaussian is positive
 			if gauss_param[0] LT 0.0 then continue
 
+			; check that the SNR is high
+			if gauss_param[0] LT 5.0*gauss_err[0] then continue
+
 			; check that the center of the Guassian is in the observed range
 			if gauss_param[1] LT min(x[w_fit]) or gauss_param[1] GT max(x[w_fit]) then continue
 
 			; check that the Gaussian width makes sense
-			if gauss_param[2] LT 0.0 or gauss_param[2] GT 0.5*n_elements(w_fit) then continue
+			if gauss_param[2] LT 0.5 or gauss_param[2] GT 0.5*n_elements(w_fit) then continue
 
 			skylines_wavelength = [ skylines_wavelength, line_list[i_line] ]
 			skylines_pixel = [ skylines_pixel, gauss_param[1] ]
@@ -405,14 +408,18 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 		; index of the row we are considering now
 		i_row = sorted_rows[counter]
 
-		; skip 2 pixels at the edges to avoid the noisy part
-		if i_row LT 2 or N_spatial_pix-i_row LT 2 then continue
+		; skip 3 pixels at the edges to avoid the noisy part
+		if i_row LT 3 or N_spatial_pix-i_row LT 3 then continue
 
 		; print info on the row
 		print, 'row ' + strtrim(i_row, 2) + ' ', format='(a,$)'
 
 		; extract this pixel row from the slit
 		this_row = im[*, i_row]
+
+		; to gain signal, extract this row and sum it to the four neighbor rows
+		if wavecal_settings.use_more_pixelrows then $
+			this_row = total(im[*, i_row-2:i_row+2], 2)
 
 		; normalize
 		this_row /= max(this_row, /nan)
@@ -776,15 +783,21 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	
 	; minimum number of OH lines for a reliable wavelength solution
 	Nmin_lines = 6 
+	
+	; normally, extract individual pixel rows and detect OH lines
+	use_more_pixelrows = 0
 
 	; special case: K band
 	if fuel.band eq 'K' then begin
 
 		; larger wavelength window to detect OH lines
-		lambda_window = 0.003
+		;lambda_window = 0.003
 
 		; lower degree for wavecal function to avoid extrapolating too much at large lambda
 		poly_degree = 2
+
+		; integrate over more than one pixel row to find OH lines
+		use_more_pixelrows = 1
 
 	endif
 
@@ -800,7 +813,8 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 		Nmin_lines : Nmin_lines, $
 		model_lambda : model_lambda, $
 		model_flux : model_flux, $
-		smoothing_length : fuel.wavecal_approx_smooth $
+		smoothing_length : fuel.wavecal_approx_smooth, $
+		use_more_pixelrows : use_more_pixelrows $
 	}
 
 
