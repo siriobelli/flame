@@ -537,6 +537,12 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	; normalize the observed spectrum
 	sky /= max(sky, /nan)
 
+	; start PS file
+	filename_pieces = strsplit(slit_filename, '/', /extract) ; necessary for finding the slit directory
+	filename_pieces[-1] = 'wavelength_solution_estimate.ps'
+	ps_filename =  strjoin(filename_pieces, '/')
+	cgPS_open, ps_filename, /nomatch
+
 
 	print, ''
 	print, 'FIRST STEP: rough estimate of lambda and delta_lambda'
@@ -596,6 +602,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	; return the approximate wavelength axis
 	approx_lambda_axis = lambda_axis
 
+	cgPS_close
 
 END
 
@@ -832,10 +839,8 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose
 
 		print, 'Using the central pixel rows of ', reference_filename
 
-		cgPS_open, fuel.intermediate_dir + 'estimate_wavelength_solution_slit' + strtrim(this_slit.number,2) + '.ps', /nomatch
-			flame_wavecal_approximate, slit_filename=reference_filename, this_slit=this_slit, $
-				wavecal_settings=wavecal_settings, approx_lambda_axis = approx_lambda_axis
-		cgPS_close
+		flame_wavecal_approximate, slit_filename=reference_filename, this_slit=this_slit, $
+			wavecal_settings=wavecal_settings, approx_lambda_axis = approx_lambda_axis
 
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
 
