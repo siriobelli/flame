@@ -31,6 +31,7 @@ FUNCTION flame_create_fuel
     gain : 0.0, $
     xrange_star:[1000, 1200], $
     wavecal_approx_smooth : 5, $
+    use_sky_edge : 0, $
     corrscience_files : ptr_new(/allocate_heap), $
     diagnostics : ptr_new(/allocate_heap), $
     slits_fromheader : ptr_new(/allocate_heap), $

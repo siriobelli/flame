@@ -25,6 +25,76 @@ END
 ; ****************************************************************************************
 
 
+FUNCTION flame_getslits_trace_skyedge, image, approx_edge, top=top, bottom=bottom
+
+  ; check keywords
+  if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
+  if keyword_set(top) AND keyword_set(bottom) then message, 'Please select either /top or /bottom'
+
+  ; read in the x-size of the image
+  sz = size(image)
+  N_pixel_x = sz[1]
+
+  ; how big, in the y direction, is the cutout?
+  cutout_size = 44      ; even number please
+
+  ; let's extract a cutout centered on the edge
+  cutout_bottom_ycoord = approx_edge-cutout_size/2
+  cutout = image[ * , cutout_bottom_ycoord : cutout_bottom_ycoord + cutout_size - 1 ]
+  
+  ; from now on, the code assumes that we are interested in finding the top edge of a slit
+  ; if instead we want the bottom edge, simply flip vertically the cutout 
+  if keyword_set(bottom) then cutout = reverse(cutout, 2)
+ 
+  ; for each bin along the spectral direction, detect the edge using the sky background
+  binsize = 29
+  starting_pixel=0
+  x_edge = []
+  y_edge = []
+  while starting_pixel LT N_pixel_x do begin 
+
+    ; extract the bin
+    end_pixel = min([starting_pixel + binsize - 1, N_pixel_x-1])
+    cutout_bin = cutout[starting_pixel : end_pixel, *]
+
+    ; spatial profile
+    profile = median(cutout_bin, dimension=1)
+
+    ; detect the edge 
+    derivative = abs(profile - shift(profile,1))
+    derivative[0] = 0
+    derivative[-1] = 0
+    peak = max(derivative, peak_location)
+
+    ; save x and y coordinate of the detection
+    x_edge = [ x_edge, 0.5*(starting_pixel + end_pixel) ]
+    y_edge = [ y_edge, peak_location ]
+
+    ; advance to next bin
+    starting_pixel += binsize
+
+  endwhile
+
+  ; fill in the missing pixels with NaNs
+  y_edge_full = fltarr(N_pixel_x) + !values.d_nan
+  y_edge_full[x_edge] = y_edge
+
+  ; transform into real y coordinates (not just within the cutout anymore)
+  if keyword_set(bottom) then $
+    real_y_edge = cutout_bottom_ycoord + cutout_size - float(y_edge_full) $
+  else $
+    real_y_edge = cutout_bottom_ycoord + float(y_edge_full)
+  
+  ; return array with the y-coordinates of the edges
+  return, real_y_edge
+
+
+END
+
+
+; ****************************************************************************************
+
+
 
 FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, slit_angle=slit_angle
 
@@ -152,13 +222,13 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   if Nlines LT 9 then begin
 
     message, 'I found only ' + strtrim(Nlines,2) + $
-      ' OH lines! Edge tracing will be based on sky background.', /informational
+      ' OH lines! Edge tracing should be based on sky background.', /informational
 
   endif else begin
 
     print, strtrim(Nlines,2) + ' OH lines found. Tracing edge...'
 
-print, approx_edge, keyword_set(top), keyword_set(bottom)
+    print, approx_edge, keyword_set(top), keyword_set(bottom)
 
     ; select the good edge measurements
     w_ok = cgsetintersection( w_OH, where( y_edge ne 0.0, /null ) )
@@ -184,7 +254,7 @@ END
 
 
 PRO flame_getslits_trace, image=image, info_fromheader=info_fromheader, yshift=yshift, $
-  poly_coeff=poly_coeff, slit_height=slit_height
+  poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
 ;
 ; traces the top and bottom edges of a slit in the image and return the slit height and the 
 ; coefficients of a polynomial fit describing the *bottom* edge
@@ -194,14 +264,19 @@ PRO flame_getslits_trace, image=image, info_fromheader=info_fromheader, yshift=y
   expected_top = info_fromheader.approx_top - yshift
   expected_bottom = info_fromheader.approx_bottom - yshift
 
-  ; identify top edge
-  top_edge = flame_getslits_trace_edge(image, expected_top, /top, slit_angle=info_fromheader.PA )
-
-  ; identify bottom edge
-  bottom_edge = flame_getslits_trace_edge(image, expected_bottom, /bottom, slit_angle=info_fromheader.PA )
+  if keyword_set(use_sky_edge) then begin
+    ; identify top and bottom edge using sky background  
+    top_edge = flame_getslits_trace_skyedge(image, expected_top, /top )
+    bottom_edge = flame_getslits_trace_skyedge(image, expected_bottom, /bottom )
+  endif else begin
+    ; identify top and bottom edge using OH lines
+    top_edge = flame_getslits_trace_edge(image, expected_top, /top, slit_angle=info_fromheader.PA )
+    bottom_edge = flame_getslits_trace_edge(image, expected_bottom, /bottom, slit_angle=info_fromheader.PA )
+  endelse
 
   ; calculate the slit height
   slit_height = median( top_edge - bottom_edge )
+  if ~finite(slit_height) then slit_height = median(top_edge) - median(bottom_edge)
 
   ; combine the top and bottom edge measurements together (i.e. subtract slit_heigh from the top edge)
   x_to_fit = [ where(finite(top_edge), /null ), where(finite(bottom_edge), /null) ]
@@ -351,7 +426,7 @@ PRO flame_getslits_findedges, fuel=fuel
 
     ; trace slit
     flame_getslits_trace, image=im, info_fromheader=info_fromheader, yshift=yshift, $
-          poly_coeff=poly_coeff, slit_height=slit_height
+          poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.use_sky_edge
 
       ; add new fields to slit structure
       this_slit = { $
