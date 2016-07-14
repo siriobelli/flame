@@ -3,7 +3,6 @@
 ; TO-DO:
 ;
 ; - frames are combined by shifting A-B-A by an integer number of pixels - can you do better?
-; - Ideally, need to de-shift to the nearest integer during the rectification step
 ; - dithering length is calculated from first A frame and first B frame - we need a better definition
 ; - handle better the case in which A or B are actually sky
 ;
@@ -109,21 +108,39 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	;*************************************
 
 	if w_A ne !NULL then begin
-		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
+
+		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
 		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=3.0, rejected_im=rejected_im_A)
 		writefits, filename_prefix + '_stack_A.fits', stack_A, header
+
+		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
+		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=3.0, rejected_im=rejected_im_A)
+		writefits, filename_prefix + '_stack_A_skysub.fits', stack_A_skysub, header
+
 	endif
 
 	if w_B ne !NULL then begin
-		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
+
+		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
 		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=3.0, rejected_im=rejected_im_B)
 		writefits, filename_prefix + '_stack_B.fits', stack_B, header
+	
+		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
+		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=3.0, rejected_im=rejected_im_B)
+		writefits, filename_prefix + '_stack_B_skysub.fits', stack_B_skysub, header
+	
 	endif
 
 	if w_X ne !NULL then begin
-		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
+	
+		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
 		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=3.0, rejected_im=rejected_im_X)
 		writefits, filename_prefix + '_stack_X.fits', stack_X, header
+	
+		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
+		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=3.0, rejected_im=rejected_im_X)
+		writefits, filename_prefix + '_stack_X_skysub.fits', stack_X_skysub, header
+	
 	endif
 
 
@@ -131,18 +148,27 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	;*************************************
 
 	if w_A NE !NULL and w_B ne !NULL then begin
+
 		writefits, filename_prefix + '_stack_A-B.fits', stack_A - stack_B, header
 		writefits, filename_prefix + '_rejectedpixels_A-B.fits', rejected_im_A + rejected_im_B, header
+		writefits, filename_prefix + '_stack_A-B_skysub.fits', stack_A_skysub - stack_B_skysub, header
+
 	endif
 
 	if w_A NE !NULL and w_X ne !NULL then begin
+
 		writefits, filename_prefix + '_stack_A-X.fits', stack_A - stack_X, header
 		writefits, filename_prefix + '_rejectedpixels_A-X.fits', rejected_im_A + rejected_im_X, header
+		writefits, filename_prefix + '_stack_A-X_skysub.fits', stack_A_skysub - stack_X_skysub, header
+
 	endif
 
 	if w_B NE !NULL and w_X ne !NULL then begin
+
 		writefits, filename_prefix + '_stack_B-X.fits', stack_B - stack_X, header
 		writefits, filename_prefix + '_rejectedpixels_B-X.fits', rejected_im_B + rejected_im_X, header
+		writefits, filename_prefix + '_stack_B-X_skysub.fits', stack_B_skysub - stack_X_skysub, header
+
 	endif
 
 
@@ -152,7 +178,7 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	if w_A ne !NULL and w_B ne !NULL then begin
 
 	; A-B stack
-	stack_AB = stack_A - stack_B
+	stack_AB = stack_A_skysub - stack_B_skysub
 
 	; invert the A-B stack
 	stack_BA = -stack_AB
