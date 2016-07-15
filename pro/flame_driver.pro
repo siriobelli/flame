@@ -40,6 +40,9 @@
   ; if we don't have a star on the slit then we have to specify the dithering
   ;fuel.dither_filelist = 'input/dither.txt'
 
+  ; if you want to use the sky background to trace the slit edges
+  fuel.use_sky_edge = 1
+
   ; for longslit
   ;fuel.longslit = 1
   ;fuel.longslit_edge = [1133, 1179]

@@ -506,8 +506,8 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 
 	; select the range of interest for this particular slit
 	range = this_slit.approx_wavelength_hi - this_slit.approx_wavelength_lo
-	w_slit = where( model_lambda GT this_slit.approx_wavelength_lo - 0.5*range $
-		and model_lambda LT this_slit.approx_wavelength_hi + 0.5*range, /null )
+	w_slit = where( model_lambda GT this_slit.approx_wavelength_lo $
+		and model_lambda LT this_slit.approx_wavelength_hi, /null )
 	model_lambda = model_lambda[w_slit]
 	model_flux = model_flux[w_slit]
 
@@ -791,7 +791,7 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	if fuel.band eq 'K' then begin
 
 		; larger wavelength window to detect OH lines
-		;lambda_window = 0.003
+		;lambda_window = 0.002
 
 		; lower degree for wavecal function to avoid extrapolating too much at large lambda
 		poly_degree = 2

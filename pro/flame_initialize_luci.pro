@@ -19,6 +19,9 @@ FUNCTION flame_initialize_luci_waverange, band=band, central_wl=central_wl, slit
   lambda_min = central_wl - slit_xmm * delta_wavel - 150.0*delta_wavel
   lambda_max = central_wl - slit_xmm * delta_wavel + 150.0*delta_wavel
 
+  ; don't go beyond the end of the K band
+  if lambda_max GT 2.5 then lambda_max = 2.5
+
   return, [lambda_min, lambda_max]
 
 END

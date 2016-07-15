@@ -55,9 +55,9 @@ PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectificat
 	; use the wavelengths of all the pixels in the central row as breakpoints (or nodes) for the B-spline
 	breakpoints = wavelength_solution[*,N_spatial_pix/2]
 
-	; plot all pixels in a small wavelength range (from 2/4 to 3/4 of entire observed range)
+	; plot all pixels in a small wavelength range (from 1/4 to 2/4 of entire observed range)
 	cgplot, pixel_wavelength, pixel_flux, psym=3, xtit='wavelength (micron)', $
-		xra=breakpoints[ [n_elements(breakpoints)*2/4, n_elements(breakpoints)*3/4] ], $
+		xra=breakpoints[ [n_elements(breakpoints)*1/4, n_elements(breakpoints)*2/4] ], $
 		title=(strsplit(slit_filename,'/', /extract))[-1]
 
 	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
