@@ -16,8 +16,8 @@ FUNCTION flame_initialize_luci_waverange, band=band, central_wl=central_wl, slit
   if strlowcase(camera) eq 'n3.75 camera' then delta_wavel *= 2.0
 
   ; rough wavelength range; mask is roughly 300mm across
-  lambda_min = central_wl - slit_xmm * delta_wavel - 150.0*delta_wavel
-  lambda_max = central_wl - slit_xmm * delta_wavel + 150.0*delta_wavel
+  lambda_min = central_wl - slit_xmm * delta_wavel
+  lambda_max = central_wl + (300.0-slit_xmm) * delta_wavel
 
   ; don't go beyond the end of the K band
   if lambda_max GT 2.5 then lambda_max = 2.5
