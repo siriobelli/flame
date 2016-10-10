@@ -502,7 +502,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 
 	model_lambda = wavecal_settings.model_lambda
 	model_flux = wavecal_settings.model_flux
-
+	
 	; select the range of interest for this particular slit
 	w_slit = where( model_lambda GT this_slit.approx_wavelength_lo $
 		and model_lambda LT this_slit.approx_wavelength_hi, /null )
@@ -555,7 +555,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 
 	; let's smooth observed and model sky so that we can get an approximate match
 	sky_sm = gauss_smooth(sky, wavecal_settings.smoothing_length)
-	model_flux_sm = gauss_smooth(model_flux, wavecal_settings.smoothing_length)
+	model_flux_sm = gauss_smooth(model_flux, 3)
 
 	; remove continuum variation from the observed sky (important in the K band)
 	sky_sm -= median(sky, 100)
@@ -564,9 +564,14 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	sky_sm /= max(sky_sm)
 	model_flux_sm /= max(model_flux_sm)
 
+	; estimated pixel scale from the approximate wavelength range
+	estimated_pix_scale = (this_slit.approx_wavelength_hi-this_slit.approx_wavelength_lo) $
+		/ double(n_elements(sky_sm))
+
 	; there are two parameters that define the wavelength axis: central pixel scale and variation in the pixel scale
 	; first, we assume a constant pixel scale, in micron per pixels:
-	coarse_pix_scale_grid = 10^(-4.5 + 2.5*dindgen(1000)/999.) 
+	;coarse_pix_scale_grid = 10^(-4.5 + 2.5*dindgen(1000)/999.) 
+	coarse_pix_scale_grid = estimated_pix_scale * (10.0+dindgen(500))/500.0*2.0
 
 	flame_wavecal_crosscorr, sky=sky_sm, model_lambda=model_lambda, model_flux=model_flux_sm, $
 		 approx_lambda_central=median(model_lambda), pix_scale_grid=coarse_pix_scale_grid, $
@@ -578,6 +583,8 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 
 	; estimate the error on the pixel scale by using the step size in the grid
 	w_coarse_pixel_scale = ( where( coarse_pix_scale_grid GE coarse_pixel_scale, /null) )[0]
+	if w_coarse_pixel_scale eq 0 or w_coarse_pixel_scale eq n_elements(coarse_pix_scale_grid)-1 then $
+		message, 'Cross correlation selected values at the edge of the grid!'
 	coarse_pixel_scale_error = coarse_pix_scale_grid[ w_coarse_pixel_scale + 1 ] - coarse_pix_scale_grid[ w_coarse_pixel_scale - 1 ]
 
 	print, 'Results of first coarse fit:'
