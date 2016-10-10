@@ -1,4 +1,4 @@
-FUNCTION flame_initialize_luci_waverange, band=band, central_wl=central_wl, slit_xmm=slit_xmm, camera=camera
+FUNCTION flame_initialize_luci_waverange, instrument=instrument, band=band, central_wl=central_wl, slit_xmm=slit_xmm, camera=camera
 ;
 ; return the estimated wavelength range for a slit
 ;
@@ -22,6 +22,12 @@ FUNCTION flame_initialize_luci_waverange, band=band, central_wl=central_wl, slit
   ; don't go beyond the end of the K band
   if lambda_max GT 2.5 then lambda_max = 2.5
 
+  ; temporary, correction by eye for LUCI1 - tested only for J band!!
+  if instrument eq 'LUCI1' then begin 
+    lambda_min -= 0.08
+    lambda_max -= 0.08
+  endif
+
   return, [lambda_min, lambda_max]
 
 END
@@ -34,7 +40,8 @@ END
 
 PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   slit_num=slit_num, slit_name=slit_name, slit_PA=slit_PA, $
-  bottom=bottom, top=top, target=target, wavelength_lo=wavelength_lo, wavelength_hi=wavelength_hi
+  bottom=bottom, top=top, target=target, wavelength_lo=wavelength_lo, wavelength_hi=wavelength_hi, $
+  instrument=instrument
 ;
 ; read the header of a LUCI science frame
 ; and for each slit finds or calculate the slit number, name, slit PA, 
@@ -117,7 +124,7 @@ PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
 
   ; rough wavelength range
   for i_slit=0, n_elements(slit_hdr)-1 do begin
-    lambda_range = flame_initialize_luci_waverange(band=band, central_wl=central_wavelength, slit_xmm=slit_hdr[i_slit].x_mm, camera=camera)
+    lambda_range = flame_initialize_luci_waverange(instrument=instrument, band=band, central_wl=central_wavelength, slit_xmm=slit_hdr[i_slit].x_mm, camera=camera)
 
     ; output wavelength range
     wavelength_lo = [ wavelength_lo, lambda_range[0] ]
@@ -192,7 +199,7 @@ PRO flame_initialize_luci, fuel=fuel
 
     ; rough wavelength range (slit should be central, x ~ 150 mm)
     lambda_range = $
-     flame_initialize_luci_waverange(band=fuel.band, central_wl=central_wavelength, slit_xmm=150.0, camera=camera)
+     flame_initialize_luci_waverange(instrument=fuel.instrument, band=fuel.band, central_wl=central_wavelength, slit_xmm=150.0, camera=camera)
 
     ; create slit structure 
     slits = { $
@@ -210,7 +217,8 @@ PRO flame_initialize_luci, fuel=fuel
 
     flame_initialize_luci_slits, science_header, pixel_scale=fuel.pixel_scale, $
       slit_num=slit_num, slit_name=slit_name, slit_PA=slit_PA, $
-      bottom=bottom, top=top, target=target, wavelength_lo=wavelength_lo, wavelength_hi=wavelength_hi
+      bottom=bottom, top=top, target=target, wavelength_lo=wavelength_lo, wavelength_hi=wavelength_hi, $
+      instrument=fuel.instrument
 
     ; create array of slit structures
     slits = []
