@@ -160,9 +160,14 @@ PRO flame_initialize_luci, fuel=fuel
   ; save it to fuel
   *fuel.corrscience_files = corrscience_files
 
-  ; determine what band we are in
+  ; read FITS header of science file
   science_header = headfits(science_filenames[0])
-  fuel.band =  strtrim(fxpar(science_header, 'FILTER2'),2)
+
+  ; read instrument name - useful to discriminate between LUCI1 and LUCI2
+  fuel.instrument = strtrim(fxpar(science_header, 'INSTRUME'), 2)
+
+  ; determine what band we are in
+  fuel.band =  strtrim(fxpar(science_header, 'FILTER2'), 2)
 
   ; read in the pixel scale 
   fuel.pixel_scale = fxpar(science_header, 'PIXSCALE')  ; arcsec/pixel

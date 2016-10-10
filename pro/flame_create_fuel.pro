@@ -20,6 +20,7 @@ FUNCTION flame_create_fuel
     reduce_only_oneslit : 0, $
     longslit: 0, $
     longslit_edge: [0,0], $
+    instrument: '', $
     N_frames: 0, $
     slitim_filename : 'slitim.fits', $
     flame_data_dir : data_dir, $
