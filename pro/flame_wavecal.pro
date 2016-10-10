@@ -504,7 +504,6 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	model_flux = wavecal_settings.model_flux
 
 	; select the range of interest for this particular slit
-	range = this_slit.approx_wavelength_hi - this_slit.approx_wavelength_lo
 	w_slit = where( model_lambda GT this_slit.approx_wavelength_lo $
 		and model_lambda LT this_slit.approx_wavelength_hi, /null )
 	model_lambda = model_lambda[w_slit]
