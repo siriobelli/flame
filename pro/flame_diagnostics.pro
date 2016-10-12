@@ -17,10 +17,11 @@ FUNCTION flame_monitor_fit_trace, frame, xrange=xrange, yrange=yrange, est_width
   ypixel = yrange[0] + indgen(n_elements(profile))
   
   ; initial estimates for the Gaussian curve
-  est_peak = max(profile, /nan)-median(profile)
-  est_center = ypixel[n_elements(ypixel)/2] 
+  est_peak = max(profile, i_max, /nan)-median(profile)
+  est_center = ypixel[i_max] 
   est_width = est_width
   est_continuum = median(profile)
+  print, 'estimated center: ', est_center
 
   ; fit a Gaussian
   fit_result = gaussfit(ypixel, profile, coeff, nterms=4, $
@@ -74,7 +75,7 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
   est_width = (est_seeing / 2.355) / fuel.pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
-  half_range = 5.0 * est_width
+  half_range = 10.0 * est_width
 
   ; A frames (always the one on top)
   A_yrange = max(fuel.startrace_y_pos) + [-half_range, half_range]
