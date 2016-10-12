@@ -21,7 +21,6 @@ FUNCTION flame_monitor_fit_trace, frame, xrange=xrange, yrange=yrange, est_width
   est_center = ypixel[i_max] 
   est_width = est_width
   est_continuum = median(profile)
-  print, 'estimated center: ', est_center
 
   ; fit a Gaussian
   fit_result = gaussfit(ypixel, profile, coeff, nterms=4, $
