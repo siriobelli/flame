@@ -416,7 +416,7 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 		; extract this pixel row from the slit
 		this_row = im[*, i_row]
 
-		; to gain signal, extract this row and sum it to the four neighbor rows
+		; if needed, to gain signal, extract this row and sum it to the four neighbor rows
 		if wavecal_settings.use_more_pixelrows then $
 			this_row = total(im[*, i_row-2:i_row+2], 2)
 
@@ -457,8 +457,12 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 	wavelength_shift = dblarr(N_spatial_pix)
 	for i_row=0, N_spatial_pix-1 do $
 		wavelength_shift[i_row] = $
-		median(wavelength_solution[ N_lambda_pix/2-2 : N_lambda_pix/2+2, i_row]) - $
-		median(wavelength_solution_reference[ N_lambda_pix/2-2 : N_lambda_pix/2+2 ] )
+			median(wavelength_solution[ N_lambda_pix/2-2 : N_lambda_pix/2+2, i_row]) - $
+			median(wavelength_solution_reference[ N_lambda_pix/2-2 : N_lambda_pix/2+2 ] )
+
+	; the 3 pixels at each edge are not being fit
+	wavelength_shift[0:2] = 0.0
+	wavelength_shift[-3:-1] = 0.0
 
 	; plot the shift as a function of vertical position
 	cgplot, 1d4*wavelength_shift, psym=-16, thick=3, charsize=1, $
@@ -477,9 +481,8 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 	OH_lines = [ [OH_wavelength], [OH_xpixel], [OH_ypixel] ]
 
 	; write a ds9 region file with the identified OH lines 
-	filename_pieces = strsplit(slit_filename, '/', /extract) ; necessary for finding the slit directory
-	filename_pieces[-1] = 'OHlines.reg'
-	flame_wavecal_writeds9, OH_lines, filename =  strjoin(filename_pieces, '/')
+	flame_wavecal_writeds9, OH_lines, filename =  $
+		flame_util_replace_string(slit_filename, '.fits', '_OHlines.reg')
 
 
 END
@@ -781,10 +784,10 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	readcol, fuel.linelist_filename, line_list
 
 	; the size of the spectral window, in micron, to be used in the fit to individual sky lines
-	lambda_window = 0.001
+	lambda_window = 0.002
 	
 	; the degree of the polynomial used to describe the wavelength solution
-	poly_degree = 4
+	poly_degree = 3
 	
 	; minimum number of OH lines for a reliable wavelength solution
 	Nmin_lines = 6 
