@@ -356,14 +356,21 @@ PRO flame_diagnostics_plot, diagnostics
   ; check if a reference star was measured
   if where( finite(diagnostics.flux), /null) NE !NULL then begin   
     
+    frame_num = diagnostics.frame_num
+
+    ; if there are multiple frames with the same number (e.g. from two different nights)
+    ; then use sequential numbers instead
+    if n_elements( uniq(frame_num, sort(frame_num)) ) NE n_elements(frame_num) then $
+      frame_num = indgen( n_elements(diagnostics) )
+
     ; plot flux
-    cgplot, diagnostics.frame_num, diagnostics.flux/median(diagnostics.flux), $
+    cgplot, frame_num, diagnostics.flux/median(diagnostics.flux), $
       _extra = extra_structure, xra=xra, $
       ytit='flux / median', position=[x0,y1-delta_y,x1,y1]
     cgplot, [0, 10000], 1+[0,0], /overplot
 
     ; plot seeing
-    cgplot, diagnostics.frame_num, diagnostics.seeing, $
+    cgplot, frame_num, diagnostics.seeing, $
       _extra = extra_structure, xra=xra, $
       ytit='FWHM (arcsec)', position=[x0,y1-2.0*delta_y,x1,y1-delta_y]
 
@@ -371,21 +378,21 @@ PRO flame_diagnostics_plot, diagnostics
 
   ; plot position of A frames
   if where(diagnostics.offset_pos eq 'A', /null) ne !NULL then $
-    cgplot, diagnostics[where(diagnostics.offset_pos eq 'A', /null)].frame_num, $
+    cgplot, frame_num[where(diagnostics.offset_pos eq 'A', /null)], $
       diagnostics[where(diagnostics.offset_pos eq 'A', /null)].position, $
       _extra = extra_structure, xra=xra, $
       ytit='A $\Delta$ y (pixels)', position=[x0,y1-3.0*delta_y,x1,y1-2.0*delta_y]
 
   ; plot position of B frames
   if where(diagnostics.offset_pos eq 'B', /null) ne !NULL then $
-    cgplot, diagnostics[where(diagnostics.offset_pos eq 'B', /null)].frame_num, $
+    cgplot, frame_num[where(diagnostics.offset_pos eq 'B', /null)], $
       diagnostics[where(diagnostics.offset_pos eq 'B', /null)].position, $
       _extra = extra_structure, xra=xra, $
       ytit='B $\Delta$ y (pixels)', position=[x0,y1-4.0*delta_y,x1,y1-3.0*delta_y]
 
   ; plot airmass
   extra_structure.xtickformat = ''
-  cgplot, diagnostics.frame_num, diagnostics.airmass, $
+  cgplot, frame_num, diagnostics.airmass, $
     _extra = extra_structure, xra=xra, $
     ytit='airmass', xtit='frame number', position=[x0,y1-5.0*delta_y,x1,y1-4.0*delta_y]
   
