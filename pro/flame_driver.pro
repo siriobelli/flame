@@ -41,7 +41,8 @@
   ;fuel.dither_filelist = 'input/dither.txt'
 
   ; if you want to use the sky background to trace the slit edges
-  fuel.use_sky_edge = 1
+  ; use if OH lines are not enough (e.g. in the K band)
+  ;fuel.use_sky_edge = 1
 
   ; for longslit
   ;fuel.longslit = 1
