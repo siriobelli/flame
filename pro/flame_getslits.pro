@@ -105,6 +105,9 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   ; Pixels with no detected edges are set to NaN
   ; If the slit is tilted, slit_angle must be specified
   ; 
+  
+  ; NEED TO FIGURE OUT WHY THIS IS!!!!!
+  mysterious_constant = 1.5
 
   ; check keywords
   if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
@@ -134,7 +137,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
 
   ; if the slit is tilted, undo the tilt so that the OH lines are roughly vertical
   if slit_angle NE 0.0 then for i_ypixel=0, (size(cutout))[2]-1 do $
-    cutout[*,i_ypixel] = shift( cutout[*,i_ypixel], tan(slit_angle * !PI/180d)*i_ypixel )
+    cutout[*,i_ypixel] = shift( cutout[*,i_ypixel], mysterious_constant*tan(slit_angle * !PI/180d)*i_ypixel )
 
   ; extract a spectrum from the fiducial slit regions
   sky_spectrum = median(cutout[*,0:Npix_slit_fiducial-1], dimension=2)
