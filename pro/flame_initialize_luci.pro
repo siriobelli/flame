@@ -3,8 +3,7 @@ FUNCTION flame_initialize_luci_waverange, instrument=instrument, band=band, cent
 ; return the estimated wavelength range for a slit
 ;
 
-  ; determine appropriate value of conversion factor delta_wavel in micron/mm
-  
+  ; determine appropriate value of conversion factor delta_wavel in micron/mm  
   case band of
     'J': delta_wavel = 0.00049
     'H': delta_wavel = 0.00066
@@ -12,21 +11,24 @@ FUNCTION flame_initialize_luci_waverange, instrument=instrument, band=band, cent
     else: message, 'I do not have the wavelength scale for this band yet'
   endcase
 
+  ; determine appropriate value of shift in micron  
+  case band of
+    'J': shift_wavel = -0.081
+    'H': shift_wavel = -0.109
+    'K': shift_wavel = -0.175
+    else: message, 'I do not have the wavelength shift for this band yet'
+  endcase
+
   ; for ARGOS 
   if strlowcase(camera) eq 'n3.75 camera' then delta_wavel *= 2.0
 
   ; rough wavelength range; mask is roughly 300mm across
-  lambda_min = central_wl - slit_xmm * delta_wavel
-  lambda_max = central_wl + (300.0-slit_xmm) * delta_wavel
+  lambda_min = central_wl + shift_wavel - slit_xmm * delta_wavel
+  lambda_max = central_wl + shift_wavel + (300.0-slit_xmm) * delta_wavel
 
   ; don't go beyond the end of the K band
   if lambda_max GT 2.5 then lambda_max = 2.5
 
-  ; temporary, correction by eye for LUCI1 - tested only for J band!!
-  if instrument eq 'LUCI1' then begin 
-    lambda_min -= 0.08
-    lambda_max -= 0.08
-  endif
 
   return, [lambda_min, lambda_max]
 
