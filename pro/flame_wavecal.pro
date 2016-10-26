@@ -571,6 +571,13 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	estimated_pix_scale = (this_slit.approx_wavelength_hi-this_slit.approx_wavelength_lo) $
 		/ double(n_elements(sky_sm))
 
+	; show spectra before cross-correlation
+	cgplot, this_slit.approx_wavelength_lo + estimated_pix_scale * dindgen(n_elements(sky_sm)), sky_sm-0.05, $
+		charsize=1, thick=3, xtit='wavelength (micron)', title=(strsplit(slit_filename,'/', /extract))[-1] + ' - initial guess'
+	cgplot, model_lambda, model_flux_sm, color='red', /overplot, thick=3
+	cgtext, 0.75, 0.80, 'observed sky', charsize=1, /normal
+	cgtext, 0.75, 0.75, 'model sky', charsize=1, /normal, color='red'
+
 	; there are two parameters that define the wavelength axis: central pixel scale and variation in the pixel scale
 	; first, we assume a constant pixel scale, in micron per pixels:
 	;coarse_pix_scale_grid = 10^(-4.5 + 2.5*dindgen(1000)/999.) 
@@ -578,7 +585,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 
 	flame_wavecal_crosscorr, sky=sky_sm, model_lambda=model_lambda, model_flux=model_flux_sm, $
 		 approx_lambda_central=median(model_lambda), pix_scale_grid=coarse_pix_scale_grid, $
-		 lambda_axis=lambda_axis, title=(strsplit(slit_filename,'/', /extract))[-1]
+		 lambda_axis=lambda_axis, title='after first cross-correlation'
 
 	; extract central lambda and pixel scale
 	coarse_lambda_central = median(lambda_axis)
@@ -612,7 +619,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	; cross-correlate the observed and model sky spectra and find a good wavelength solution
 	flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 approx_lambda_central=coarse_lambda_central, pix_scale_grid=pix_scale_grid, pix_scale_variation_grid=pix_scale_variation_grid, $
-		 lambda_axis=lambda_axis
+		 lambda_axis=lambda_axis, title='after second cross-correlation'
 
 	; return the approximate wavelength axis
 	approx_lambda_axis = lambda_axis
