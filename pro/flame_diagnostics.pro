@@ -74,7 +74,7 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
   est_width = (est_seeing / 2.355) / fuel.pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
-  half_range = 10.0 * est_width
+  half_range = 6.0 * est_width
 
   ; A frames (always the one on top)
   A_yrange = max(fuel.startrace_y_pos) + [-half_range, half_range]
