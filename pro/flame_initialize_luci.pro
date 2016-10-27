@@ -11,13 +11,8 @@ FUNCTION flame_initialize_luci_waverange, instrument=instrument, band=band, cent
     else: message, 'I do not have the wavelength scale for this band yet'
   endcase
 
-  ; determine appropriate value of shift in micron  
-  case band of
-    'J': shift_wavel = -0.081
-    'H': shift_wavel = -0.109
-    'K': shift_wavel = -0.175
-    else: message, 'I do not have the wavelength shift for this band yet'
-  endcase
+  ; still not clear what this means physically
+  shift_wavel = -165.0 * delta_wavel
 
   ; for ARGOS 
   if strlowcase(camera) eq 'n3.75 camera' then delta_wavel *= 2.0
