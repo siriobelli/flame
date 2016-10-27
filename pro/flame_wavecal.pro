@@ -232,11 +232,15 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 		; keep only the OH lines of interest
 		line_list = wavecal_settings.line_list[w_lines]
 
+		; estimate width of OH lines
+		approximate_linewidth_A = median(wavelength_axis_guess) / wavecal_settings.instrument_resolution
+		approximate_linewidth_pix = approximate_linewidth_A / ( wavelength_axis_guess[3] - wavelength_axis_guess[2] )
+			
 		; fit a Gaussian to every sky line
 		for i_line=0,n_elements(line_list)-1 do begin
 
 			; select the region to fit
-			w_fit = where( abs(wavelength_axis_guess-line_list[i_line]) LT 0.5*wavecal_settings.lambda_window, /null )
+			w_fit = where( abs(wavelength_axis_guess-line_list[i_line]) LT 4.0*approximate_linewidth_A, /null )
 
 			; check that the region is within the observed range
 			if w_fit eq !NULL then continue
@@ -244,13 +248,20 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 			; error handling for the gaussian fitting
 			catch, error_gaussfit
 			if error_gaussfit ne 0 then begin
-				message, 'GAUSSFIT ERROR STATUS: ' + strtrim(error_gaussfit,2), /informational
+				print, 'GAUSSFIT ERROR STATUS: ' + strtrim(error_gaussfit,2)
 				catch, /cancel
 				continue
 			endif 
 
+			; estimate parameters of the Gaussian
+			est_peak = max( median( y[w_fit], 3) , /nan)
+			est_center = w_fit[ n_elements(w_fit)/2 ]
+			est_sigma = 0.5* approximate_linewidth_pix
+			est_cont = min( median( y[w_fit], 3) , /nan)
+
 			; Gaussian fit
-			junk = gaussfit( x[w_fit], y[w_fit], gauss_param, nterms=4, sigma=gauss_err, chisq=chisq )
+			junk = gaussfit( x[w_fit], y[w_fit], gauss_param, nterms=4, $
+				estimates=[est_peak, est_center, est_sigma, est_cont], sigma=gauss_err, chisq=chisq )
 
 			; check that chi square makes sense
 			if ~finite(chisq) then continue
@@ -378,7 +389,6 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 	flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 approx_lambda_central=median(approx_lambda_axis), pix_scale_grid=pix_scale_grid, pix_scale_variation_grid=pix_scale_variation_grid, $
 		 lambda_axis=lambda_axis_central_row, title=(strsplit(slit_filename,'/', /extract))[-1]
-
 
 	; now fit all the pixel rows
 	;--------------------------------------------------------------------------------------------------------------
@@ -797,9 +807,9 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	; load line list
 	readcol, fuel.linelist_filename, line_list
 
-	; the size of the spectral window, in micron, to be used in the fit to individual sky lines
-	lambda_window = 0.002
-	
+	; approximate value of R needed to estimate the width of OH lines
+	instrument_resolution = fuel.instrument_resolution
+
 	; the degree of the polynomial used to describe the wavelength solution
 	poly_degree = 3
 	
@@ -812,14 +822,11 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	; special case: K band
 	if fuel.band eq 'K' then begin
 
-		; larger wavelength window to detect OH lines
-		;lambda_window = 0.002
-
 		; lower degree for wavecal function to avoid extrapolating too much at large lambda
-		poly_degree = 2
+		; poly_degree = 2
 
 		; integrate over more than one pixel row to find OH lines
-		use_more_pixelrows = 1
+		; use_more_pixelrows = 1
 
 	endif
 
@@ -830,7 +837,7 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	; create the wavecal_settings structure
 	wavecal_settings = { $
 		line_list : line_list, $
-		lambda_window : lambda_window, $
+		instrument_resolution : instrument_resolution, $
 		poly_degree : poly_degree, $
 		Nmin_lines : Nmin_lines, $
 		model_lambda : model_lambda, $

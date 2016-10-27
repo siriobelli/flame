@@ -21,6 +21,7 @@ FUNCTION flame_create_fuel
     longslit: 0, $
     longslit_edge: [0,0], $
     instrument: '', $
+    instrument_resolution: 0.0, $
     N_frames: 0, $
     slitim_filename : 'slitim.fits', $
     flame_data_dir : data_dir, $

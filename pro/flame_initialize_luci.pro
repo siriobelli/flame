@@ -170,6 +170,13 @@ PRO flame_initialize_luci, fuel=fuel
   ; read instrument name - useful to discriminate between LUCI1 and LUCI2
   fuel.instrument = strtrim(fxpar(science_header, 'INSTRUME'), 2)
 
+  ; read in grating
+  grating = strtrim(fxpar(science_header, 'GRATNAME'), 2)
+
+  ; set resolution (approximate value; assumes a 0.75" slit width)
+  if grating eq 'G210 HiRes' then fuel.instrument_resolution = 3700.0 $
+    else message, 'Grating ', grating, ' not supported'
+  
   ; determine what band we are in
   fuel.band =  strtrim(fxpar(science_header, 'FILTER2'), 2)
 
