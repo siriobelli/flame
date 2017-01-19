@@ -502,20 +502,13 @@ END
 
 
 PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit, $
-	wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis, delta_lambda=delta_lambda
+	wavecal_settings=wavecal_settings, approx_lambda_axis=approx_lambda_axis
 	;
 	; Two steps:
 	; First, use a coarse, logarithmic grid with constant pixel scale (uniform wavelength solution)
 	; Second, use a fine grid centered on the coarse value of pixel scale, and explore also the 
 	; pix_scale_variation parameter for non-uniform wavelength solution
 	;
-
-
-	; apply lambda shift, if present
-	if keyword_set(delta_lambda) then begin 
-		this_slit.approx_wavelength_lo += delta_lambda
-		this_slit.approx_wavelength_hi += delta_lambda
-	endif
 
 	; load the model sky spectrum
 	;---------------------
@@ -842,7 +835,7 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-PRO flame_wavecal, fuel=fuel, verbose=verbose, delta_lambda=delta_lambda
+PRO flame_wavecal, fuel=fuel, verbose=verbose
 
 	start_time = systime(/seconds)
 
@@ -871,7 +864,7 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose, delta_lambda=delta_lambda
 		print, 'Using the central pixel rows of ', reference_filename
 
 		flame_wavecal_approximate, slit_filename=reference_filename, this_slit=this_slit, $
-			wavecal_settings=wavecal_settings, approx_lambda_axis = approx_lambda_axis, delta_lambda=delta_lambda
+			wavecal_settings=wavecal_settings, approx_lambda_axis = approx_lambda_axis
 
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
 

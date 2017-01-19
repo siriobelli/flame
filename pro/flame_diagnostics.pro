@@ -319,7 +319,7 @@ FUNCTION flame_diagnostics_blind, fuel
   diagnostics[w_B].offset_pos = 'B'
 
   ; read the airmass from the headers
-  for i_frame=0, fuel.N_frames-1 do $
+  for i_frame=0, fuel.util.N_frames-1 do $
     diagnostics[i_frame].airmass = sxpar(headfits(fuel.util.science_filenames[i_frame]), 'AIRMASS')
 
   return, diagnostics
@@ -346,11 +346,11 @@ PRO flame_diagnostics_plot, diagnostics
   y1 = 0.95
   delta_y = (y1-y0)/5.0
 
+ frame_num = diagnostics.frame_num
+
   ; check if a reference star was measured
   if where( finite(diagnostics.flux), /null) NE !NULL then begin   
-    
-    frame_num = diagnostics.frame_num
-
+   
     ; if there are multiple frames with the same number (e.g. from two different nights)
     ; then use sequential numbers instead
     if n_elements( uniq(frame_num, sort(frame_num)) ) NE n_elements(frame_num) then $

@@ -5,6 +5,8 @@
 ;  (generate the bad pixel mask from the dark frames, if needed)
 ; - converted from ADU to electrons
 ;
+; TO-DO: flat field correction
+;
 
 
 PRO flame_correct_makemask, fuel=fuel

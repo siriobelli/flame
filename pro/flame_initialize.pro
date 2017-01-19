@@ -3,11 +3,7 @@ PRO flame_initialize, input=input, fuel=fuel
 ; initialize flame and create the fuel structure. The only input is the input structure.
 ;
 
-;
-; to add: check that each of the individual frames (science, darks, etc) actually exists
-;
-
-  ; find the Flame data directory and check it exists
+  ; find the Flame data directory and check that it exists
   path_to_thisfile = file_which('flame_initialize.pro', /include_current_dir)
   data_dir = flame_util_replace_string(path_to_thisfile, 'pro/flame_initialize.pro', 'data/')
   if ~file_test(data_dir, /directory) then message, 'data directory not found. Check the flame directory structure.'
@@ -24,6 +20,9 @@ PRO flame_initialize, input=input, fuel=fuel
 
   ; read the number of science frames
   N_frames = n_elements(science_filenames)
+
+  ; check the all the science frames exist
+  if ~array_equal(file_test(science_filenames), 1+intarr(N_frames)) then message, 'not all science frames exist'
 
   ; create file names for corrected science frames
   corrscience_filenames = strarr(N_frames)
