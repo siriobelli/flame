@@ -70,7 +70,7 @@ END
 PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
 	; prefix for output file names
-	filename_prefix = fuel.output_dir + 'slit' + string(slit.number, format='(I02)') + '-' + slit.name
+	filename_prefix = fuel.input.output_dir + 'slit' + string(slit.number, format='(I02)') + '-' + slit.name
 
 	; input filenames for this slit
 	filenames = *slit.filenames

@@ -1,56 +1,119 @@
-FUNCTION flame_initialize_luci_waverange, science_header, slit_xmm
+
+FUNCTION flame_initialize_luci_settings, science_header
 ;
-; return the estimated wavelength range for a slit
+; read the LUCI settings from the FITS header of a science frame
+; and create the instrument structure
 ;
 
-  ; read in grating name
+  ; read things from header - - - - - - - - - - - - - - - - - - - 
+
+  ; read instrument name - useful to discriminate between LUCI1 and LUCI2
+  instrument_name = strtrim(fxpar(science_header, 'INSTRUME'), 2)
+
+  ; read grating name
   grating = strtrim(fxpar(science_header, 'GRATNAME'), 2)
 
   ; read in grating order
   grating_order = strtrim(fxpar(science_header, 'GRATORDE'), 2)
 
-  ; read in camera name
-  camera = strtrim(fxpar(science_header, 'CAMERA'), 2)
-
   ; read central wavelength 
   central_wavelength = fxpar(science_header, 'GRATWLEN')
+
+  ; read camera
+  camera = fxpar(science_header, 'CAMERA')
+
+  ; read pixel scale 
+  pixel_scale = fxpar(science_header, 'PIXSCALE')  ; arcsec/pixel
+
+  ; read filters
+  filter1 = strtrim(fxpar(science_header, 'FILTER1'), 2)
+  filter2 = strtrim(fxpar(science_header, 'FILTER2'), 2)
+
+  ; read in read-out noise
+  readnoise = fxpar(science_header, 'RDNOISE')   ; e-/read 
+
+  ; read in gain
+  gain = fxpar(science_header, 'GAIN')   ; e-/adu
+
+
+
+  ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - - 
+
+  ; set resolution (approximate value; assumes a 0.75" slit width)
+  if grating eq 'G210 HiRes' then resolution = 3700.0 $
+    else message, 'Grating ' + string(grating) + ' not supported'
+  
+
+  ; create the instrument structure - - - - - - - - - - - - - - - - - - - 
+  instrument = { $
+    instrument_name: instrument_name, $
+    grating : grating, $
+    grating_order : grating_order, $  
+    central_wavelength : central_wavelength, $
+    camera : camera, $
+    pixel_scale : pixel_scale, $
+    filter1 : filter1, $
+    filter2 : filter2, $
+    readnoise : readnoise, $
+    gain : gain, $
+    resolution: resolution $
+    }
+
+  return, instrument
+
+
+END
+
+
+
+
+;******************************************************************
+
+
+
+
+FUNCTION flame_initialize_luci_waverange, instrument, slit_xmm
+;
+; return the estimated wavelength range for a slit
+;
+
 
   ; look up the wavelength range (in um) covered by the detector: -------------------
 
   ; grating G210
-  if (strsplit(grating, /extract))[0] eq 'G210' then case grating_order of
+  if (strsplit(instrument.grating, /extract))[0] eq 'G210' then case instrument.grating_order of
     '2': wavelength_range = 0.328 ; K 
     '3': wavelength_range = 0.202 ; H 
     '4': wavelength_range = 0.150 ; J 
     '5': wavelength_range = 0.124 ; z
-    else: message, grating + ': order ' + grating_order + ' not supported'
+    else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
   endcase
        
   ; grating G200
-  if (strsplit(grating, /extract))[0] eq 'G200' then case grating_order of
+  if (strsplit(instrument.grating, /extract))[0] eq 'G200' then case instrument.grating_order of
     '1': wavelength_range = 0.880 ; HK 
     '2': wavelength_range = 0.440 ; zJ 
-    else: message, grating + ': order ' + grating_order + ' not supported'
+    else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
   endcase
        
   ; grating G150
-  if (strsplit(grating, /extract))[0] eq 'G150' then case grating_order of
+  if (strsplit(instrument.grating, /extract))[0] eq 'G150' then case instrument.grating_order of
     '2': wavelength_range = 0.533 ; Ks 
-    else: message, grating + ': order ' + grating_order + ' not supported'
+    else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
   endcase
   
   ; check whether no grating has been found 
-  if wavelength_range EQ !NULL then message, 'grating ' + grating + ' not supported'
+  if wavelength_range EQ !NULL then message, 'grating ' + instrument.grating + ' not supported'
 
   ; finally, if the camera is not the default N1.8, then scale by the ratio of pixel scales
-  if (strsplit(camera, /extract))[0] NE 'N1.8' then $
-    if (strsplit(camera, /extract))[0] eq 'N3.75' then wavelength_range *= 0.47 else $
-      message, 'camera ' + camera + ' not supported'
+  if (strsplit(instrument.camera, /extract))[0] NE 'N1.8' then $
+    if (strsplit(instrument.camera, /extract))[0] eq 'N3.75' then wavelength_range *= 0.47 else $
+      message, 'camera ' + instrument.camera + ' not supported'
 
 ; -------------------------------------------------------------------------------------
 
   ; rough wavelength range; mask is roughly 2*162mm across; x=0mm means centered slit.
-  lambda_min = central_wavelength - (162.0 + slit_xmm) / 162.0 * wavelength_range / 2.0
+  lambda_min = instrument.central_wavelength - (162.0 + slit_xmm) / 162.0 * wavelength_range / 2.0
   lambda_max = lambda_min + wavelength_range
 
 
@@ -63,15 +126,40 @@ END
 
 
 
-PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
-  slit_num=slit_num, slit_name=slit_name, slit_PA=slit_PA, $
-  bottom=bottom, top=top, target=target, wavelength_lo=wavelength_lo, wavelength_hi=wavelength_hi, $
-  instrument=instrument
+FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
+
+  ; rough wavelength range (slit should be central, x ~ 162 mm)
+    lambda_range = $
+     flame_initialize_luci_waverange(instrument, 162.0)
+
+    ; create slit structure 
+    slits = { $
+      number:1, $
+      name:'longslit', $
+      PA:!values.d_nan, $
+      approx_bottom:input.longslit_edge[0], $
+      approx_top:input.longslit_edge[1], $
+      approx_target:mean(input.longslit_edge), $
+      approx_wavelength_lo:lambda_range[0], $
+      approx_wavelength_hi:lambda_range[1] }
+
+  return, slits
+
+END 
+
+
+
+;******************************************************************
+
+
+
+FUNCTION flame_initialize_luci_slits, header, instrument=instrument
+
 ;
 ; read the header of a LUCI science frame
 ; and for each slit finds or calculate the slit number, name, slit PA, 
 ; bottom pixel position, top pixel position, target pixel position, 
-; and wavelength at the center of the slit
+; and wavelength at the center of the slit. It return the slits structure.
 ;
 
   ; only tweakable settings: maximum width in arcsec allowed for science slits. 
@@ -118,11 +206,11 @@ PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   N_pixel_y = fxpar(header, 'NAXIS2')
 
   deltay_arcsec = slit_hdr.y_mm * mmtoarcsec  ; how many arcsec from the mask center; positive going down
-  deltay_pixels = deltay_arcsec / pixel_scale ; how many pixels from the mask center; positive going down
+  deltay_pixels = deltay_arcsec / instrument.pixel_scale ; how many pixels from the mask center; positive going down
   y_pixels = N_pixel_y / 2 - deltay_pixels    ; y-pixel position, usual convention
 
   ; find the height in pixels of each slit
-  slitheight_pixels = slit_hdr.length_arcsec / pixel_scale
+  slitheight_pixels = slit_hdr.length_arcsec / instrument.pixel_scale
 
   ; output interesting values
   slit_num = slit_hdr.number
@@ -132,84 +220,33 @@ PRO flame_initialize_luci_slits, header, pixel_scale=pixel_scale, $
   top = y_pixels + 0.5*slitheight_pixels
   target = y_pixels
 
-  ; calculate approximate wavelength range
 
-  ; identify band
-  band = strtrim(fxpar(header, 'FILTER2'),2)
+  ; create array of slit structures
+  slits = []
+  ; trace the edges of the slits using the sky emission lines
+  for i_slit=0, n_elements(bottom)-1 do begin
 
-  ; identify central wavelength
-  central_wavelength = fxpar(header, 'GRATWLEN')
+    ; calculate approximate wavelength range
+    lambda_range = flame_initialize_luci_waverange(instrument, slit_hdr[i_slit].x_mm)
 
-  ; read camera
-  camera = fxpar(header, 'CAMERA')
+    this_slit = { $
+      number:slit_num[i_slit], $
+      name:slit_name[i_slit], $
+      PA:slit_PA[i_slit], $
+      approx_bottom:bottom[i_slit], $
+      approx_top:top[i_slit], $
+      approx_target:target[i_slit], $
+      approx_wavelength_lo:lambda_range[0], $
+      approx_wavelength_hi:lambda_range[1] }
 
-  ; output wavelength range
-  wavelength_lo = []
-  wavelength_hi = []
+    slits = [slits, this_slit]
 
-  ; rough wavelength range
-  for i_slit=0, n_elements(slit_hdr)-1 do begin
-    lambda_range = flame_initialize_luci_waverange(header, slit_hdr[i_slit].x_mm)
-
-    ; output wavelength range
-    wavelength_lo = [ wavelength_lo, lambda_range[0] ]
-    wavelength_hi = [ wavelength_hi, lambda_range[1] ]
   endfor
 
+return, slits
 
 END
 
-
-
-
-;******************************************************************
-
-
-PRO flame_initialize_all, fuel=fuel
-
-  ;
-  ; part of initialization in common to any instrument
-  ;
-
-  ; check and setup directory structure
-  if file_test(fuel.intermediate_dir) eq 0 then spawn, 'mkdir ' + fuel.intermediate_dir
-  if file_test(fuel.output_dir) eq 0 then spawn, 'mkdir ' + fuel.output_dir
-
-  ; check that the science file exists
-  if ~file_test(fuel.science_filelist) then message, 'file ' + fuel.science_filelist + ' not found'
-
-  ; check that the darks file exists
-  if strlowcase(fuel.darks_filelist) NE 'none' then $
-    if ~file_test(fuel.darks_filelist) then message, 'file ' + fuel.darks_filelist + ' not found'
-
-  ; check that the flats file exists
-  if strlowcase(fuel.flats_filelist) NE 'none' then $
-    if ~file_test(fuel.flats_filelist) then message, 'file ' + fuel.flats_filelist + ' not found'
-
-  ; check that the dither file exists
-  if strlowcase(fuel.dither_filelist) NE 'none' then $
-    if ~file_test(fuel.dither_filelist) then message, 'file ' + fuel.dither_filelist + ' not found'
-
-  ; read the science file
-  readcol, fuel.science_filelist, science_filenames, format='A'
-
-  ; set the number of science frames
-  fuel.N_frames = n_elements(science_filenames)
-
-  ; create file names for corrected science frames
-  corrscience_files = strarr(fuel.N_frames)
-  for i_frame=0, fuel.N_frames-1 do begin
-    components = strsplit( science_filenames[i_frame], '/', /extract)
-    out_filename = components[-1] ; keep just the filename
-    out_filename = flame_util_replace_string( out_filename, '.fits', '_corr.fits' )
-    print, i_frame
-    corrscience_files[i_frame] = fuel.intermediate_dir + out_filename
-  endfor
-
-  ; save it to fuel
-  *fuel.corrscience_files = corrscience_files
-
-END
 
 
 
@@ -223,90 +260,29 @@ PRO flame_initialize_luci, fuel=fuel
   ; the user has changed the default values.
   ;
 
-  ; start with the part in common for all instruments
-  flame_initialize_all, fuel=fuel
+  ; read FITS header of first science frame
+  science_header = headfits(fuel.util.science_filenames[0])
 
-  ; read file name of first frame
-  readcol, fuel.science_filelist, science_filenames, format='A'
+  ; read the instrument settings from the header 
+  instrument = flame_initialize_luci_settings(science_header)
 
-  ; read FITS header of first frame
-  science_header = headfits(science_filenames[0])
+  ; save the settings to fuel
+  *fuel.instrument = instrument
 
-  ; read instrument name - useful to discriminate between LUCI1 and LUCI2
-  fuel.instrument = strtrim(fxpar(science_header, 'INSTRUME'), 2)
+  ; now read in the slits parameters from the FITS header
 
-  ; read in grating
-  grating = strtrim(fxpar(science_header, 'GRATNAME'), 2)
-
-  ; set resolution (approximate value; assumes a 0.75" slit width)
-  if grating eq 'G210 HiRes' then fuel.instrument_resolution = 3700.0 $
-    else message, 'Grating ' + string(grating) + ' not supported'
-  
-  ; determine what band we are in
-  fuel.band =  strtrim(fxpar(science_header, 'FILTER2'), 2)
-
-  ; read in the pixel scale 
-  fuel.pixel_scale = fxpar(science_header, 'PIXSCALE')  ; arcsec/pixel
-
-  ; read in read-out noise
-  fuel.readnoise = fxpar(science_header, 'RDNOISE')   ; e-/read 
-
-  ; read in gain
-  fuel.gain = fxpar(science_header, 'GAIN')   ; e-/adu
-
-  ; read central wavelength 
-  central_wavelength = fxpar(science_header, 'GRATWLEN')
-
-  ; read camera
-  camera = fxpar(science_header, 'CAMERA')
-
-
-  ; read in the slits parameters from the FITS header
   ; LONGSLIT ---------------------------------------------------------------------
-  if fuel.longslit then begin
+  if fuel.input.longslit then begin
+
     ; get the slit edges from the user
+    slits = flame_initialize_luci_longslit( header, instrument=instrument, input=fuel.input)
 
-    ; rough wavelength range (slit should be central, x ~ 162 mm)
-    lambda_range = $
-     flame_initialize_luci_waverange(science_header, 162.0)
-
-    ; create slit structure 
-    slits = { $
-      number:1, $
-      name:'longslit', $
-      PA:!values.d_nan, $
-      approx_bottom:fuel.longslit_edge[0], $
-      approx_top:fuel.longslit_edge[1], $
-      approx_target:mean(fuel.longslit_edge), $
-      approx_wavelength_lo:lambda_range[0], $
-      approx_wavelength_hi:lambda_range[1] }
 
   ; MOS      ---------------------------------------------------------------------
   endif else begin
 
-    flame_initialize_luci_slits, science_header, pixel_scale=fuel.pixel_scale, $
-      slit_num=slit_num, slit_name=slit_name, slit_PA=slit_PA, $
-      bottom=bottom, top=top, target=target, wavelength_lo=wavelength_lo, wavelength_hi=wavelength_hi, $
-      instrument=fuel.instrument
-
-    ; create array of slit structures
-    slits = []
-    ; trace the edges of the slits using the sky emission lines
-    for i_slit=0, n_elements(bottom)-1 do begin
-
-      this_slit = { $
-        number:slit_num[i_slit], $
-        name:slit_name[i_slit], $
-        PA:slit_PA[i_slit], $
-        approx_bottom:bottom[i_slit], $
-        approx_top:top[i_slit], $
-        approx_target:target[i_slit], $
-        approx_wavelength_lo:wavelength_lo[i_slit], $
-        approx_wavelength_hi:wavelength_hi[i_slit] }
-
-      slits = [slits, this_slit]
-
-    endfor
+    ; get all the info from the header
+    slits = flame_initialize_luci_slits( science_header, instrument=instrument)
 
   endelse
 

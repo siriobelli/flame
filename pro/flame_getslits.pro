@@ -344,10 +344,10 @@ PRO flame_getslits_writeds9, fuel=fuel
   slits = *fuel.slits
 
   ; number of horizontal pixel in one frame
-  N_pix_x = (size( readfits((*fuel.corrscience_files)[0]) ) )[1]
+  N_pix_x = (size( readfits((fuel.util.corrscience_filenames)[0]) ) )[1]
 
   ; open file
-  openw, lun, fuel.intermediate_dir + region_filename, /get_lun
+  openw, lun, fuel.input.intermediate_dir + region_filename, /get_lun
 
   ; write header
   printf, lun, '# Region file format: DS9 version 4.1'
@@ -388,13 +388,13 @@ END
 PRO flame_getslits_findedges, fuel=fuel
 
   ; read in the frame
-  im=readfits((*fuel.corrscience_files)[0], hdr)
+  im=readfits((fuel.util.corrscience_filenames)[0], hdr)
   
   ; create array of new slit structures
   slits = []
 
   ; LONGSLIT ---------------------------------------------------------------------
-  if fuel.longslit then begin
+  if fuel.input.longslit then begin
 
     ; read the info about this slit from the header
     info_fromheader = (*fuel.slits_fromheader)[0]
@@ -418,7 +418,7 @@ PRO flame_getslits_findedges, fuel=fuel
   endif else begin
 
     ; compare the expected position with the measured ones and obtain rough shift
-    yshift = flame_getslits_findshift( (*fuel.corrscience_files)[0], $
+    yshift = flame_getslits_findshift( (fuel.util.corrscience_filenames)[0], $
       (*fuel.slits_fromheader).approx_top, (*fuel.slits_fromheader).approx_bottom )
  
     ; trace the edges of the slits using the sky emission lines
@@ -429,7 +429,7 @@ PRO flame_getslits_findedges, fuel=fuel
 
     ; trace slit
     flame_getslits_trace, image=im, info_fromheader=info_fromheader, yshift=yshift, $
-          poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.use_sky_edge
+          poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
 
       ; add new fields to slit structure
       this_slit = { $
@@ -469,7 +469,7 @@ PRO flame_getslits_write_slitim, fuel=fuel
   slits = *fuel.slits
 
   ; read in the first science frame to get the right dimensions
-  slitim = fix(0 * readfits((*fuel.corrscience_files)[0], hdr))
+  slitim = fix(0 * readfits((fuel.util.corrscience_filenames)[0], hdr))
 
   ; construct the coordinates for the pixels in the image
   N_pix_x = (size(slitim))[2]
@@ -489,7 +489,7 @@ PRO flame_getslits_write_slitim, fuel=fuel
    
   endfor
   
-  writefits, fuel.intermediate_dir + fuel.slitim_filename, slitim
+  writefits, fuel.input.intermediate_dir + fuel.util.slitim_filename, slitim
   
 
 END 
@@ -544,7 +544,7 @@ PRO flame_getslits_cutout, fuel=fuel
   slits = *fuel.slits
 
   ; read in the slitim image
-  slitim = readfits(fuel.intermediate_dir + fuel.slitim_filename)
+  slitim = readfits(fuel.input.intermediate_dir + fuel.util.slitim_filename)
 
   print,'Slits: ', n_elements(slits)
   for i_slit=0, n_elements(slits)-1 do begin
@@ -552,20 +552,20 @@ PRO flame_getslits_cutout, fuel=fuel
     print,'Working on slit ', slits[i_slit].name, ' - ', slits[i_slit].number
     
     ; create directory
-    slitdir = fuel.intermediate_dir + 'slit' + string(slits[i_slit].number,format='(I02)') + '/'
+    slitdir = fuel.input.intermediate_dir + 'slit' + string(slits[i_slit].number,format='(I02)') + '/'
     spawn,'rm -rf ' + slitdir
     if file_test(slitdir) eq 0 then spawn, 'mkdir ' + slitdir
 
     ; file names for the cutouts
-    output_filenames = strarr(fuel.n_frames)
-    for i_frame=0, fuel.n_frames-1 do begin
-      naked_filename = ( strsplit((*fuel.corrscience_files)[i_frame], '/', /extract) )[-1]
+    output_filenames = strarr(fuel.util.n_frames)
+    for i_frame=0, fuel.util.n_frames-1 do begin
+      naked_filename = ( strsplit((fuel.util.corrscience_filenames)[i_frame], '/', /extract) )[-1]
       output_filenames[i_frame] = flame_util_replace_string( slitdir + naked_filename, '.fits', '_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'  )
     endfor
 
     ; extract slit
     print,'*** Cutting out slit ', slits[i_slit].name
-    flame_getslits_cutout_extract, slitim, slits[i_slit], (*fuel.corrscience_files), output_filenames
+    flame_getslits_cutout_extract, slitim, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames
 
     ; add filenames to the slit structure
     *slits[i_slit].filenames = output_filenames
@@ -590,8 +590,8 @@ PRO flame_getslits, fuel=fuel
   flame_getslits_write_slitim, fuel=fuel
 
   ; if we are reducing only one slit, then delete all the others 
-  if fuel.reduce_only_oneslit ne 0 then $
-    *fuel.slits = (*fuel.slits)[fuel.reduce_only_oneslit-1]
+  if fuel.input.reduce_only_oneslit ne 0 then $
+    *fuel.slits = (*fuel.slits)[fuel.input.reduce_only_oneslit-1]
 
   ; cutout slits 
   flame_getslits_cutout, fuel=fuel

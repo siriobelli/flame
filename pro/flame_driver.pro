@@ -5,51 +5,55 @@
   ;****************************************************
   ;****************************************************
 
-  fuel = flame_create_fuel()
+  input = flame_create_input()
 
   ; text file containing the list of science FITS files that need to be reduced
-  fuel.science_filelist = 'science.txt'
+  input.science_filelist = 'science.txt'
 
   ; text file containing the list of FITS files with dark frames (used for bad pixel mask)
   ; if 'none', the default dark will be used
-  fuel.darks_filelist = 'none'
+  input.darks_filelist = 'none'
 
   ; text file containing the list of FITS files with flat field
   ; if 'none', the default flat field will be used
-  fuel.flats_filelist = 'none'
+  input.flats_filelist = 'none'
   
   ; array with y-pixel positions for the traces of the reference star. [0,0] if there is no reference star
-  fuel.startrace_y_pos = [1283, 1303]
+  input.startrace_y_pos = [1281, 1300]
 
   
   ; ADVANCED OPTIONS
   ;**********************************
 
   ; if 0, then reduce all slits. If n, then reduce slit number n (starting from 1).
-  fuel.reduce_only_oneslit = 4
+  input.reduce_only_oneslit = 5
 
   ; if you want to change the range in x-coordinates used to extract the star traces:
-  ;fuel.xrange_star = [100, 500]
+  ;input.xrange_star = [100, 500]
 
   ; if we don't have a star on the slit then we have to specify the dithering
-  ;fuel.dither_filelist = 'input/dither.txt'
+  ;input.dither_filelist = 'input/dither.txt'
 
   ; if you want to use the sky background to trace the slit edges
   ; use if OH lines are not enough (e.g. in the K band)
-  ;fuel.use_sky_edge = 1
+  ;input.use_sky_edge = 1
 
   ; for longslit
-  ;fuel.longslit = 1
-  ;fuel.longslit_edge = [1133, 1179]
+  ;input.longslit = 1
+  ;input.longslit_edge = [1133, 1179]
 
   ;**********************************
 
 
   ; create the fuel structure
+  flame_initialize, input=input, fuel=fuel
+
   flame_initialize_luci, fuel=fuel
 
-  ; check that everything makes sense
-  ;help, fuel
+  ; check that everything is good
+  help, fuel.input
+  help, fuel.util
+  help, *fuel.instrument
 
 
 

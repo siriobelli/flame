@@ -10,18 +10,17 @@
 PRO flame_correct_makemask, fuel=fuel
 
   ; identify the darks files
-  readcol, fuel.darks_filelist, darklist, format='A'
-  print, n_elements(darklist), ' dark frames'
+  print, n_elements(fuel.util.darks_filelist), ' dark frames'
 
   ; read in all dark frames
   darks = []
-  for i_frame=0, n_elements(darklist)-1 do darks = [ [[darks]], [[ readfits(darklist[i_frame], header) ]] ]
+  for i_frame=0, n_elements(fuel.util.darks_filelist)-1 do darks = [ [[darks]], [[ readfits(fuel.util.darks_filelist[i_frame], header) ]] ]
 
   ; median combine all the dark frames
   master_dark = median(darks, dimension=3)
 
   ; save the master dark
-  writefits, fuel.intermediate_dir + 'master_dark.fits', master_dark, header
+  writefits, fuel.input.intermediate_dir + 'master_dark.fits', master_dark, header
 
   ; calculate typical value and dispersion for pixel values in a robust way
   mmm, master_dark, dark_bias, dark_sigma
@@ -36,7 +35,7 @@ PRO flame_correct_makemask, fuel=fuel
   print, 'Fraction of bad pixels: ' + number_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
   ; plot distribution 
-  cgPS_open, fuel.intermediate_dir + 'master_dark_histogram.ps', /nomatch
+  cgPS_open, fuel.input.intermediate_dir + 'master_dark_histogram.ps', /nomatch
   cghistoplot, master_dark, /freq, binsize=max([0.1*dark_sigma, 1.0]), $
     xra=dark_bias+[-10.0, 10.0]*dark_sigma, /fillpoly, $
     xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
@@ -52,7 +51,7 @@ PRO flame_correct_makemask, fuel=fuel
   badpixel_mask[w_badpixels] = 1
 
   ; save bad pixel mask
-  writefits, fuel.intermediate_dir + 'badpixel_mask.fits', badpixel_mask, header
+  writefits, fuel.input.intermediate_dir + 'badpixel_mask.fits', badpixel_mask, header
   
 END
 
@@ -64,11 +63,11 @@ END
 PRO flame_correct, fuel=fuel
 
   ; decide whether we are going to make a bad pixel mask 
-  if fuel.darks_filelist eq 'none' then begin
+  if fuel.util.darks_filenames[0] eq '' then begin
 
     ; copy the default bad pixel mask to the intermediate directory
-    spawn, 'cp ' + fuel.flame_data_dir + 'default_badpixel_mask.fits ' + $
-      fuel.intermediate_dir + 'badpixel_mask.fits'
+    spawn, 'cp ' + fuel.util.flame_data_dir + 'default_badpixel_mask.fits ' + $
+      fuel.input.intermediate_dir + 'badpixel_mask.fits'
   
   endif else begin
 
@@ -78,17 +77,14 @@ PRO flame_correct, fuel=fuel
   endelse
 
   ; read in the bad pixel mask
-  badpix = readfits(fuel.intermediate_dir + 'badpixel_mask.fits')
+  badpix = readfits(fuel.input.intermediate_dir + 'badpixel_mask.fits')
+    
+  for i_frame=0,fuel.util.N_frames-1 do begin
   
-  ; identify the science files
-  readcol, fuel.science_filelist, science_filenames, format='A'
-  
-  for i_frame=0,fuel.N_frames-1 do begin
-  
-    print, 'Correcting frame ', science_filenames[i_frame]
+    print, 'Correcting frame ', fuel.util.science_filenames[i_frame]
 
     ; read in science frame
-    frame = readfits(science_filenames[i_frame], header, /silent)
+    frame = readfits(fuel.util.science_filenames[i_frame], header, /silent)
 
     ; CORRECTION 1: non-linearity
     frame_corr1 = frame + 4.155d-6 * frame^2    ; from http://scienceops.lbto.org/sciops_cookbook/luci2-vs-luci1/  (Jan 2016)
@@ -98,13 +94,13 @@ PRO flame_correct, fuel=fuel
     frame_corr2[where(badpix, /null)] = !values.d_nan
 
     ; CORRECTION 3: convert to electrons per second
-    frame_corr3 = frame_corr2 * fuel.gain
+    frame_corr3 = frame_corr2 * (*fuel.instrument).gain
 
     ; change the flux units in the header
     fxaddpar, header, 'BUNIT', 'electrons', ' '
     
     ; save corrected frame
-    writefits, (*fuel.corrscience_files)[i_frame], frame_corr3, header
+    writefits, (fuel.util.corrscience_filenames)[i_frame], frame_corr3, header
     
   endfor
   

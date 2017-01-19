@@ -67,20 +67,20 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
   frame = readfits(frame_filename, /silent)
 
   ; x range in which to fit a Gaussian to the star trace
-  xrange=fuel.xrange_star
+  xrange=fuel.input.xrange_star
 
   ; estimate width of trace in pixels: 0.8 arcsec (compromise between seeing-limited and ARGOS)
   est_seeing = 0.8  ; FWHM in arcsec
-  est_width = (est_seeing / 2.355) / fuel.pixel_scale   ; sigma in pixels
+  est_width = (est_seeing / 2.355) / (*fuel.instrument).pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
   half_range = 6.0 * est_width
 
   ; A frames (always the one on top)
-  A_yrange = max(fuel.startrace_y_pos) + [-half_range, half_range]
+  A_yrange = max(fuel.input.startrace_y_pos) + [-half_range, half_range]
 
   ; B frames
-  B_yrange = min(fuel.startrace_y_pos) + [-half_range, half_range]
+  B_yrange = min(fuel.input.startrace_y_pos) + [-half_range, half_range]
 
   ; fit a Gaussian at the A position
   fit_A = flame_monitor_fit_trace( frame, xrange=xrange, yrange=A_yrange, est_width=est_width, $
@@ -171,18 +171,18 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   frame = frame_star - frame_sky
 
   ; x range in which to fit a Gaussian to the star trace
-  xrange=fuel.xrange_star
+  xrange=fuel.input.xrange_star
 
   ; estimate width of trace in pixels: 0.8 arcsec (compromise between seeing-limited and ARGOS)
   est_seeing = 0.8  ; FWHM in arcsec
-  est_width = (est_seeing / 2.355) / fuel.pixel_scale   ; sigma in pixels
+  est_width = (est_seeing / 2.355) / (*fuel.instrument).pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
   half_range = 5.0 * est_width
 
   ; find expected position of star trace
-  if offset_pos eq 'A' then ycenter = max(fuel.startrace_y_pos) $
-    else ycenter = min(fuel.startrace_y_pos) 
+  if offset_pos eq 'A' then ycenter = max(fuel.input.startrace_y_pos) $
+    else ycenter = min(fuel.input.startrace_y_pos) 
 
   ; vertical range to be considered for the fit
   yrange = ycenter + [-half_range, half_range]
@@ -195,7 +195,7 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   diagnostics = { $
     frame_num: frame_num, $
     offset_pos: offset_pos, $
-    seeing: 2.355 * fit_result.width * fuel.pixel_scale, $
+    seeing: 2.355 * fit_result.width * (*fuel.instrument).pixel_scale, $
     flux: sqrt(2.0*3.14) * fit_result.width * fit_result.peak, $
     position: fit_result.center, $
     airmass: airmass}
@@ -217,9 +217,6 @@ FUNCTION flame_diagnostics_fromdata, fuel
 ;
 
 
-  ; identify the science files
-  readcol, fuel.science_filelist, science_filenames, format='A'
-
   ; 1)  For each frame, decide whether it is an A or B position 
   ;     by looking at which one of the two "windows" is more likely
   ;     to contain a star trace
@@ -227,13 +224,13 @@ FUNCTION flame_diagnostics_fromdata, fuel
   ; *********A is always the one on top***************
 
   ; this string array will keep track of the 'A' and 'B' position. 'X' means undecided
-  offset_pos = strarr(fuel.N_frames)
+  offset_pos = strarr(fuel.util.N_frames)
   
   ; identify A and B frames  
-  cgPs_open, fuel.intermediate_dir + 'startrace_identify_AB.ps', /nomatch
-    for i_frame=0,fuel.N_frames-1 do begin
-       offset_pos[i_frame] = flame_diagnostics_AorB( science_filenames[i_frame], fuel=fuel )
-       print, i_frame, ' ', science_filenames[i_frame], ' offset position: ', offset_pos[i_frame]
+  cgPs_open, fuel.input.intermediate_dir + 'startrace_identify_AB.ps', /nomatch
+    for i_frame=0,fuel.util.N_frames-1 do begin
+       offset_pos[i_frame] = flame_diagnostics_AorB( fuel.util.science_filenames[i_frame], fuel=fuel )
+       print, i_frame, ' ', fuel.util.science_filenames[i_frame], ' offset position: ', offset_pos[i_frame]
     endfor
   cgPS_close
 
@@ -242,27 +239,27 @@ FUNCTION flame_diagnostics_fromdata, fuel
   ;     Need to identify the closest frame with a different offset position
   ;     to use as sky frame
 
-  cgPS_open, fuel.intermediate_dir + 'startraces.ps', /nomatch
+  cgPS_open, fuel.input.intermediate_dir + 'startraces.ps', /nomatch
 
   ; array that will contain the diagnostics
   diagnostics = []
 
   print, 'Fitting the star trace for each frame...'
   
-  for i_frame=0, fuel.N_frames-1 do begin
+  for i_frame=0, fuel.util.N_frames-1 do begin
  
-    print, 'fitting star trace for ', science_filenames[i_frame] + ' at position ' + offset_pos[i_frame]
+    print, 'fitting star trace for ', fuel.util.science_filenames[i_frame] + ' at position ' + offset_pos[i_frame]
     
     ; need to find the closest available frame (starting with the next one)
-    distance = abs( i_frame+0.01 - indgen(fuel.N_frames) )
+    distance = abs( i_frame+0.01 - indgen(fuel.util.N_frames) )
     closest_frames = sort(distance) ; this array contains the frame numbers from the closest to the farthest
     ii = 1
     while offset_pos[closest_frames[ii]] EQ offset_pos[i_frame] do ii++
     i_frame_background = closest_frames[ii]   ; this is the frame to use a background
     
     ; fit a Gaussian to the sky-subtracted frame and obtain diagnostics
-    diagnostics_thisframe = flame_diagnostics_fit( science_filenames[i_frame], $
-      science_filenames[i_frame_background], offset_pos=offset_pos[i_frame], fuel=fuel )
+    diagnostics_thisframe = flame_diagnostics_fit( fuel.util.science_filenames[i_frame], $
+      fuel.util.science_filenames[i_frame_background], offset_pos=offset_pos[i_frame], fuel=fuel )
 
     ; add these to the total diagnostics
     diagnostics = [ diagnostics , diagnostics_thisframe ]
@@ -288,14 +285,10 @@ FUNCTION flame_diagnostics_blind, fuel
 ;
 
   ; read pixel scale
-  pixel_scale = fuel.pixel_scale    ; arcsec/pixel
+  pixel_scale = (*fuel.instrument).pixel_scale    ; arcsec/pixel
   
-  ; identify the science files
-  readcol, fuel.science_filelist, science_filenames, format='A'
-
-  ; identify the dither file
-  if fuel.dither_filelist eq 'none' then message, 'dither_filelist needs to be specified'
-  readcol, fuel.dither_filelist, dither_position, format='D'
+  ; check that dither blind positions were specified
+  if ~finite(fuel.util.dither_blind_positions[0]) then message, 'dither_filelist needs to be specified'
 
   ; create a template of the diagnostics structure
   diagnostics_tmp = { $
@@ -307,27 +300,27 @@ FUNCTION flame_diagnostics_blind, fuel
       airmass: !values.f_NaN}
 
   ; array of diagnostics 
-  diagnostics = replicate(diagnostics_tmp, fuel.N_frames)
+  diagnostics = replicate(diagnostics_tmp, fuel.util.N_frames)
 
   ; read frame numbers from file names
-  frame_num = intarr(fuel.N_frames)
-  for i_frame=0, fuel.N_frames-1 do $
-    frame_num[i_frame] = (strsplit(science_filenames[i_frame], '.', /extract))[-2]
+  frame_num = intarr(fuel.util.N_frames)
+  for i_frame=0, fuel.util.N_frames-1 do $
+    frame_num[i_frame] = (strsplit(fuel.util.science_filenames[i_frame], '.', /extract))[-2]
 
   ; fill the frame_num field
   diagnostics.frame_num = frame_num
 
   ; fill the dither position field (in pixels, not arcsec)
-  diagnostics.position = dither_position / pixel_scale
+  diagnostics.position = fuel.util.dither_blind_positions / pixel_scale
 
   ; detect the As and the Bs
-  w_A = where( dither_position GT mean(dither_position, /nan), complement=w_B )
+  w_A = where( fuel.util.dither_blind_positions GT mean(fuel.util.dither_blind_positions, /nan), complement=w_B )
   diagnostics[w_A].offset_pos = 'A'
   diagnostics[w_B].offset_pos = 'B'
 
   ; read the airmass from the headers
   for i_frame=0, fuel.N_frames-1 do $
-    diagnostics[i_frame].airmass = sxpar(headfits(science_filenames[i_frame]), 'AIRMASS')
+    diagnostics[i_frame].airmass = sxpar(headfits(fuel.util.science_filenames[i_frame]), 'AIRMASS')
 
   return, diagnostics
 
@@ -410,7 +403,7 @@ PRO flame_diagnostics, fuel=fuel
   ;----------------------------------------
 
   ; check if a reference star position has been set
-  if fuel.startrace_y_pos[0] GT 0.0 and fuel.startrace_y_pos[1] GT 0.0 then $
+  if fuel.input.startrace_y_pos[0] GT 0.0 and fuel.input.startrace_y_pos[1] GT 0.0 then $
 
     ; if a valid reference star position is given, then monitor the star
     diagnostics = flame_diagnostics_fromdata(fuel) $
@@ -424,7 +417,7 @@ PRO flame_diagnostics, fuel=fuel
   ; 2 - plot diagnostics
   ;----------------------------------------
 
-  cgPS_open, fuel.intermediate_dir + 'diagnostics.ps', /nomatch
+  cgPS_open, fuel.input.intermediate_dir + 'diagnostics.ps', /nomatch
     flame_diagnostics_plot, diagnostics
   cgPS_close
   
@@ -435,7 +428,7 @@ PRO flame_diagnostics, fuel=fuel
   forprint, diagnostics.frame_num, '    ' + '    ' + cgnumber_formatter(diagnostics.offset_pos, decimals=2), $
     '    ' + cgnumber_formatter(diagnostics.seeing, decimals=2), '    ' + cgnumber_formatter(diagnostics.flux, decimals=1), $
     '    ' + cgnumber_formatter(diagnostics.flux/median(diagnostics.flux), decimals=2), '    ' + cgnumber_formatter(diagnostics.position, decimals=1), $
-    textout=fuel.intermediate_dir + 'diagnostics.txt', $
+    textout=fuel.input.intermediate_dir + 'diagnostics.txt', $
     comment = '# frame number   offset    seeing    flux    normalized flux    position '
 
 

@@ -715,8 +715,8 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_lines, fuel=fuel
-;
+PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_lines
+
 ; This routine calculates the 2D wavelength solution and y-rectification.
 ; These are two mappings from the observed pixel coordinates to the rectified grid
 ; lambdax, gamma, where lambdax is a pixel grid linear in lambda and gamma is the 
@@ -805,10 +805,10 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 ;
 
 	; load line list
-	readcol, fuel.linelist_filename, line_list
+	readcol, fuel.util.linelist_filename, line_list
 
 	; approximate value of R needed to estimate the width of OH lines
-	instrument_resolution = fuel.instrument_resolution
+	instrument_resolution = (*fuel.instrument).resolution
 
 	; the degree of the polynomial used to describe the wavelength solution
 	poly_degree = 3
@@ -819,20 +819,8 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	; normally, extract individual pixel rows and detect OH lines
 	use_more_pixelrows = 0
 
-	; special case: K band
-	if fuel.band eq 'K' then begin
-
-		; lower degree for wavecal function to avoid extrapolating too much at large lambda
-		; poly_degree = 2
-
-		; integrate over more than one pixel row to find OH lines
-		; use_more_pixelrows = 1
-
-	endif
-
-
 	; read in sky model
-	readcol, fuel.sky_emission_filename, model_lambda, model_flux	; lambda in micron
+	readcol, fuel.util.sky_emission_filename, model_lambda, model_flux	; lambda in micron
 	
 	; create the wavecal_settings structure
 	wavecal_settings = { $
@@ -842,7 +830,7 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 		Nmin_lines : Nmin_lines, $
 		model_lambda : model_lambda, $
 		model_flux : model_flux, $
-		smoothing_length : fuel.wavecal_approx_smooth, $
+		smoothing_length : fuel.input.wavecal_approx_smooth, $
 		use_more_pixelrows : use_more_pixelrows $
 	}
 
@@ -895,7 +883,7 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose, delta_lambda=delta_lambda
 				OH_lines=OH_lines, slit=this_slit
 
 			flame_wavecal_2D_calibration, filename=(*slits[i_slit].filenames)[i_frame], $
-				slit=this_slit, OH_lines=OH_lines, fuel=fuel
+				slit=this_slit, OH_lines=OH_lines
 
 			; update the slit structure with the output wavelength grid of the last frame
 			(*fuel.slits)[i_slit] = this_slit
