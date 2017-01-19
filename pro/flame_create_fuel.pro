@@ -10,9 +10,9 @@ FUNCTION flame_create_fuel
   data_dir = flame_util_replace_string(path_to_thisfile, 'pro/flame_create_fuel.pro', 'data/')
 
   fuel = { $
-    science_filelist : 'input/science.txt', $
-    darks_filelist: 'input/darks.txt', $
-    flats_filelist: 'input/flats.txt', $
+    science_filelist : 'science.txt', $
+    darks_filelist: 'none', $
+    flats_filelist: 'none', $
     dither_filelist: 'none', $
     intermediate_dir : 'intermediate/', $
     output_dir: 'output/', $

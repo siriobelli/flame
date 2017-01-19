@@ -8,7 +8,7 @@
   fuel = flame_create_fuel()
 
   ; text file containing the list of science FITS files that need to be reduced
-  fuel.science_filelist = 'input/science.txt'
+  fuel.science_filelist = 'science.txt'
 
   ; text file containing the list of FITS files with dark frames (used for bad pixel mask)
   ; if 'none', the default dark will be used
@@ -18,12 +18,6 @@
   ; if 'none', the default flat field will be used
   fuel.flats_filelist = 'none'
   
-  ; name of the directory where intermediate data products will be saved
-  fuel.intermediate_dir = 'intermediate/'
-
-  ; name of the directory where the final output files will be saved
-  fuel.output_dir = 'output/'
-
   ; array with y-pixel positions for the traces of the reference star. [0,0] if there is no reference star
   fuel.startrace_y_pos = [1283, 1303]
 
