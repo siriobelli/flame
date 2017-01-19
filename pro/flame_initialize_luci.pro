@@ -175,11 +175,28 @@ PRO flame_initialize_all, fuel=fuel
   if file_test(fuel.intermediate_dir) eq 0 then spawn, 'mkdir ' + fuel.intermediate_dir
   if file_test(fuel.output_dir) eq 0 then spawn, 'mkdir ' + fuel.output_dir
 
+  ; check that the science file exists
+  if ~file_test(fuel.science_filelist) then message, 'file ' + fuel.science_filelist + ' not found'
+
+  ; check that the darks file exists
+  if strlowcase(fuel.darks_filelist) NE 'none' then $
+    if ~file_test(fuel.darks_filelist) then message, 'file ' + fuel.darks_filelist + ' not found'
+
+  ; check that the flats file exists
+  if strlowcase(fuel.flats_filelist) NE 'none' then $
+    if ~file_test(fuel.flats_filelist) then message, 'file ' + fuel.flats_filelist + ' not found'
+
+  ; check that the dither file exists
+  if strlowcase(fuel.dither_filelist) NE 'none' then $
+    if ~file_test(fuel.dither_filelist) then message, 'file ' + fuel.dither_filelist + ' not found'
+
+  ; read the science file
+  readcol, fuel.science_filelist, science_filenames, format='A'
+
   ; set the number of science frames
-  fuel.N_frames = file_lines(fuel.science_filelist)
+  fuel.N_frames = n_elements(science_filenames)
 
   ; create file names for corrected science frames
-  readcol, fuel.science_filelist, science_filenames, format='A'
   corrscience_files = strarr(fuel.N_frames)
   for i_frame=0, fuel.N_frames-1 do begin
     components = strsplit( science_filenames[i_frame], '/', /extract)
