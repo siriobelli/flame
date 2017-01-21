@@ -399,9 +399,8 @@ PRO flame_getslits_findedges, fuel=fuel
     ; read the old slits structure - containing the info from the header
     old_slits_struc = (*fuel.slits)[0]
 
-    ; add new fields to slit structure
-    slits = create_struct( $
-        old_slits_struc, $
+    ; make new fields for slit structure
+    new_slits_struc = create_struct( $
         'yshift', !values.d_nan, $
         'height', old_slits_struc.approx_top - old_slits_struc.approx_bottom, $
         'bottom_poly', old_slits_struc.approx_bottom, $
@@ -410,6 +409,22 @@ PRO flame_getslits_findedges, fuel=fuel
         'outlambda_min', 0d, $
         'outlambda_delta', 0d, $
         'outlambda_Npix', 0L )
+
+    ; merge old and new slits structures
+
+    ; check if new fields are already present in the slits structure
+    if tag_exist(old_slits_struc, 'yshift') then begin
+      
+      ; in that case, assign new values
+      struct_assign, new_slits_struc, old_slits_struc, /nozero 
+      this_slit = old_slits_struc
+
+    ; otherwise, append new fields
+    endif else $
+      this_slit = create_struct( old_slits_struc, new_slits_struc )
+
+    ; add to array with the other slits
+    slits = [slits, this_slit]
 
  ; MOS      ---------------------------------------------------------------------
   endif else begin
@@ -429,8 +444,7 @@ PRO flame_getslits_findedges, fuel=fuel
           poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
 
       ; add new fields to slit structure
-      this_slit = create_struct( $
-        old_slits_struc, $
+      new_slits_struc = create_struct( $
         'yshift', yshift, $
         'height', slit_height, $
         'bottom_poly', poly_coeff, $
@@ -440,7 +454,21 @@ PRO flame_getslits_findedges, fuel=fuel
         'outlambda_delta', 0d, $
         'outlambda_Npix', 0L )
 
-      slits = [slits, this_slit]
+    ; merge old and new slits structures
+
+    ; check if new fields are already present in the slits structure
+    if tag_exist(old_slits_struc, 'yshift') then begin
+      
+      ; in that case, assign new values
+      struct_assign, new_slits_struc, old_slits_struc, /nozero 
+      this_slit = old_slits_struc
+
+    ; otherwise, append new fields
+    endif else $
+      this_slit = create_struct( old_slits_struc, new_slits_struc )
+
+    ; add to array with the other slits
+    slits = [slits, this_slit]
 
       endfor
 

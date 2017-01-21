@@ -6,7 +6,7 @@ PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectificat
 	print, 'Sky subtraction for ', slit_filename
 
 	; read in the slit image
-	slit_image = mrdfits(slit_filename, 0)
+	slit_image = mrdfits(slit_filename, 0, /silent)
 
 	; how many pixels on the spatial direction
 	N_spatial_pix = (size(slit_image))[2]

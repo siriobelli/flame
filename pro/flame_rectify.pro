@@ -6,7 +6,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	print, 'rectifying ', filename
 
 	; read in file to rectify
-	im = mrdfits(filename, 0, header)
+	im = mrdfits(filename, 0, header, /silent)
 
 	; read dimensions of the image
 	N_imx = (size(im))[1]

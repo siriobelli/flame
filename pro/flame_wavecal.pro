@@ -866,6 +866,9 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose
 		flame_wavecal_approximate, slit_filename=reference_filename, this_slit=this_slit, $
 			wavecal_settings=wavecal_settings, approx_lambda_axis = approx_lambda_axis
 
+		; make sure there are no old rectification coefficients left over
+		this_slit.rectification = ptr_new(/allocate_heap)
+
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
 
 			flame_wavecal_accurate, slit_filename=(*slits[i_slit].filenames)[i_frame], $
