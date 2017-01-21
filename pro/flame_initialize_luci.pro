@@ -1,84 +1,78 @@
 
-FUNCTION flame_initialize_luci_settings, science_header
+
+
+FUNCTION flame_initialize_luci_resolution, instrument
 ;
-; read the LUCI settings from the FITS header of a science frame
-; and create the instrument structure
+; return the estimated spectral resolution for a slit width of 0.75 arcsec
 ;
-
-  ; read things from header - - - - - - - - - - - - - - - - - - - 
-
-  ; read instrument name - useful to discriminate between LUCI1 and LUCI2
-  instrument_name = strtrim(fxpar(science_header, 'INSTRUME'), 2)
-
-  ; read grating name
-  grating = strtrim(fxpar(science_header, 'GRATNAME'), 2)
-
-  ; read in grating order
-  grating_order = strtrim(fxpar(science_header, 'GRATORDE'), 2)
-
-  ; read central wavelength 
-  central_wavelength = fxpar(science_header, 'GRATWLEN')
-
-  ; read camera
-  camera = fxpar(science_header, 'CAMERA')
-
-  ; read pixel scale 
-  pixel_scale = fxpar(science_header, 'PIXSCALE')  ; arcsec/pixel
-
-  ; read filters
-  filter1 = strtrim(fxpar(science_header, 'FILTER1'), 2)
-  filter2 = strtrim(fxpar(science_header, 'FILTER2'), 2)
-
-  ; read in read-out noise
-  readnoise = fxpar(science_header, 'RDNOISE')   ; e-/read 
-
-  ; read in gain
-  gain = fxpar(science_header, 'GAIN')   ; e-/adu
-
-
-
-  ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - - 
-
-  ; NEED TO DO THIS WELL!!
-  ; set resolution (approximate value; assumes a 0.75" slit width and the G210 grating)
-  resolution = 3700.0  
-
-  ; linearity correction: the polynomial coefficients describing the transformation
-  linearity_correction = [0.0d, 1.0d, 4.155d-6]
-
-  ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - - 
-  default_badpixel_mask = 'default_badpixel_mask_' + instrument_name + '.fits'
-  default_flat_field = 'default_flat_field_' + instrument_name + '.fits'
   
+  ; tabulated values for R - note they assume a slit width of 0.5 arcsec
 
-  ; create the instrument structure - - - - - - - - - - - - - - - - - - - 
-  instrument = { $
-    instrument_name: instrument_name, $
-    grating : grating, $
-    grating_order : grating_order, $  
-    central_wavelength : central_wavelength, $
-    camera : camera, $
-    pixel_scale : pixel_scale, $
-    filter1 : filter1, $
-    filter2 : filter2, $
-    readnoise : readnoise, $
-    gain : gain, $
-    resolution: resolution, $
-    linearity_correction: linearity_correction, $
-    default_badpixel_mask: default_badpixel_mask, $
-    default_flatfield: default_flat_field $
-    }
+  ; grating G210
+  if (strsplit(instrument.grating, /extract))[0] eq 'G210' then case instrument.grating_order of
+    '2': R = 5000. ; K 
+    '3': R = 5900. ; H 
+    '4': R = 5800. ; J 
+    '5': R = 5400. ; z
+    else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
+  endcase
+       
+  ; grating G200
+  if (strsplit(instrument.grating, /extract))[0] eq 'G200' then case instrument.grating_order of
+    '1': R = 2250. ; HK 
+    '2': R = 2250. ; zJ 
+    else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
+  endcase
+       
+  ; grating G150
+  if (strsplit(instrument.grating, /extract))[0] eq 'G150' then case instrument.grating_order of
+    '2': R = 4150. ; Ks 
+    else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
+  endcase
+  
+  ; check whether no grating has been found 
+  if R EQ !NULL then message, 'grating ' + instrument.grating + ' not supported'
 
-  return, instrument
+  ;
+  ;  ARE WE SURE THAT R IS INDIPENDENT ON THE CAMERA??
+  ;
 
+  ; output the resolution for a 1"-wide slit:
+  R_1arcsec = R / 2.0 
+
+  return, R_1arcsec
 
 END
 
 
+;******************************************************************
+
+
+
+FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
+
+  ; rough wavelength range (slit should be central, x ~ 162 mm)
+    lambda_range = $
+     flame_initialize_luci_waverange(instrument, 162.0)
+
+    ; create slit structure 
+    slits = { $
+      number:1, $
+      name:'longslit', $
+      PA:!values.d_nan, $
+      approx_bottom:input.longslit_edge[0], $
+      approx_top:input.longslit_edge[1], $
+      approx_target:mean(input.longslit_edge), $
+      approx_wavelength_lo:lambda_range[0], $
+      approx_wavelength_hi:lambda_range[1] }
+
+  return, slits
+
+END 
+
 
 
 ;******************************************************************
-
 
 
 
@@ -134,28 +128,79 @@ END
 
 ;******************************************************************
 
+FUNCTION flame_initialize_luci_settings, science_header
+;
+; read the LUCI settings from the FITS header of a science frame
+; and create the instrument structure
+;
+
+  ; read things from header - - - - - - - - - - - - - - - - - - - 
+
+  ; read instrument name - useful to discriminate between LUCI1 and LUCI2
+  instrument_name = strtrim(fxpar(science_header, 'INSTRUME'), 2)
+
+  ; read grating name
+  grating = strtrim(fxpar(science_header, 'GRATNAME'), 2)
+
+  ; read in grating order
+  grating_order = strtrim(fxpar(science_header, 'GRATORDE'), 2)
+
+  ; read central wavelength 
+  central_wavelength = fxpar(science_header, 'GRATWLEN')
+
+  ; read camera
+  camera = fxpar(science_header, 'CAMERA')
+
+  ; read pixel scale 
+  pixel_scale = fxpar(science_header, 'PIXSCALE')  ; arcsec/pixel
+
+  ; read filters
+  filter1 = strtrim(fxpar(science_header, 'FILTER1'), 2)
+  filter2 = strtrim(fxpar(science_header, 'FILTER2'), 2)
+
+  ; read in read-out noise
+  readnoise = fxpar(science_header, 'RDNOISE')   ; e-/read 
+
+  ; read in gain
+  gain = fxpar(science_header, 'GAIN')   ; e-/adu
 
 
-FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
 
-  ; rough wavelength range (slit should be central, x ~ 162 mm)
-    lambda_range = $
-     flame_initialize_luci_waverange(instrument, 162.0)
+  ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - - 
 
-    ; create slit structure 
-    slits = { $
-      number:1, $
-      name:'longslit', $
-      PA:!values.d_nan, $
-      approx_bottom:input.longslit_edge[0], $
-      approx_top:input.longslit_edge[1], $
-      approx_target:mean(input.longslit_edge), $
-      approx_wavelength_lo:lambda_range[0], $
-      approx_wavelength_hi:lambda_range[1] }
+  ; linearity correction: the polynomial coefficients describing the transformation
+  linearity_correction = [0.0d, 1.0d, 4.155d-6]
 
-  return, slits
+  ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - - 
+  default_badpixel_mask = 'default_badpixel_mask_' + instrument_name + '.fits'
+  default_flat_field = 'default_flat_field_' + instrument_name + '.fits'
+  
 
-END 
+  ; create the instrument structure - - - - - - - - - - - - - - - - - - - 
+  instrument = { $
+    instrument_name: instrument_name, $
+    grating: grating, $
+    grating_order: grating_order, $  
+    central_wavelength: central_wavelength, $
+    camera: camera, $
+    pixel_scale: pixel_scale, $
+    filter1: filter1, $
+    filter2: filter2, $
+    readnoise: readnoise, $
+    gain: gain, $
+    resolution_slit1arcsec: 0.0, $
+    linearity_correction: linearity_correction, $
+    default_badpixel_mask: default_badpixel_mask, $
+    default_flatfield: default_flat_field $
+    }
+
+  ; now use the instrument structure to calculate the spectral resolution 
+  instrument.resolution_slit1arcsec = flame_initialize_luci_resolution(instrument)
+
+  return, instrument
+
+
+END
 
 
 
@@ -266,8 +311,7 @@ END
 
 PRO flame_initialize_luci, fuel=fuel
   ;
-  ; LUCI-specific routine that initializes the fuel structure after
-  ; the user has changed the default values.
+  ; LUCI-specific routine that initializes the fuel.instrument structure
   ;
 
   ; read FITS header of first science frame
