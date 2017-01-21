@@ -256,7 +256,7 @@ END
 ; ****************************************************************************************
 
 
-PRO flame_getslits_trace, image=image, info_fromheader=info_fromheader, yshift=yshift, $
+PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, $
   poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
 ;
 ; traces the top and bottom edges of a slit in the image and return the slit height and the 
@@ -264,8 +264,8 @@ PRO flame_getslits_trace, image=image, info_fromheader=info_fromheader, yshift=y
 ;
 
   ; apply y shift
-  expected_top = info_fromheader.approx_top - yshift
-  expected_bottom = info_fromheader.approx_bottom - yshift
+  expected_top = slits.approx_top - yshift
+  expected_bottom = slits.approx_bottom - yshift
 
   if keyword_set(use_sky_edge) then begin
     ; identify top and bottom edge using sky background  
@@ -273,8 +273,8 @@ PRO flame_getslits_trace, image=image, info_fromheader=info_fromheader, yshift=y
     bottom_edge = flame_getslits_trace_skyedge(image, expected_bottom, /bottom )
   endif else begin
     ; identify top and bottom edge using OH lines
-    top_edge = flame_getslits_trace_edge(image, expected_top, /top, slit_angle=info_fromheader.PA )
-    bottom_edge = flame_getslits_trace_edge(image, expected_bottom, /bottom, slit_angle=info_fromheader.PA )
+    top_edge = flame_getslits_trace_edge(image, expected_top, /top, slit_angle=slits.PA )
+    bottom_edge = flame_getslits_trace_edge(image, expected_bottom, /bottom, slit_angle=slits.PA )
   endelse
 
   ; calculate the slit height
@@ -396,56 +396,49 @@ PRO flame_getslits_findedges, fuel=fuel
   ; LONGSLIT ---------------------------------------------------------------------
   if fuel.input.longslit then begin
 
-    ; read the info about this slit from the header
-    info_fromheader = (*fuel.slits_fromheader)[0]
+    ; read the old slits structure - containing the info from the header
+    old_slits_struc = (*fuel.slits)[0]
 
-    slits = { $
-        number: info_fromheader.number, $
-        name: info_fromheader.name, $
-        PA: info_fromheader.PA, $
-        approx_wavelength_lo: info_fromheader.approx_wavelength_lo, $
-        approx_wavelength_hi: info_fromheader.approx_wavelength_hi, $
-        yshift: !values.d_nan, $
-        height: info_fromheader.approx_top - info_fromheader.approx_bottom, $
-        bottom_poly: info_fromheader.approx_bottom, $
-        filenames: ptr_new(/allocate_heap), $
-        rectification: ptr_new(/allocate_heap), $
-        outlambda_min:0d, $
-        outlambda_delta:0d, $
-        outlambda_Npix:0L }
+    ; add new fields to slit structure
+    slits = create_struct( $
+        old_slits_struc, $
+        'yshift', !values.d_nan, $
+        'height', old_slits_struc.approx_top - old_slits_struc.approx_bottom, $
+        'bottom_poly', old_slits_struc.approx_bottom, $
+        'filenames', ptr_new(/allocate_heap), $
+        'rectification', ptr_new(/allocate_heap), $
+        'outlambda_min', 0d, $
+        'outlambda_delta', 0d, $
+        'outlambda_Npix', 0L )
 
  ; MOS      ---------------------------------------------------------------------
   endif else begin
 
     ; compare the expected position with the measured ones and obtain rough shift
     yshift = flame_getslits_findshift( (fuel.util.corrscience_filenames)[0], $
-      (*fuel.slits_fromheader).approx_top, (*fuel.slits_fromheader).approx_bottom )
+      (*fuel.slits).approx_top, (*fuel.slits).approx_bottom )
  
     ; trace the edges of the slits using the sky emission lines
-    for i_slit=0, n_elements((*fuel.slits_fromheader))-1 do begin
+    for i_slit=0, n_elements((*fuel.slits))-1 do begin
 
-    ; read the info about this slit from the header
-    info_fromheader = (*fuel.slits_fromheader)[i_slit]
+    ; read the old slits structure - containing the info from the header
+    old_slits_struc = (*fuel.slits)[0]
 
     ; trace slit
-    flame_getslits_trace, image=im, info_fromheader=info_fromheader, yshift=yshift, $
+    flame_getslits_trace, image=im, slits=old_slits_struc, yshift=yshift, $
           poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
 
       ; add new fields to slit structure
-      this_slit = { $
-        number: info_fromheader.number, $
-        name: info_fromheader.name, $
-        PA: info_fromheader.PA, $
-        approx_wavelength_lo: info_fromheader.approx_wavelength_lo, $
-        approx_wavelength_hi: info_fromheader.approx_wavelength_hi, $
-        yshift: yshift, $
-        height: slit_height, $
-        bottom_poly: poly_coeff, $
-        filenames: ptr_new(/allocate_heap), $
-        rectification: ptr_new(/allocate_heap), $
-        outlambda_min:0d, $
-        outlambda_delta:0d, $
-        outlambda_Npix:0L }
+      this_slit = create_struct( $
+        old_slits_struc, $
+        'yshift', yshift, $
+        'height', slit_height, $
+        'bottom_poly', poly_coeff, $
+        'filenames', ptr_new(/allocate_heap), $
+        'rectification', ptr_new(/allocate_heap), $
+        'outlambda_min', 0d, $
+        'outlambda_delta', 0d, $
+        'outlambda_Npix', 0L )
 
       slits = [slits, this_slit]
 

@@ -800,8 +800,8 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	; load line list
 	readcol, fuel.util.linelist_filename, line_list
 
-	; approximate value of R needed to estimate the width of OH lines
-	instrument_resolution = (*fuel.instrument).resolution
+	; approximate value of R needed to estimate the width of OH lines (assuming one arcsec slit width!)
+	instrument_resolution = (*fuel.instrument).resolution_slit1arcsec
 
 	; the degree of the polynomial used to describe the wavelength solution
 	poly_degree = 3

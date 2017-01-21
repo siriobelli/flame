@@ -72,7 +72,6 @@ FUNCTION flame_create_fuel, input
     util: util, $
     instrument: ptr_new(/allocate_heap), $
     diagnostics : ptr_new(/allocate_heap), $
-    slits_fromheader : ptr_new(/allocate_heap), $
     slits : ptr_new(/allocate_heap) $
     }
       

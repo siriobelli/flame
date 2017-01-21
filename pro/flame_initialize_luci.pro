@@ -340,8 +340,8 @@ PRO flame_initialize_luci, fuel=fuel
 
   endelse
 
-  ; save the slits in the fuel structure - this is the "slits_fromheader" structure, not "slits"!
-  *fuel.slits_fromheader = slits
+  ; save the slits in the fuel structure
+  *fuel.slits = slits
 
 
 END
