@@ -5,6 +5,9 @@
   ;****************************************************
   ;****************************************************
 
+  ; suppress harmless messages (e.g., module compilation)
+  !quiet = 1
+
   input = flame_create_input()
 
   ; text file containing the list of science FITS files that need to be reduced

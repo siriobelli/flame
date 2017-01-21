@@ -39,9 +39,16 @@ FUNCTION flame_initialize_luci_settings, science_header
 
   ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - - 
 
-  ; set resolution (approximate value; assumes a 0.75" slit width)
-  if grating eq 'G210 HiRes' then resolution = 3700.0 $
-    else message, 'Grating ' + string(grating) + ' not supported'
+  ; NEED TO DO THIS WELL!!
+  ; set resolution (approximate value; assumes a 0.75" slit width and the G210 grating)
+  resolution = 3700.0  
+
+  ; linearity correction: the polynomial coefficients describing the transformation
+  linearity_correction = [0.0d, 1.0d, 4.155d-6]
+
+  ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - - 
+  default_badpixel_mask = 'default_badpixel_mask_' + instrument_name + '.fits'
+  default_flat_field = 'default_flat_field_' + instrument_name + '.fits'
   
 
   ; create the instrument structure - - - - - - - - - - - - - - - - - - - 
@@ -56,7 +63,10 @@ FUNCTION flame_initialize_luci_settings, science_header
     filter2 : filter2, $
     readnoise : readnoise, $
     gain : gain, $
-    resolution: resolution $
+    resolution: resolution, $
+    linearity_correction: linearity_correction, $
+    default_badpixel_mask: default_badpixel_mask, $
+    default_flatfield: default_flat_field $
     }
 
   return, instrument

@@ -12,11 +12,11 @@
 PRO flame_correct_makemask, fuel=fuel
 
   ; identify the darks files
-  print, n_elements(fuel.util.darks_filelist), ' dark frames'
+  print, n_elements(fuel.util.darks_filenames), ' dark frames'
 
   ; read in all dark frames
   darks = []
-  for i_frame=0, n_elements(fuel.util.darks_filelist)-1 do darks = [ [[darks]], [[ readfits(fuel.util.darks_filelist[i_frame], header) ]] ]
+  for i_frame=0, n_elements(fuel.util.darks_filenames)-1 do darks = [ [[darks]], [[ readfits(fuel.util.darks_filenames[i_frame], header) ]] ]
 
   ; median combine all the dark frames
   master_dark = median(darks, dimension=3)
@@ -64,13 +64,16 @@ END
 
 PRO flame_correct, fuel=fuel
 
+
+  ; bad pixel mask - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
   ; decide whether we are going to make a bad pixel mask 
   if fuel.util.darks_filenames[0] eq '' then begin
 
     ; copy the default bad pixel mask to the intermediate directory
-    spawn, 'cp ' + fuel.util.flame_data_dir + 'default_badpixel_mask.fits ' + $
-      fuel.input.intermediate_dir + 'badpixel_mask.fits'
-  
+    file_copy, fuel.util.flame_data_dir + (*fuel.instrument).badpixel_mask, $
+      fuel.input.intermediate_dir + 'badpixel_mask.fits', /overwrite
+
   endif else begin
 
     ; make bad pixel mask 
@@ -80,17 +83,26 @@ PRO flame_correct, fuel=fuel
 
   ; read in the bad pixel mask
   badpix = readfits(fuel.input.intermediate_dir + 'badpixel_mask.fits')
+
+
+  ; master flat field - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+
+
+
+  ; apply corrections - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
     
   for i_frame=0,fuel.util.N_frames-1 do begin
   
     print, 'Correcting frame ', fuel.util.science_filenames[i_frame]
 
     ; read in science frame
-    frame = readfits(fuel.util.science_filenames[i_frame], header, /silent)
+    frame = readfits(fuel.util.science_filenames[i_frame], header)
 
     ; CORRECTION 1: non-linearity
-    frame_corr1 = frame + 4.155d-6 * frame^2    ; from http://scienceops.lbto.org/sciops_cookbook/luci2-vs-luci1/  (Jan 2016)
-    
+    frame_corr1 = poly(frame, (*fuel.instrument).linearity_correction )
+
     ; CORRECTION 2: bad pixels
     frame_corr2 = frame_corr1
     frame_corr2[where(badpix, /null)] = !values.d_nan
@@ -100,7 +112,7 @@ PRO flame_correct, fuel=fuel
 
     ; change the flux units in the header
     fxaddpar, header, 'BUNIT', 'electrons', ' '
-    
+
     ; save corrected frame
     writefits, (fuel.util.corrscience_filenames)[i_frame], frame_corr3, header
     
