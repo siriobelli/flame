@@ -1,11 +1,11 @@
-PRO flame_initialize, input=input, fuel=fuel
+FUNCTION flame_create_fuel, input
 ;
-; initialize flame and create the fuel structure. The only input is the input structure.
+; initialize flame and output the fuel structure. The only input is the input structure.
 ;
 
   ; find the Flame data directory and check that it exists
-  path_to_thisfile = file_which('flame_initialize.pro', /include_current_dir)
-  data_dir = flame_util_replace_string(path_to_thisfile, 'pro/flame_initialize.pro', 'data/')
+  path_to_thisfile = file_which('flame_create_fuel.pro', /include_current_dir)
+  data_dir = flame_util_replace_string(path_to_thisfile, 'pro/flame_create_fuel.pro', 'data/')
   if ~file_test(data_dir, /directory) then message, 'data directory not found. Check the flame directory structure.'
 
   ; check and setup directory structure
@@ -76,5 +76,6 @@ PRO flame_initialize, input=input, fuel=fuel
     slits : ptr_new(/allocate_heap) $
     }
       
+return, fuel
 
 END

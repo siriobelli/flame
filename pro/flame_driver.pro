@@ -8,6 +8,7 @@
   ; suppress harmless messages (e.g., module compilation)
   !quiet = 1
 
+  ; create the input structure
   input = flame_create_input()
 
   ; text file containing the list of science FITS files that need to be reduced
@@ -49,8 +50,9 @@
 
 
   ; create the fuel structure
-  flame_initialize, input=input, fuel=fuel
+  fuel = flame_create_fuel(input)
 
+  ; initialize
   flame_initialize_luci, fuel=fuel
 
   ; check that everything is good
