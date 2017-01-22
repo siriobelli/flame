@@ -9,6 +9,68 @@
 ;
 
 
+
+
+PRO flame_correct_makeflat, fuel=fuel
+
+
+  ; read in all flat frames
+  flats = []
+  for i_frame=0, n_elements(fuel.util.flats_filenames)-1 do $
+    flats = [ [[flats]], [[ readfits(fuel.util.flats_filenames[i_frame], header) ]] ]
+
+  ; median combine all the flat frames
+  master_flat = median(flats, dimension=3)
+
+  ; heavily smoothed version of the flat - this is to ignore the hot pixels 
+  smoothed_flat = gauss_smooth(master_flat, 5, /edge_truncate)
+
+  ; determine the brightest spot on the master flat - excluding hot pixels
+  flat_peak = max(smoothed_flat)
+
+  ; assume that pixels with less than 15% of the peak flux are not being illuminated
+  w_notilluminated = where(smoothed_flat LT 0.15 * flat_peak )
+  print, 100.0*double( n_elements(w_notilluminated) ) / double( n_elements(smoothed_flat) ), $
+    '% of the flat pixels are not illuminated'
+
+  ; set NaNs for pixels that are not illuminated
+  master_flat[w_notilluminated] = !values.d_nan
+  smoothed_flat[w_notilluminated] = !values.d_nan
+
+  ; create horizontal and vertical profiles (the trick is to normalize each row first) 
+  norm_y = median( master_flat, dimension=1 ) ## replicate(1, 2048)
+  x_profile = median(master_flat / norm_y, dimension=2)
+
+  norm_x = transpose( replicate(1, 2048) # median( master_flat, dimension=2 ) )
+  y_profile = median(master_flat / norm_x, dimension=1)
+
+  ; make a model for the illumination using the smoothed profiles
+  flat_model = median(x_profile, 101) # median(y_profile, 101)
+
+  ; divide the model out 
+  smallscale_field = master_flat / flat_model
+
+  ; normalize
+  smallscale_field /= median(smallscale_field)
+
+  ; save the master flat
+  writefits, fuel.input.intermediate_dir + 'master_flat.fits', smallscale_field, header
+
+  ; now identify the bad pixels, truncate edges, etc 
+
+  ;
+  ; rename variables 
+  ; consider outputting a PS file and some info on bad pixels and flat fielding
+  ;
+
+END
+
+
+
+;******************************************************************
+
+
+
 PRO flame_correct_makemask, fuel=fuel
 
   ; identify the darks files
@@ -87,7 +149,17 @@ PRO flame_correct, fuel=fuel
 
   ; master flat field - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+  ; decide whether we are going to make a master flat field 
+  if fuel.util.flats_filenames[0] eq '' then begin
 
+    print, 'no flat field'
+
+  endif else begin 
+
+    ; make master flat field
+    flame_correct_makeflat, fuel=fuel
+
+  endelse
 
 
   ; apply corrections - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
