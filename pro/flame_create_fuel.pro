@@ -63,7 +63,8 @@ FUNCTION flame_create_fuel, input
     slitim_filename: 'slitim.fits', $
     flame_data_dir : data_dir, $
     sky_emission_filename : data_dir + 'sky_emission_model.dat', $
-    linelist_filename: data_dir + 'line_list.dat' $    
+    linelist_filename: data_dir + 'line_list.dat', $
+    start_time : systime(/seconds) $
    }
 
   ; create the fuel structure

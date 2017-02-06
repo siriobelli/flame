@@ -237,6 +237,11 @@ PRO flame_combine, fuel=fuel
 
 	endfor
 
+	; print total execution time
+	print, ' '
+	print, 'The data reduction took a total of ', $
+		number_formatter((systime(/seconds) - fuel.util.start_time)/60.0, decimals=2), ' minutes.'
+
 
 END
 
