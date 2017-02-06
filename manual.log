@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  12 OCT 2016 10:51
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  6 FEB 2017 15:49
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -232,29 +232,40 @@ File: pdftex.def 2011/05/27 v0.06d Graphics/color for pdfTeX
 ))
 \Gin@req@height=\dimen111
 \Gin@req@width=\dimen112
+)
+(./deluxetable.sty
+Package: deluxetable 
+\pt@box=\box28
+\pt@width=\dimen113
+\pt@line=\count106
+\pt@column=\count107
+\pt@nlines=\count108
+\pt@ncol=\count109
+\pt@page=\count110
+\pt@tmpcapwidth=\dimen114
 ) (./manual.aux)
 \openout1 = `manual.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 17.
-LaTeX Font Info:    ... okay on input line 17.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 17.
-LaTeX Font Info:    ... okay on input line 17.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 17.
-LaTeX Font Info:    ... okay on input line 17.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 17.
-LaTeX Font Info:    ... okay on input line 17.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 17.
-LaTeX Font Info:    ... okay on input line 17.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 17.
-LaTeX Font Info:    ... okay on input line 17.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 17.
-LaTeX Font Info:    ... okay on input line 17.
-LaTeX Font Info:    Try loading font information for T1+lmr on input line 17.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 19.
+LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Try loading font information for T1+lmr on input line 19.
  (/usr/share/texmf/tex/latex/lm/t1lmr.fd
 File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-\AtBeginShipoutBox=\box28
-Package hyperref Info: Link coloring OFF on input line 17.
+\AtBeginShipoutBox=\box29
+Package hyperref Info: Link coloring OFF on input line 19.
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
@@ -262,30 +273,30 @@ Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
 Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
 )
-\c@section@level=\count106
+\c@section@level=\count111
 )
-LaTeX Info: Redefining \ref on input line 17.
-LaTeX Info: Redefining \pageref on input line 17.
-LaTeX Info: Redefining \nameref on input line 17.
+LaTeX Info: Redefining \ref on input line 19.
+LaTeX Info: Redefining \pageref on input line 19.
+LaTeX Info: Redefining \nameref on input line 19.
 
 (./manual.out) (./manual.out)
 \@outlinefile=\write3
 \openout3 = `manual.out'.
 
-\c@lstlisting=\count107
+\c@lstlisting=\count112
 
 (/usr/share/texlive/texmf-dist/tex/context/base/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count108
-\scratchdimen=\dimen113
-\scratchbox=\box29
-\nofMPsegments=\count109
-\nofMParguments=\count110
+\scratchcounter=\count113
+\scratchdimen=\dimen115
+\scratchbox=\box30
+\nofMPsegments=\count114
+\nofMParguments=\count115
 \everyMPshowfont=\toks16
-\MPscratchCnt=\count111
-\MPscratchDim=\dimen114
-\MPnumerator=\count112
-\makeMPintoPDFobject=\count113
+\MPscratchCnt=\count116
+\MPscratchDim=\dimen116
+\MPnumerator=\count117
+\makeMPintoPDFobject=\count118
 \everyMPtoPDFconversion=\toks17
 ) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2010/02/09 v2.5 Base part for package epstopdf
@@ -302,111 +313,122 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Font Info:    Try loading font information for T1+lmtt on input line 22.
+(/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2013/08/26 1.5b listings language file
+)
+(/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang2.sty
+File: lstlang2.sty 2013/08/26 1.5b listings language file
+)
+LaTeX Font Info:    Try loading font information for T1+lmtt on input line 26.
 
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 22.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 26.
 
 (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 22.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 26.
 
 (/usr/share/texmf/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 22.
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 26.
 
 
 (/usr/share/texmf/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 22.
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 26.
 
 
 (/usr/share/texmf/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <12> on input line 22.
+(Font)              <12> on input line 26.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 22.
+(Font)              <8> on input line 26.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 22.
+(Font)              <6> on input line 26.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 54.
+(Font)              <10> on input line 69.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 54.
+(Font)              <7> on input line 69.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 54.
-LaTeX Font Info:    Try loading font information for OMS+lmr on input line 64.
+(Font)              <5> on input line 69.
+LaTeX Font Info:    Try loading font information for OMS+lmr on input line 87.
 
 (/usr/share/texmf/tex/latex/lm/omslmr.fd
 File: omslmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `OMS/lmr/m/n' in size <10> not available
-(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 64.
+(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 87.
  [1
 
-{/afs/mpe.mpg.de/home/sirio/.texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2]
- [3]
+{/afs/mpe.mpg.de/home/sirio/.texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+Table 1 has been set to width 462.738pt
+
+Overfull \hbox (117.738pt too wide) in paragraph at lines 129--145
+ [][] 
+ []
+
+[2] [3]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 184.
-
-<diagnostics.pdf, id=152, 503.8825pt x 392.46625pt>
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 203.
+ [4] <diagnostics.pdf, id=169, 503.8825pt x 392.46625pt>
 File: diagnostics.pdf Graphic file (type pdf)
- <use diagnostics.pdf>
-Package pdftex.def Info: diagnostics.pdf used on input line 191.
+
+<use diagnostics.pdf>
+Package pdftex.def Info: diagnostics.pdf used on input line 272.
 (pdftex.def)             Requested size: 310.4979pt x 241.84138pt.
-
-[4] [5 <./diagnostics.pdf>] <slits.png, id=183, 948.54375pt x 902.37125pt>
+ [5] [6 <./diagnostics.pdf>]
+<slits.png, id=193, 948.54375pt x 902.37125pt>
 File: slits.png Graphic file (type png)
-
-<use slits.png>
-Package pdftex.def Info: slits.png used on input line 242.
+ <use slits.png>
+Package pdftex.def Info: slits.png used on input line 323.
 (pdftex.def)             Requested size: 241.49895pt x 229.73674pt.
- [6] <wavecal_approx_1.pdf, id=190, 471.7625pt x 385.44pt>
+ [7]
+<wavecal_approx_1.pdf, id=201, 471.7625pt x 385.44pt>
 File: wavecal_approx_1.pdf Graphic file (type pdf)
 
 <use wavecal_approx_1.pdf>
-Package pdftex.def Info: wavecal_approx_1.pdf used on input line 271.
+Package pdftex.def Info: wavecal_approx_1.pdf used on input line 352.
 (pdftex.def)             Requested size: 155.24895pt x 126.84271pt.
 
-<wavecal_approx_2.pdf, id=191, 471.7625pt x 370.38374pt>
+<wavecal_approx_2.pdf, id=202, 471.7625pt x 370.38374pt>
 File: wavecal_approx_2.pdf Graphic file (type pdf)
 
 <use wavecal_approx_2.pdf>
-Package pdftex.def Info: wavecal_approx_2.pdf used on input line 273.
+Package pdftex.def Info: wavecal_approx_2.pdf used on input line 354.
 (pdftex.def)             Requested size: 155.24895pt x 121.88791pt.
- [7 <./slits.png>]
-<wavecal_accurate.pdf, id=203, 510.90875pt x 422.57875pt>
+ [8 <./slits.png>]
+<wavecal_accurate.pdf, id=213, 510.90875pt x 422.57875pt>
 File: wavecal_accurate.pdf Graphic file (type pdf)
 
 <use wavecal_accurate.pdf>
-Package pdftex.def Info: wavecal_accurate.pdf used on input line 290.
+Package pdftex.def Info: wavecal_accurate.pdf used on input line 371.
 (pdftex.def)             Requested size: 241.49895pt x 199.74689pt.
- [8 <./wavecal_approx_1.pdf> <./wavecal_approx_2.pdf>] [9 <./wavecal_accurate.p
-df>]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 325.
- [10]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 325.
+ [9 <./wavecal_approx_1.pdf> <./wavecal_approx_2.pdf>]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 411.
+ [10 <./wavecal_accurate.pdf>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 411.
  (./manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 325.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 325.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 411.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 411.
 Package rerunfilecheck Info: File `manual.out' has not changed.
-(rerunfilecheck)             Checksum: 8478400D641FCB3DA6CCD6A1CD1C0355;1707.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 325.
+(rerunfilecheck)             Checksum: B9D752BBC836C4C9FDA86083158E125D;1775.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 411.
  ) 
 Here is how much of TeX's memory you used:
- 6746 strings out of 494946
- 99607 string characters out of 6177758
- 181281 words of memory out of 5000000
- 9830 multiletter control sequences out of 15000+600000
- 52426 words of font info for 45 fonts, out of 8000000 for 9000
+ 7032 strings out of 494946
+ 103438 string characters out of 6177758
+ 204309 words of memory out of 5000000
+ 10104 multiletter control sequences out of 15000+600000
+ 55418 words of font info for 46 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 29i,7n,32p,879b,1603s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 29i,8n,40p,879b,914s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dv
 ips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share
 /texmf/fonts/enc/dvips/lm/lm-mathsy.enc}</usr/share/texmf/fonts/type1/public/lm
@@ -414,14 +436,14 @@ ips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share
 f/fonts/type1/public/lm/lmmi10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr1
 0.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts
 /type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb></u
-sr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/p
-ublic/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/sh
-are/texmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public
-/lm/lmtt12.pfb>
-Output written on manual.pdf (10 pages, 1221056 bytes).
+sr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/pub
+lic/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/shar
+e/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/public/l
+m/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.pfb>
+Output written on manual.pdf (10 pages, 1253460 bytes).
 PDF statistics:
- 300 PDF objects out of 1000 (max. 8388607)
- 264 compressed objects within 3 object streams
- 74 named destinations out of 1000 (max. 500000)
- 218 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 309 PDF objects out of 1000 (max. 8388607)
+ 272 compressed objects within 3 object streams
+ 75 named destinations out of 1000 (max. 500000)
+ 226 words of extra memory for PDF output out of 10000 (max. 10000000)
 

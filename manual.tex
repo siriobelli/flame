@@ -6,6 +6,7 @@
 \usepackage{listings}
 \usepackage{capt-of}
 \usepackage{graphicx}
+\usepackage{deluxetable}
 
 
 
@@ -13,8 +14,11 @@
 
 \newcommand{\flame}{\texttt{flame}}
 \newcommand{\fuel}{\texttt{fuel}}
+\newcommand{\inp}{\texttt{input}}
 
 \begin{document}
+
+\lstset{language=IDL}
 
 \title{\flame\ user manual}
 \author{Sirio Belli}
@@ -22,6 +26,10 @@
 
 
 
+% ***********************************************************************************************
+% ***********************************************************************************************
+%									1. INTRODUCTION
+% ***********************************************************************************************
 % ***********************************************************************************************
 
 
@@ -31,7 +39,14 @@
 
 
 
+
+
 % ***********************************************************************************************
+% ***********************************************************************************************
+%									2. INSTALLATION
+% ***********************************************************************************************
+% ***********************************************************************************************
+
 
 
 \section{Installation}
@@ -54,7 +69,15 @@ Other third-party routines used by \flame\ are included in the distribution, in 
 Download the \flame\ IDL code from \url{http://siriobelli.github.io/flame/}. Either save it in the directory where you keep your IDL code, or add the flame/ directory to the IDL path. No other step is necessary.
 
 
+
+
+
 % ***********************************************************************************************
+% ***********************************************************************************************
+%									3. SETUP
+% ***********************************************************************************************
+% ***********************************************************************************************
+
 
 
 \section{Setting up the Data Reduction}
@@ -62,10 +85,9 @@ Download the \flame\ IDL code from \url{http://siriobelli.github.io/flame/}. Eit
 Go to the directory that you want to use for the reduction of a data set (it is recommended to create a new directory for this purpose). Then:
 \begin{itemize}
 \item Copy the file \texttt{flame\_driver.pro} from the flame/pro/ directory to the current directory.
-\item \emph{(optional)} Create a directory that will contain the input files (e.g., input/)
-\item Create an ASCII file with, in each line, the full name (including absolute path) of a raw science file (e.g., input/science.txt)
-\item \emph{(optional)} Create an ASCII file with the names of the flat field frames (e.g., input/flats.txt)
-\item \emph{(optional)} Create an ASCII file with the names of the dark frames (e.g., input/darks.txt)
+\item Create an ASCII file with, in each line, the full name (including absolute path) of a raw science file (e.g., science.txt)
+\item \emph{(optional)} Create an ASCII file with the names of the flat field frames (e.g., flats.txt)
+\item \emph{(optional)} Create an ASCII file with the names of the dark frames (e.g., darks.txt)
 \end{itemize}
 
 
@@ -73,28 +95,22 @@ Go to the directory that you want to use for the reduction of a data set (it is 
 
 The data reduction is entirely controlled via the driver file \texttt{flame\_driver.pro}. Open the local copy with a text editor and have a look at the code. The driver file is divided into two parts. The first part is where the input parameters are set. The second part is the data reduction, and does not require any input from the user.
 
-The data reduction in \flame\ consists of a series of steps, which are represented by individual routines. The information is carried from one routine to the next via the use of only one structure, named \fuel, which contains all the input parameters set by the user, together with all the internal variables. The very first step is to create the \fuel\ structure:
+The very first step is to create the \inp\ structure:
 \begin{lstlisting}
-fuel = flame_create_fuel()
+ input = flame_create_input()
 \end{lstlisting}
-We now need to populate the fields in the \fuel\ structure with values that are appropriate for the data set that we are reducing.
+We now need to populate the fields in the \inp\ structure with values that are appropriate for the data set that we are reducing.
 We start by specifying the ASCII files containing the FITS file names:
 \begin{lstlisting}
-fuel.science_filelist = 'input/science.txt'
-fuel.darks_filelist = 'input/darks.txt'
-fuel.flats_filelist = 'none'
+input.science_filelist = 'science.txt'
+input.darks_filelist = 'darks.txt'
+input.flats_filelist = 'none'
 \end{lstlisting}
 In this example the flat field frames are not available and the corresponding field is set to \textquoteleft none\textquoteright. The same can be done for the dark frames. The science frames must, of course, always be specified.
-Next, we need to define the directories for intermediate and final outputs:
-\begin{lstlisting}
-fuel.intermediate_dir = 'intermediate/'
-fuel.output_dir = 'output/'
-\end{lstlisting}
-If these directories do not exist, they will be created by \flame. Note that these definitions use relative paths, but it is safer to always use absolute paths (e.g., /scr/observing/run\_1/mask\_1/output/).
 
-The last required input is the y pixel position of a reference star in both the A and the B position. These coordinates do not need to be exact. If the trace is too faint in a single frame, a simple A-B subtraction is needed. The A and B coordinates need to be specified as the two elements of an array, for example:
+The last required input is the y pixel position of a reference star in both the A and the B position. These coordinates do not need to be exact. If the trace is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. The A and B coordinates need to be specified as the two elements of an array, for example:
 \begin{lstlisting}
-fuel.startrace_y_pos = [547, 560]
+input.startrace_y_pos = [547, 560]
 \end{lstlisting}
 When no reference star is available, the dithering pattern must be specified manually. These and other advanced features are explained in the next section.
 
@@ -102,13 +118,39 @@ When no reference star is available, the dithering pattern must be specified man
 
 \subsection{Advanced options}
 
+The \inp\ structure contains additional fields that can be used to specify advanced options. We now discuss the most useful ones; the full list is reported in Table \ref{tab:input}.
+
+\begin{deluxetable}{lll}
+\tabletypesize{\footnotesize}
+\tablewidth{0pc}
+\tablecaption{Content of the \inp\ structure \label{tab:input}}
+\tablehead{
+\colhead{Field} & \colhead{Default Value} & \colhead{Description} }
+\startdata
+science\_filelist   	& science.txt 		& name of ASCII file containing the list of science frames \\
+darks\_filelist   		& none 				& name of ASCII file containing the list of dark frames\\
+flats\_filelist   		& none 				& name of ASCII file containing the list of flat field frames	\\
+dither\_filelist   		& none 				& name of ASCII file containing the list of dither positions \\
+intermediate\_dir		& intermediate/		& directory that will contain the intermediate products \\
+output\_dir				& output/			& directory that will contain the final output \\
+startrace\_y\_pos 		& [0, 0]			& pixel y-coordinate of the A and B position of the star trace \\
+reduce\_only\_oneslit 	& 0 				& if non-zero, reduce only that one slit \\
+longslit 				& 0 				& set to one to reduce long-slit data \\
+longslit\_edge			& [0, 0] 			& when reducing long-slit data, only consider this range of pixel y-coordinate \\
+xrange\_star 			& [1000, 1200]		& range of star trace (in pixel x-coordinate) that will be extracted \\
+wavecal\_approx\_smooth 	& 5 				& smoothing length used in the approximate wavecal calibration \\
+use\_sky\_edge			& 0 				& if set, the slit detection is based on the sky continuum instead of OH lines
+\enddata
+%\tablecomments{Some comment here.}
+\end{deluxetable}
+
 
 \subsubsection{Specify dithering pattern}
 
-It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the dithering offset for each frame, and the dithering pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, in arcseconds, corresponding to that frame (for example 5, -5, 5, -5, etc). Then the file name needs to be input in the fuel structure:
+It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the dithering offset for each frame, and the dithering pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, in arcseconds, corresponding to that frame (for example 5, -5, 5, -5, etc). Then the file name needs to be input in the \inp\ structure:
 \begin{lstlisting}
-fuel.startrace_y_pos = [0, 0]
-fuel.dither_filelist = 'input/dither.txt'
+input.startrace_y_pos = [0, 0]
+input.dither_filelist = 'dither.txt'
 \end{lstlisting}
 
 
@@ -116,7 +158,7 @@ fuel.dither_filelist = 'input/dither.txt'
 
 When the reference star is present, its trace is extracted and used as a diagnostic tool (see Section \ref{sec:diagnostics}). Only the central part of the trace is used, in the interval [1000, 1200] in x-pixel coordinates. If the trace is too faint in this central region, it is possible to define a different range for the extraction:
 \begin{lstlisting}
-fuel.xrange_star = [100, 500]
+input.xrange_star = [100, 500]
 \end{lstlisting}
 
 
@@ -125,9 +167,9 @@ fuel.xrange_star = [100, 500]
 
 Because reducing the entire slitmask can take a long time, especially for observations with a large number of frames, \flame\ offers the possibility to reduce only one slit. This is particularly useful when observing, so that quick decisions can be made based on the final reduction of a representative object. To reduce only one slit we need to specify the slit index (starting from 1). For example if we are interested in the third slit:
 \begin{lstlisting}
-fuel.reduce_only_oneslit = 3
+input.reduce_only_oneslit = 3
 \end{lstlisting}
-The default value for fuel.reduce\_only\_oneslit is zero, which means that all the slits will be reduced.
+The default value for input.reduce\_only\_oneslit is zero, which means that all the slits will be reduced.
 
 
 \subsubsection{Detection of slit edges with sky background}
@@ -135,7 +177,7 @@ The default value for fuel.reduce\_only\_oneslit is zero, which means that all t
 
 In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges (see Section \ref{sec:getslits}). It is possible to use the sky continuum emission instead, by specifying
 \begin{lstlisting}
-fuel.use_sky_edge = 1
+input.use_sky_edge = 1
 \end{lstlisting}
 
 
@@ -143,22 +185,61 @@ fuel.use_sky_edge = 1
 
 The reduction of longslit observation is slightly different from the reduction of a slit in a multi-object mask because the edges of the longslit are not well defined. This means that the slit curvature cannot be traced, and therefore it is advisable to reduce only the region of interest, possibly at the center of the detector. The longslit flag must be set, and the y pixel coordinates delimiting the region of interest must be provided:
 \begin{lstlisting}
-fuel.longslit = 1
-fuel.longslit_edge = [1150, 1250]
+input.longslit = 1
+input.longslit_edge = [1150, 1250]
 \end{lstlisting}
+
+
+% Next, we need to define the directories for intermediate and final outputs:
+% \begin{lstlisting}
+% input.intermediate_dir = 'intermediate/'
+% input.output_dir = 'output/'
+% \end{lstlisting}
+% If these directories do not exist, they will be created by \flame. Note that these definitions use relative paths, but it is safer to always use absolute paths (e.g., /scr/observing/run\_1/mask\_1/output/).
+
+
+
+
+\subsection{The \fuel\ structure}
+
+The data reduction in \flame\ consists of a series of steps, which are represented by individual routines. The information is carried from one routine to the next via the use of only one structure, named \fuel, which contains all the input parameters set by the user, together with all the internal variables.
+
+Once the \inp\ fields have been specified, the \fuel\ structure must be created:
+\begin{lstlisting}
+fuel = flame_create_fuel(input)
+\end{lstlisting}
+This will also check for potential errors in the inputs, and create the necessary directories.
+
+The \fuel\ structure consists of five substructures:
+\begin{itemize}
+	\item fuel.input: a copy of the \inp\ structure created in the previous step;
+	\item fuel.util: utility variables needed by \flame;
+	\item fuel.instrument: instrument-specific information;
+	\item fuel.diagnostics: diagnostics such as seeing and transparency for each of the science frames;
+	\item fuel.slits: information relative to each slit, such as position on the detector and expected wavelength range.
+\end{itemize}
+
+Initially, only fuel.input and fuel.util are populated; the other fields are set to null pointers and will be created by successive steps.
 
 
 
 \subsection{Initialization}
 
-Once all the inputs and options have been specified, the fuel structure must be initialized:
+Once the \fuel\ structure has been created, it is still mostly empty. The next step creates the substructures fuel.instrument and fuel.slits:
 \begin{lstlisting}
 flame_initialize_luci, fuel=fuel
 \end{lstlisting}
-This will check for potential errors in the inputs, create the necessary directories, and read the relevant fields from the FITS header of the science files, such as band, central wavelength, and slit positions. This is the only step during the data reduction where instrument-specific operations are performed. Since the remaining steps are common to all near-infrared MOS data, it is in principle easy to adapt \flame\ to a different instrument by simply writing the appropriate initialization module.
+
+During the initialization, relevant fields from the FITS header of the science files, such as band, central wavelength, and slit positions are read and saved. This is the only step during the data reduction where instrument-specific operations are performed. Since the remaining steps are common to all near-infrared MOS data, it is in principle easy to adapt \flame\ to a different instrument by simply writing the appropriate initialization module.
 
 
 
+
+
+% ***********************************************************************************************
+% ***********************************************************************************************
+%									4. DATA REDUCTION
+% ***********************************************************************************************
 % ***********************************************************************************************
 
 
@@ -314,6 +395,11 @@ The last step consists in the stacking (after sigma-clipping) of all the A and B
 
 
 % ***********************************************************************************************
+% ***********************************************************************************************
+%									CREDITS
+% ***********************************************************************************************
+% ***********************************************************************************************
+
 
 \vspace{10mm}
 
