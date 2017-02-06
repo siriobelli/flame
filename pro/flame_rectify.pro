@@ -60,13 +60,10 @@ END
 
 PRO flame_rectify, fuel=fuel
 
-	; extract slits
-	slits = *fuel.slits
-
 	; loop through all slits
-	for i_slit=0, n_elements(slits)-1 do begin
+	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
-		this_slit = slits[i_slit]
+		this_slit = fuel.slits[i_slit]
 
 		print, 'Rectifying slit ', this_slit.number, ' - ', this_slit.name
 

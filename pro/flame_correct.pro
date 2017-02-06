@@ -133,7 +133,7 @@ PRO flame_correct, fuel=fuel
   if fuel.util.darks_filenames[0] eq '' then begin
 
     ; copy the default bad pixel mask to the intermediate directory
-    file_copy, fuel.util.flame_data_dir + (*fuel.instrument).badpixel_mask, $
+    file_copy, fuel.util.flame_data_dir + fuel.instrument.default_badpixel_mask, $
       fuel.input.intermediate_dir + 'badpixel_mask.fits', /overwrite
 
   endif else begin
@@ -173,14 +173,14 @@ PRO flame_correct, fuel=fuel
     frame = readfits(fuel.util.science_filenames[i_frame], header)
 
     ; CORRECTION 1: non-linearity
-    frame_corr1 = poly(frame, (*fuel.instrument).linearity_correction )
+    frame_corr1 = poly(frame, fuel.instrument.linearity_correction )
 
     ; CORRECTION 2: bad pixels
     frame_corr2 = frame_corr1
     frame_corr2[where(badpix, /null)] = !values.d_nan
 
     ; CORRECTION 3: convert to electrons per second
-    frame_corr3 = frame_corr2 * (*fuel.instrument).gain
+    frame_corr3 = frame_corr2 * fuel.instrument.gain
 
     ; change the flux units in the header
     fxaddpar, header, 'BUNIT', 'electrons', ' '

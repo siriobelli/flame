@@ -801,7 +801,7 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 	readcol, fuel.util.linelist_filename, line_list
 
 	; approximate value of R needed to estimate the width of OH lines (assuming one arcsec slit width!)
-	instrument_resolution = (*fuel.instrument).resolution_slit1arcsec
+	instrument_resolution = fuel.instrument.resolution_slit1arcsec
 
 	; the degree of the polynomial used to describe the wavelength solution
 	poly_degree = 3
@@ -840,7 +840,7 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose
 	start_time = systime(/seconds)
 
 	; extract the slits structures
-	slits = *fuel.slits
+	slits = fuel.slits
 
 	; avoid printing too much stuff on the terminal
 	quiet_state = !QUIET
@@ -852,7 +852,7 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose
 	; loop through all slits
 	for i_slit=0, n_elements(slits)-1 do begin 
 
-		this_slit = (*fuel.slits)[i_slit]
+		this_slit = fuel.slits[i_slit]
 
 		print, '**********************************************************************'
 		print, 'Wavecal for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
@@ -882,7 +882,7 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose
 				slit=this_slit, OH_lines=OH_lines
 
 			; update the slit structure with the output wavelength grid of the last frame
-			(*fuel.slits)[i_slit] = this_slit
+			fuel.slits[i_slit] = this_slit
 
 		endfor
 

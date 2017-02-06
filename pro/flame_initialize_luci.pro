@@ -320,9 +320,6 @@ PRO flame_initialize_luci, fuel=fuel
   ; read the instrument settings from the header 
   instrument = flame_initialize_luci_settings(science_header)
 
-  ; save the settings to fuel
-  *fuel.instrument = instrument
-
   ; now read in the slits parameters from the FITS header
 
   ; LONGSLIT ---------------------------------------------------------------------
@@ -340,8 +337,9 @@ PRO flame_initialize_luci, fuel=fuel
 
   endelse
 
-  ; save the slits in the fuel structure
-  *fuel.slits = slits
-
+  ; save both instrument and slits in the fuel structure
+  new_fuel = { input:fuel.input, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
+  fuel=new_fuel    
+  
 
 END

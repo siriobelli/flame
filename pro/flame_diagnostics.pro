@@ -71,7 +71,7 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
 
   ; estimate width of trace in pixels: 0.8 arcsec (compromise between seeing-limited and ARGOS)
   est_seeing = 0.8  ; FWHM in arcsec
-  est_width = (est_seeing / 2.355) / (*fuel.instrument).pixel_scale   ; sigma in pixels
+  est_width = (est_seeing / 2.355) / fuel.instrument.pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
   half_range = 6.0 * est_width
@@ -175,7 +175,7 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
 
   ; estimate width of trace in pixels: 0.8 arcsec (compromise between seeing-limited and ARGOS)
   est_seeing = 0.8  ; FWHM in arcsec
-  est_width = (est_seeing / 2.355) / (*fuel.instrument).pixel_scale   ; sigma in pixels
+  est_width = (est_seeing / 2.355) / fuel.instrument.pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
   half_range = 5.0 * est_width
@@ -195,7 +195,7 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   diagnostics = { $
     frame_num: frame_num, $
     offset_pos: offset_pos, $
-    seeing: 2.355 * fit_result.width * (*fuel.instrument).pixel_scale, $
+    seeing: 2.355 * fit_result.width * fuel.instrument.pixel_scale, $
     flux: sqrt(2.0*3.14) * fit_result.width * fit_result.peak, $
     position: fit_result.center, $
     airmass: airmass}
@@ -285,7 +285,7 @@ FUNCTION flame_diagnostics_blind, fuel
 ;
 
   ; read pixel scale
-  pixel_scale = (*fuel.instrument).pixel_scale    ; arcsec/pixel
+  pixel_scale = fuel.instrument.pixel_scale    ; arcsec/pixel
   
   ; check that dither blind positions were specified
   if ~finite(fuel.util.dither_blind_positions[0]) then message, 'dither_filelist needs to be specified'
@@ -435,7 +435,7 @@ PRO flame_diagnostics, fuel=fuel
   ; 4 - add diagnostics to the fuel structure
   ;----------------------------------------
 
-  *fuel.diagnostics = diagnostics
-    
+  new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:diagnostics, slits:fuel.slits }
+  fuel=new_fuel    
     
 END

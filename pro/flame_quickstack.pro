@@ -11,7 +11,7 @@ PRO flame_quickstack, fuel=fuel
 	;*************************************
 
 	; get the diagnostics
-	diagnostics = *fuel.diagnostics
+	diagnostics = fuel.diagnostics
 
 	; select all A frames
 	w_A = where(diagnostics.offset_pos eq 'A', /null)

@@ -106,7 +106,7 @@ PRO flame_skysub, fuel=fuel
 	print, '****************'
 
 	; extract the slits structures
-	slits = *fuel.slits
+	slits = fuel.slits
 
  	; loop through all the slits
 	for i_slit=0, n_elements(slits)-1 do $

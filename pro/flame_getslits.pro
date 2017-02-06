@@ -341,7 +341,7 @@ PRO flame_getslits_writeds9, fuel=fuel
   region_filename = 'slits.reg'
 
   ; read the slits structures
-  slits = *fuel.slits
+  slits = fuel.slits
 
   ; number of horizontal pixel in one frame
   N_pix_x = (size( readfits((fuel.util.corrscience_filenames)[0]) ) )[1]
@@ -397,7 +397,7 @@ PRO flame_getslits_findedges, fuel=fuel
   if fuel.input.longslit then begin
 
     ; read the old slits structure - containing the info from the header
-    old_slits_struc = (*fuel.slits)[0]
+    old_slits_struc = fuel.slits[0]
 
     ; make new fields for slit structure
     new_slits_struc = create_struct( $
@@ -431,13 +431,13 @@ PRO flame_getslits_findedges, fuel=fuel
 
     ; compare the expected position with the measured ones and obtain rough shift
     yshift = flame_getslits_findshift( (fuel.util.corrscience_filenames)[0], $
-      (*fuel.slits).approx_top, (*fuel.slits).approx_bottom )
+      fuel.slits.approx_top, fuel.slits.approx_bottom )
  
     ; trace the edges of the slits using the sky emission lines
-    for i_slit=0, n_elements((*fuel.slits))-1 do begin
+    for i_slit=0, n_elements(fuel.slits)-1 do begin
 
     ; read the old slits structure - containing the info from the header
-    old_slits_struc = (*fuel.slits)[0]
+    old_slits_struc = fuel.slits[i_slit]
 
     ; trace slit
     flame_getslits_trace, image=im, slits=old_slits_struc, yshift=yshift, $
@@ -475,8 +475,9 @@ PRO flame_getslits_findedges, fuel=fuel
   endelse
 
   ; save the slit structures in fuel
-  *fuel.slits = slits
-
+  new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:slits }
+  fuel=new_fuel    
+    
 END
 
 
@@ -487,7 +488,7 @@ PRO flame_getslits_write_slitim, fuel=fuel
   ; make an image where the pixels belonging to a slit have the slit number as a value, otherwise zero
 
   ; read slits structures
-  slits = *fuel.slits
+  slits = fuel.slits
 
   ; read in the first science frame to get the right dimensions
   slitim = fix(0 * readfits((fuel.util.corrscience_filenames)[0], hdr))
@@ -562,7 +563,7 @@ END
 PRO flame_getslits_cutout, fuel=fuel
 
   ; extract slits structure
-  slits = *fuel.slits
+  slits = fuel.slits
 
   ; read in the slitim image
   slitim = readfits(fuel.input.intermediate_dir + fuel.util.slitim_filename)
@@ -574,8 +575,8 @@ PRO flame_getslits_cutout, fuel=fuel
     
     ; create directory
     slitdir = fuel.input.intermediate_dir + 'slit' + string(slits[i_slit].number,format='(I02)') + '/'
-    spawn,'rm -rf ' + slitdir
-    if file_test(slitdir) eq 0 then spawn, 'mkdir ' + slitdir
+    file_delete, slitdir, /allow_nonexistent, /recursive
+    file_mkdir, slitdir
 
     ; file names for the cutouts
     output_filenames = strarr(fuel.util.n_frames)
@@ -611,8 +612,10 @@ PRO flame_getslits, fuel=fuel
   flame_getslits_write_slitim, fuel=fuel
 
   ; if we are reducing only one slit, then delete all the others 
-  if fuel.input.reduce_only_oneslit ne 0 then $
-    *fuel.slits = (*fuel.slits)[fuel.input.reduce_only_oneslit-1]
+  if fuel.input.reduce_only_oneslit ne 0 then begin
+    new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:fuel.slits[fuel.input.reduce_only_oneslit-1] }
+    fuel=new_fuel    
+  endif
 
   ; cutout slits 
   flame_getslits_cutout, fuel=fuel

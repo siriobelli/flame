@@ -9,8 +9,8 @@ FUNCTION flame_create_fuel, input
   if ~file_test(data_dir, /directory) then message, 'data directory not found. Check the flame directory structure.'
 
   ; check and setup directory structure
-  if file_test(input.intermediate_dir) eq 0 then spawn, 'mkdir ' + input.intermediate_dir
-  if file_test(input.output_dir) eq 0 then spawn, 'mkdir ' + input.output_dir
+  if file_test(input.intermediate_dir) eq 0 then file_mkdir, input.intermediate_dir
+  if file_test(input.output_dir) eq 0 then file_mkdir, input.output_dir
 
   ; check that the science file exists
   if ~file_test(input.science_filelist) then message, 'file ' + input.science_filelist + ' not found'
@@ -70,9 +70,9 @@ FUNCTION flame_create_fuel, input
   fuel = { $
     input: input, $
     util: util, $
-    instrument: ptr_new(/allocate_heap), $
-    diagnostics : ptr_new(/allocate_heap), $
-    slits : ptr_new(/allocate_heap) $
+    instrument: ptr_new(), $
+    diagnostics : ptr_new(), $
+    slits : ptr_new() $
     }
       
 return, fuel

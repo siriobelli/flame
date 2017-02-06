@@ -76,7 +76,7 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	filenames = *slit.filenames
 
 	; identify the A and B and X positions
-	diagnostics = *fuel.diagnostics
+	diagnostics = fuel.diagnostics
 
 	; select all A frames
 	w_A = where(diagnostics.offset_pos eq 'A', /null)
@@ -227,13 +227,10 @@ PRO flame_combine, fuel=fuel
 	print, 'Combine frames'
 	print, '****************'
 
-	; extract the slits 
-	slits = *fuel.slits
-
  	; loop through all slits
-	for i_slit=0, n_elements(slits)-1 do begin
+	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
-		this_slit = slits[i_slit]
+		this_slit = fuel.slits[i_slit]
 		print, 'Combining slit ', this_slit.number, ' - ', this_slit.name
 
 		flame_combine_oneslit, slit=this_slit, fuel=fuel

@@ -63,7 +63,7 @@
   ; check that everything is good
   help, fuel.input
   help, fuel.util
-  help, *fuel.instrument
+  help, fuel.instrument
 
 
 
