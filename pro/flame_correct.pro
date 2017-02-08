@@ -129,31 +129,49 @@ PRO flame_correct, fuel=fuel
 
   ; bad pixel mask - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-  ; decide whether we are going to make a bad pixel mask 
+  ; are we going to use the default bad pixel mask?
   if fuel.util.darks_filenames[0] eq '' then begin
 
-    ; copy the default bad pixel mask to the intermediate directory
-    file_copy, fuel.util.flame_data_dir + fuel.instrument.default_badpixel_mask, $
-      fuel.input.intermediate_dir + 'badpixel_mask.fits', /overwrite
+    ; is there a default file?
+    if fuel.instrument.default_badpixel_mask ne 'none' then begin
 
+      ; copy the default bad pixel mask to the intermediate directory
+      file_copy, fuel.util.flame_data_dir + fuel.instrument.default_badpixel_mask, $
+        fuel.input.intermediate_dir + 'badpixel_mask.fits', /overwrite
+
+      ; read in the bad pixel mask
+      badpix = readfits(fuel.input.intermediate_dir + 'badpixel_mask.fits')
+
+    endif else begin
+
+      print, 'no bad pixel mask'
+
+      badpix = !NULL
+
+    endelse
+
+  ; otherwise, use the data provided by the user
   endif else begin
 
     ; make bad pixel mask 
     flame_correct_makemask, fuel=fuel
+    
+    ; read in the bad pixel mask
+    badpix = readfits(fuel.input.intermediate_dir + 'badpixel_mask.fits')
+
 
   endelse
 
-  ; read in the bad pixel mask
-  badpix = readfits(fuel.input.intermediate_dir + 'badpixel_mask.fits')
 
 
   ; master flat field - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-  ; decide whether we are going to make a master flat field 
+  ; are we going to use the default flat field?
   if fuel.util.flats_filenames[0] eq '' then begin
 
     print, 'no flat field'
 
+  ; otherwise, use the data provided by the user
   endif else begin 
 
     ; make master flat field
@@ -177,7 +195,8 @@ PRO flame_correct, fuel=fuel
 
     ; CORRECTION 2: bad pixels
     frame_corr2 = frame_corr1
-    frame_corr2[where(badpix, /null)] = !values.d_nan
+    if badpix NE !NULL then $
+      frame_corr2[where(badpix, /null)] = !values.d_nan
 
     ; CORRECTION 3: convert to electrons per second
     frame_corr3 = frame_corr2 * fuel.instrument.gain
