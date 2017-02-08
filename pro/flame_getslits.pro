@@ -37,6 +37,7 @@ FUNCTION flame_getslits_trace_skyedge, image, approx_edge, top=top, bottom=botto
 
   ; how big, in the y direction, is the cutout?
   cutout_size = 44      ; even number please
+  cutout_size = 64      ; changed for LRIS (larger curvature)
 
   ; let's extract a cutout centered on the edge
   cutout_bottom_ycoord = approx_edge-cutout_size/2
@@ -429,48 +430,50 @@ PRO flame_getslits_findedges, fuel=fuel
  ; MOS      ---------------------------------------------------------------------
   endif else begin
 
-    ; compare the expected position with the measured ones and obtain rough shift
-    yshift = flame_getslits_findshift( (fuel.util.corrscience_filenames)[0], $
-      fuel.slits.approx_top, fuel.slits.approx_bottom )
+    ; if the approximate slit positions have been inserted by hand, then skip the zero-th order shift
+    if fuel.input.slit_position_file eq 'none' then yshift = 0.0 else $
+      ; compare the expected position with the measured ones and obtain rough shift
+      yshift = flame_getslits_findshift( (fuel.util.corrscience_filenames)[0], $
+        fuel.slits.approx_top, fuel.slits.approx_bottom )
  
-    ; trace the edges of the slits using the sky emission lines
+    ; trace the edges of the slits using the sky emission lines or sky continuum
     for i_slit=0, n_elements(fuel.slits)-1 do begin
 
-    ; read the old slits structure - containing the info from the header
-    old_slits_struc = fuel.slits[i_slit]
+      ; read the old slits structure - containing the info from the header
+      old_slits_struc = fuel.slits[i_slit]
 
-    ; trace slit
-    flame_getslits_trace, image=im, slits=old_slits_struc, yshift=yshift, $
-          poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
+      ; trace slit
+      flame_getslits_trace, image=im, slits=old_slits_struc, yshift=yshift, $
+            poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
 
-      ; add new fields to slit structure
-      new_slits_struc = create_struct( $
-        'yshift', yshift, $
-        'height', slit_height, $
-        'bottom_poly', poly_coeff, $
-        'filenames', ptr_new(/allocate_heap), $
-        'rectification', ptr_new(/allocate_heap), $
-        'outlambda_min', 0d, $
-        'outlambda_delta', 0d, $
-        'outlambda_Npix', 0L )
+        ; add new fields to slit structure
+        new_slits_struc = create_struct( $
+          'yshift', yshift, $
+          'height', slit_height, $
+          'bottom_poly', poly_coeff, $
+          'filenames', ptr_new(/allocate_heap), $
+          'rectification', ptr_new(/allocate_heap), $
+          'outlambda_min', 0d, $
+          'outlambda_delta', 0d, $
+          'outlambda_Npix', 0L )
 
-    ; merge old and new slits structures
+      ; merge old and new slits structures
 
-    ; check if new fields are already present in the slits structure
-    if tag_exist(old_slits_struc, 'yshift') then begin
-      
-      ; in that case, assign new values
-      struct_assign, new_slits_struc, old_slits_struc, /nozero 
-      this_slit = old_slits_struc
+      ; check if new fields are already present in the slits structure
+      if tag_exist(old_slits_struc, 'yshift') then begin
+        
+        ; in that case, assign new values
+        struct_assign, new_slits_struc, old_slits_struc, /nozero 
+        this_slit = old_slits_struc
 
-    ; otherwise, append new fields
-    endif else $
-      this_slit = create_struct( old_slits_struc, new_slits_struc )
+      ; otherwise, append new fields
+      endif else $
+        this_slit = create_struct( old_slits_struc, new_slits_struc )
 
-    ; add to array with the other slits
-    slits = [slits, this_slit]
+      ; add to array with the other slits
+      slits = [slits, this_slit]
 
-      endfor
+    endfor
 
   endelse
 

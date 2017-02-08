@@ -90,53 +90,7 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
 ; bottom pixel position, top pixel position, target pixel position, 
 ; and wavelength at the center of the slit. It returns the slits structure.
 ;
-
-  ; ; only tweakable settings: maximum width in arcsec allowed for science slits. 
-  ; ; slits wider than this value are considered alignment boxes
-  ; maxwidth_arcsec = 2.0
-
-  ; ; array of structures that will contain the info for each slit
-  ; slit_hdr = []
-
-  ; i_slit=1
-  ; while fxpar( header, 'TGT' + string(i_slit, format='(I02)')  + 'NAM', missing='NONE' ) NE 'NONE' do begin
-
-  ;   slitnum = string(i_slit, format='(I02)')
-
-  ;   this_slit_hdr = {number : i_slit, $
-  ;   name : strtrim( fxpar( header, 'TGT' + slitnum + 'NAM' ), 2), $
-  ;   shape : fxpar( header, 'MOS' + slitnum + 'SHA'), $
-  ;   width_arcsec : float(fxpar( header, 'MOS' + slitnum + 'WAS')), $
-  ;   length_arcsec : float(fxpar( header, 'MOS' + slitnum + 'LAS')), $
-  ;   angle : float(fxpar( header, 'MOS' + slitnum + 'PA')), $
-  ;   width_mm : float(fxpar(header, 'MOS' + slitnum + 'WMM')), $
-  ;   length_mm : float(fxpar(header, 'MOS' + slitnum + 'LMM')), $
-  ;   x_mm : float(fxpar(header, 'MOS' + slitnum + 'XPO')), $
-  ;   y_mm : float(fxpar(header, 'MOS' + slitnum + 'YPO')) }
-
-  ;   slit_hdr = [ slit_hdr, this_slit_hdr ]
-
-  ;   i_slit++
-
-  ; endwhile
-
-  ; ; exclude reference slits
-  ; slit_hdr = slit_hdr( where( strtrim(slit_hdr.name,2) ne 'refslit', /null) )
-
-  ; ; exclude alignment boxes
-  ; slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LT maxwidth_arcsec, /null) ]
-
-  ; ; calculate the conversion between arcsec and mm
-  ; mmtoarcsec = median(slit_hdr.length_arcsec/slit_hdr.length_mm)
   
-
-  ; ; output interesting values
-  ; slit_num = slit_hdr.number
-  ; slit_name = slit_hdr.name
-  ; slit_PA = slit_hdr.angle
-  ; bottom = y_pixels - 0.5*slitheight_pixels
-  ; top = y_pixels + 0.5*slitheight_pixels
-  ; target = y_pixels
 
 
   ; create array of slit structures
@@ -148,7 +102,7 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
   ;   lambda_range = flame_initialize_luci_waverange(instrument, slit_hdr[i_slit].x_mm)
 
     this_slit = { $
-      number:i_slit, $
+      number:0, $
       name:'', $
       PA:!values.d_NaN, $
       approx_bottom:slit_y[i_slit-1], $
@@ -170,9 +124,11 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
   ; assume the Nboxes smaller slits are the alignment boxes
   box_height = slit_height[s[Nboxes-1]]
 
-  ; remove alignment boxes 
+  ; remove alignment boxes   
   slits = slits[where(slit_height GT box_height, /null)]
 
+  ; now fill in the slit numbers
+  slits.number = indgen(n_elements(slits)) + 1
 
 return, slits
 
@@ -185,10 +141,9 @@ END
 
 
 
-PRO flame_initialize_lris, fuel=fuel, slit_y=slit_y, Nboxes=Nboxes
+PRO flame_initialize_lris, fuel=fuel, Nboxes=Nboxes
   ;
   ; LRIS-specific routine that initializes the fuel.instrument structure
-  ; slit_y is the input list of approximate y-pixel coordinates of the slit edges
   ; Nboxes is the input number of alignment boxes in the slitmask (they will be discarded)
   ;
 
@@ -197,6 +152,11 @@ PRO flame_initialize_lris, fuel=fuel, slit_y=slit_y, Nboxes=Nboxes
 
   ; read the instrument settings from the header 
   instrument = flame_initialize_lris_settings(science_header)
+
+  ; read the approximate slit positions inserted manually
+  if ~file_test(fuel.input.slit_position_file) then $
+    message, 'input.slit_position_file is required for LRIS data'
+  readcol, fuel.input.slit_position_file, slit_x, slit_y
 
   ; now read in the slits parameters from the FITS header
 

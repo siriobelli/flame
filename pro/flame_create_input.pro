@@ -11,6 +11,7 @@ FUNCTION flame_create_input
     darks_filelist: 'none', $
     flats_filelist: 'none', $
     dither_filelist: 'none', $
+    slit_position_file: 'none', $
     intermediate_dir : 'intermediate/', $
     output_dir: 'output/', $
     startrace_y_pos: [0, 0], $
