@@ -83,31 +83,32 @@ END
 
 
 
-FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit_y, Nboxes=Nboxes
-
+FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit_y
+;
 ; For LRIS, need to start with the list of y-pixel coordinate of the approximate slit edges (slit_y).
 ; Then for each slit finds the slit number,
 ; bottom pixel position, top pixel position, target pixel position, 
 ; and wavelength at the center of the slit. It returns the slits structure.
 ;
   
-
+  ; sort slit_y 
+  slit_y = slit_y[ sort(slit_y) ]
 
   ; create array of slit structures
   slits = []
   ; trace the edges of the slits using the sky emission lines
-  for i_slit=1, n_elements(slit_y)-1 do begin
+  for i_slit=0, n_elements(slit_y)/2-1 do begin
 
   ;   ; calculate approximate wavelength range
   ;   lambda_range = flame_initialize_luci_waverange(instrument, slit_hdr[i_slit].x_mm)
 
     this_slit = { $
-      number:0, $
+      number:i_slit+1, $
       name:'', $
       PA:!values.d_NaN, $
-      approx_bottom:slit_y[i_slit-1], $
-      approx_top:slit_y[i_slit], $
-      approx_target: 0.5 * (slit_y[i_slit-1] + slit_y[i_slit]), $
+      approx_bottom:slit_y[2*i_slit], $
+      approx_top:slit_y[2*i_slit+1], $
+      approx_target: 0.5 * (slit_y[2*i_slit] + slit_y[2*i_slit+1]), $
       approx_wavelength_lo:!values.d_NaN, $
       approx_wavelength_hi:!values.d_NaN }
 
@@ -115,20 +116,20 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
 
   endfor
 
-  ; calculate the height of each slit
-  slit_height = slits.approx_top - slits.approx_bottom
+  ; ; calculate the height of each slit
+  ; slit_height = slits.approx_top - slits.approx_bottom
 
-  ; rank them, starting from the smallest one
-  s = sort(slit_height)
+  ; ; rank them, starting from the smallest one
+  ; s = sort(slit_height)
 
-  ; assume the Nboxes smaller slits are the alignment boxes
-  box_height = slit_height[s[Nboxes-1]]
+  ; ; assume the Nboxes smaller slits are the alignment boxes
+  ; box_height = slit_height[s[Nboxes-1]]
 
-  ; remove alignment boxes   
-  slits = slits[where(slit_height GT box_height, /null)]
+  ; ; remove alignment boxes   
+  ; slits = slits[where(slit_height GT box_height, /null)]
 
-  ; now fill in the slit numbers
-  slits.number = indgen(n_elements(slits)) + 1
+  ; ; now fill in the slit numbers
+  ; slits.number = indgen(n_elements(slits)) + 1
 
 return, slits
 
@@ -141,10 +142,9 @@ END
 
 
 
-PRO flame_initialize_lris, fuel=fuel, Nboxes=Nboxes
+PRO flame_initialize_lris, fuel=fuel
   ;
   ; LRIS-specific routine that initializes the fuel.instrument structure
-  ; Nboxes is the input number of alignment boxes in the slitmask (they will be discarded)
   ;
 
   ; read FITS header of first science frame
@@ -173,7 +173,7 @@ PRO flame_initialize_lris, fuel=fuel, Nboxes=Nboxes
   endif else begin
 
     ; get all the info from the header
-    slits = flame_initialize_lris_slits( science_header, instrument=instrument, slit_y=slit_y, Nboxes=Nboxes )
+    slits = flame_initialize_lris_slits( science_header, instrument=instrument, slit_y=slit_y )
 
   endelse
 

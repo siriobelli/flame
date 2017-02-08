@@ -25,38 +25,45 @@ END
 ; ****************************************************************************************
 
 
-FUNCTION flame_getslits_trace_skyedge, image, approx_edge, top=top, bottom=bottom
+FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bottom
 
   ; check keywords
   if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
   if keyword_set(top) AND keyword_set(bottom) then message, 'Please select either /top or /bottom'
 
+  ; first, mask out bright sources and sky lines
+  image = image_in
+  image[where(image GT median(image) + 0.5*stddev(image, /nan), /null)] = !values.d_nan
+
+  mwrfits, image, 'test.fits', /create
+
+  ; from now on, the code assumes that we are interested in finding the top edge of a slit
+  ; if instead we want the bottom edge, simply take the negative of the image
+  if keyword_set(bottom) then image *= -1.0
+ 
   ; read in the x-size of the image
   sz = size(image)
   N_pixel_x = sz[1]
 
   ; how big, in the y direction, is the cutout?
-  cutout_size = 44      ; even number please
-  cutout_size = 64      ; changed for LRIS (larger curvature)
-
-  ; let's extract a cutout centered on the edge
-  cutout_bottom_ycoord = approx_edge-cutout_size/2
-  cutout = image[ * , cutout_bottom_ycoord : cutout_bottom_ycoord + cutout_size - 1 ]
-  
-  ; from now on, the code assumes that we are interested in finding the top edge of a slit
-  ; if instead we want the bottom edge, simply flip vertically the cutout 
-  if keyword_set(bottom) then cutout = reverse(cutout, 2)
+  cutout_size = 14      ; even number please
  
   ; for each bin along the spectral direction, detect the edge using the sky background
-  binsize = 29
-  starting_pixel=0
+  binsize = 100
+  starting_pixel = N_pixel_x/2
   x_edge = []
   y_edge = []
+
+  ; starting guess for the ycoord
+  previous_ycoord = approx_edge
+
+  ; starting from the center (because we assume that's where the approximate values refer to)
+  ; first do the right half
   while starting_pixel LT N_pixel_x do begin 
 
     ; extract the bin
     end_pixel = min([starting_pixel + binsize - 1, N_pixel_x-1])
-    cutout_bin = cutout[starting_pixel : end_pixel, *]
+    cutout_bin = image[starting_pixel : end_pixel, previous_ycoord - cutout_size/2: previous_ycoord + cutout_size/2]
 
     ; spatial profile
     profile = median(cutout_bin, dimension=1)
@@ -67,27 +74,61 @@ FUNCTION flame_getslits_trace_skyedge, image, approx_edge, top=top, bottom=botto
     derivative[-1] = 0
     peak = max(derivative, peak_location)
 
+    ; add the amount of pixels left out by the cutout
+    peak_location += previous_ycoord - cutout_size/2
+
     ; save x and y coordinate of the detection
     x_edge = [ x_edge, 0.5*(starting_pixel + end_pixel) ]
     y_edge = [ y_edge, peak_location ]
 
-    ; advance to next bin
+    ; save the y coordinate for the next bin 
+    previous_ycoord = peak_location
+
+    ; advance to next bin (to the right)
     starting_pixel += binsize
+
+  endwhile
+
+  ; and then, starting from the center, to the left
+  starting_pixel = N_pixel_x/2
+  previous_ycoord = approx_edge
+
+  while starting_pixel GT 0 do begin 
+
+    ; extract the bin
+    end_pixel = min([starting_pixel + binsize - 1, N_pixel_x-1])
+    cutout_bin = image[starting_pixel : end_pixel, previous_ycoord - cutout_size/2: previous_ycoord + cutout_size/2]
+
+    ; spatial profile
+    profile = median(cutout_bin, dimension=1)
+
+    ; detect the edge 
+    derivative = abs(profile - shift(profile,1))
+    derivative[0] = 0
+    derivative[-1] = 0
+    peak = max(derivative, peak_location)
+
+    ; add the amount of pixels left out by the cutout
+    peak_location += previous_ycoord - cutout_size/2
+
+    ; save x and y coordinate of the detection
+    x_edge = [ x_edge, 0.5*(starting_pixel + end_pixel) ]
+    y_edge = [ y_edge, peak_location ]
+
+    ; save the y coordinate for the next bin 
+    previous_ycoord = peak_location
+
+    ; advance to next bin (to the right)
+    starting_pixel -= binsize
 
   endwhile
 
   ; fill in the missing pixels with NaNs
   y_edge_full = fltarr(N_pixel_x) + !values.d_nan
   y_edge_full[x_edge] = y_edge
-
-  ; transform into real y coordinates (not just within the cutout anymore)
-  if keyword_set(bottom) then $
-    real_y_edge = cutout_bottom_ycoord + cutout_size - float(y_edge_full) $
-  else $
-    real_y_edge = cutout_bottom_ycoord + float(y_edge_full)
   
   ; return array with the y-coordinates of the edges
-  return, real_y_edge
+  return, y_edge_full
 
 
 END
@@ -431,7 +472,7 @@ PRO flame_getslits_findedges, fuel=fuel
   endif else begin
 
     ; if the approximate slit positions have been inserted by hand, then skip the zero-th order shift
-    if fuel.input.slit_position_file eq 'none' then yshift = 0.0 else $
+    if fuel.input.slit_position_file ne 'none' then yshift = 0.0 else $
       ; compare the expected position with the measured ones and obtain rough shift
       yshift = flame_getslits_findshift( (fuel.util.corrscience_filenames)[0], $
         fuel.slits.approx_top, fuel.slits.approx_bottom )
