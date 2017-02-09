@@ -10,7 +10,7 @@ FUNCTION flame_getslits_trace_smear, array, filter_length, up=up, down=down
     kernel = [ replicate(0, filter_length-1), replicate(1, filter_length) ] $
   else $
     kernel = [ replicate(1, filter_length), replicate(0, filter_length-1) ]
-  
+
   ; make it vertical
   kernel = transpose(kernel)
 
@@ -40,14 +40,14 @@ FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bo
   ; from now on, the code assumes that we are interested in finding the top edge of a slit
   ; if instead we want the bottom edge, simply take the negative of the image
   if keyword_set(bottom) then image *= -1.0
- 
+
   ; read in the x-size of the image
   sz = size(image)
   N_pixel_x = sz[1]
 
   ; how big, in the y direction, is the cutout?
   cutout_size = 14      ; even number please
- 
+
   ; for each bin along the spectral direction, detect the edge using the sky background
   binsize = 100
   starting_pixel = N_pixel_x/2
@@ -59,7 +59,7 @@ FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bo
 
   ; starting from the center (because we assume that's where the approximate values refer to)
   ; first do the right half
-  while starting_pixel LT N_pixel_x do begin 
+  while starting_pixel LT N_pixel_x do begin
 
     ; extract the bin
     end_pixel = min([starting_pixel + binsize - 1, N_pixel_x-1])
@@ -68,7 +68,7 @@ FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bo
     ; spatial profile
     profile = median(cutout_bin, dimension=1)
 
-    ; detect the edge 
+    ; detect the edge
     derivative = abs(profile - shift(profile,1))
     derivative[0] = 0
     derivative[-1] = 0
@@ -81,7 +81,7 @@ FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bo
     x_edge = [ x_edge, 0.5*(starting_pixel + end_pixel) ]
     y_edge = [ y_edge, peak_location ]
 
-    ; save the y coordinate for the next bin 
+    ; save the y coordinate for the next bin
     previous_ycoord = peak_location
 
     ; advance to next bin (to the right)
@@ -93,7 +93,7 @@ FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bo
   starting_pixel = N_pixel_x/2
   previous_ycoord = approx_edge
 
-  while starting_pixel GT 0 do begin 
+  while starting_pixel GT 0 do begin
 
     ; extract the bin
     end_pixel = min([starting_pixel + binsize - 1, N_pixel_x-1])
@@ -102,7 +102,7 @@ FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bo
     ; spatial profile
     profile = median(cutout_bin, dimension=1)
 
-    ; detect the edge 
+    ; detect the edge
     derivative = abs(profile - shift(profile,1))
     derivative[0] = 0
     derivative[-1] = 0
@@ -115,7 +115,7 @@ FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bo
     x_edge = [ x_edge, 0.5*(starting_pixel + end_pixel) ]
     y_edge = [ y_edge, peak_location ]
 
-    ; save the y coordinate for the next bin 
+    ; save the y coordinate for the next bin
     previous_ycoord = peak_location
 
     ; advance to next bin (to the right)
@@ -126,7 +126,7 @@ FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bo
   ; fill in the missing pixels with NaNs
   y_edge_full = fltarr(N_pixel_x) + !values.d_nan
   y_edge_full[x_edge] = y_edge
-  
+
   ; return array with the y-coordinates of the edges
   return, y_edge_full
 
@@ -146,8 +146,8 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   ; The output is a 1D array with the y-coordinate of the edge at each x position.
   ; Pixels with no detected edges are set to NaN
   ; If the slit is tilted, slit_angle must be specified
-  ; 
-  
+  ;
+
   ; NEED TO FIGURE OUT WHY THIS IS!!!!!
   mysterious_constant = 1.5
 
@@ -170,7 +170,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   cutout = image[ * , cutout_bottom_ycoord : cutout_bottom_ycoord + cutout_size - 1 ]
 
   ; from now on, the code assumes that we are interested in finding the top edge of a slit
-  ; if instead we want the bottom edge, simply flip vertically the cutout 
+  ; if instead we want the bottom edge, simply flip vertically the cutout
   if keyword_set(bottom) then cutout = reverse(cutout, 2)
   if keyword_set(bottom) then slit_angle *= -1.0
 
@@ -196,7 +196,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   w_OH = where(sky_spectrum GT level_betweenlines + 3.0*sigma_betweenlines, /null)
   if w_OH eq !NULL then w_OH = -1 ; it won't be used anyway
 
-  ; for each pixel column, take the ratio of each pixel to the fiducial sky value in the slit 
+  ; for each pixel column, take the ratio of each pixel to the fiducial sky value in the slit
   sky_spectrum_2d = sky_spectrum # replicate(1, cutout_size)
   flux_ratio = cutout / sky_spectrum_2d
   flux_ratio[where(sky_spectrum_2d eq 0.0, /null)] = 1.0
@@ -211,8 +211,8 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   binary_mask = flux_ratio_sm
   binary_mask[ where(binary_mask GT 0.0, /null) ] = 1.0
 
-  ; FIND EDGES 
-  ; here is my definition of an edge: you need at least X consecutive "bright" pixels just below the edge, 
+  ; FIND EDGES
+  ; here is my definition of an edge: you need at least X consecutive "bright" pixels just below the edge,
   ; and at least X consecutive "dark" pixels above the edge.
   ; set X:
   filter_length = 5
@@ -221,7 +221,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   ; easy way to do this is to "smear" the binary mask vertically
   binary_mask_smeared_up = flame_getslits_trace_smear( binary_mask, filter_length, /up)
 
-  ; if the sum is less than 1+1+1+... X times, then there was a zero 
+  ; if the sum is less than 1+1+1+... X times, then there was a zero
   condition_A = binary_mask_smeared_up*0.0
   condition_A[where(binary_mask_smeared_up eq 5.0, /null)] = 1.0
 
@@ -249,7 +249,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   ; make axis of y coordinates for the edges
   y_edge = fltarr(N_pixel_x)
 
-  ; at each x coordinate, see if there are edge candidates and if more than one, 
+  ; at each x coordinate, see if there are edge candidates and if more than one,
   ; take the one with the lowest y coordinate (i.e. the one more toward the slit)
   for i_x=0L,N_pixel_x-1 do begin
     w = where( candidate_edge_x eq i_x, /null )
@@ -280,7 +280,7 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
 
     ; set all the non-good edge measurements to NaNs
     y_edge[ cgsetdifference( indgen(N_pixel_x), w_ok ) ] = !values.d_NaN
-  
+
   endelse
 
   ; transform into real y coordinates (not just within the cutout anymore)
@@ -288,11 +288,11 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
     real_y_edge = cutout_bottom_ycoord + cutout_size - float(y_edge) $
   else $
     real_y_edge = cutout_bottom_ycoord + float(y_edge)
-  
+
   ; return array with the y-coordinates of the edges
   return, real_y_edge
 
-END 
+END
 
 
 ; ****************************************************************************************
@@ -301,7 +301,7 @@ END
 PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, $
   poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
 ;
-; traces the top and bottom edges of a slit in the image and return the slit height and the 
+; traces the top and bottom edges of a slit in the image and return the slit height and the
 ; coefficients of a polynomial fit describing the *bottom* edge
 ;
 
@@ -310,7 +310,7 @@ PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, $
   expected_bottom = slits.approx_bottom - yshift
 
   if keyword_set(use_sky_edge) then begin
-    ; identify top and bottom edge using sky background  
+    ; identify top and bottom edge using sky background
     top_edge = flame_getslits_trace_skyedge(image, expected_top, /top )
     bottom_edge = flame_getslits_trace_skyedge(image, expected_bottom, /bottom )
   endif else begin
@@ -344,30 +344,30 @@ FUNCTION flame_getslits_findshift, frame, top, bottom
 
   ; read one FITS file
   spec2d = readfits(frame)
-  
+
   ; integrate the 2D spectrum along the wavelength direction, and smooth
   x = median(total(spec2d, 1, /nan), 15)
-  
+
   ; find the edges of the slits (1d profile where positive peaks mark the beginning and negative peaks mark the end of the slit)
   edges = x - shift(x, 4)
   edges[ where( abs(edges) LT stddev(edges, /nan), /null ) ] = 0
   edges[ where(edges GT 0.0, /null) ] =  1.0
   edges[ where(edges LT 0.0, /null) ] = -1.0
-  
+
   ; these are the expected edges
   expected_edges = dblarr( n_elements(edges) )
   expected_edges[top] = -1.
   expected_edges[bottom] = 1.
-  
+
   ; cross-correlate to find the shift between expected and measured slit edges
   lag = indgen(400)-200
   crosscorr = c_correlate(edges, expected_edges, lag)
   max_crosscorr = max( crosscorr, max_ind, /nan)
   delta = lag[max_ind]
-  
+
   ; return the shift
   return, delta
-  
+
 END
 
 
@@ -393,17 +393,17 @@ PRO flame_getslits_writeds9, fuel=fuel
 
   ; write header
   printf, lun, '# Region file format: DS9 version 4.1'
-  printf, lun, 'global color=green dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
+  printf, lun, 'global dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
   printf, lun, 'image'
 
   for i_slit=0, n_elements(slits)-1 do begin
 
-    ; generate points from the polynomial fit 
+    ; generate points from the polynomial fit
     top_x = 8*indgen(N_pix_x/8) ; one point every 8 pixels
     top_y = poly(top_x, slits[i_slit].bottom_poly) + slits[i_slit].height
     bottom_x = top_x
     bottom_y = poly(bottom_x, slits[i_slit].bottom_poly)
-    
+
     ; concatenate top and bottom points
     all_x = [top_x, reverse(bottom_x)]
     all_y = [top_y, reverse(bottom_y)]
@@ -414,8 +414,11 @@ PRO flame_getslits_writeds9, fuel=fuel
     ; add the last two points without the final comma
     all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
 
+    ; alternate colors for clarity
+    color_string = (['green', 'red'])[i_slit mod 2]
+
     ; write the line corresponding to this slit
-    printf, lun, 'polygon(' + all_points + ') # text={SLIT ' + strtrim(slits[i_slit].number,2) + ' - ' + slits[i_slit].name + '}'
+    printf, lun, 'polygon(' + all_points + ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + ' - ' + slits[i_slit].name + '}'
 
   endfor
 
@@ -426,12 +429,12 @@ END
 
 
 ;******************************************************************
-      
+
 PRO flame_getslits_findedges, fuel=fuel
 
   ; read in the frame
   im=readfits((fuel.util.corrscience_filenames)[0], hdr)
-  
+
   ; create array of new slit structures
   slits = []
 
@@ -456,9 +459,9 @@ PRO flame_getslits_findedges, fuel=fuel
 
     ; check if new fields are already present in the slits structure
     if tag_exist(old_slits_struc, 'yshift') then begin
-      
+
       ; in that case, assign new values
-      struct_assign, new_slits_struc, old_slits_struc, /nozero 
+      struct_assign, new_slits_struc, old_slits_struc, /nozero
       this_slit = old_slits_struc
 
     ; otherwise, append new fields
@@ -476,7 +479,7 @@ PRO flame_getslits_findedges, fuel=fuel
       ; compare the expected position with the measured ones and obtain rough shift
       yshift = flame_getslits_findshift( (fuel.util.corrscience_filenames)[0], $
         fuel.slits.approx_top, fuel.slits.approx_bottom )
- 
+
     ; trace the edges of the slits using the sky emission lines or sky continuum
     for i_slit=0, n_elements(fuel.slits)-1 do begin
 
@@ -502,9 +505,9 @@ PRO flame_getslits_findedges, fuel=fuel
 
       ; check if new fields are already present in the slits structure
       if tag_exist(old_slits_struc, 'yshift') then begin
-        
+
         ; in that case, assign new values
-        struct_assign, new_slits_struc, old_slits_struc, /nozero 
+        struct_assign, new_slits_struc, old_slits_struc, /nozero
         this_slit = old_slits_struc
 
       ; otherwise, append new fields
@@ -520,8 +523,8 @@ PRO flame_getslits_findedges, fuel=fuel
 
   ; save the slit structures in fuel
   new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:slits }
-  fuel=new_fuel    
-    
+  fuel=new_fuel
+
 END
 
 
@@ -552,13 +555,13 @@ PRO flame_getslits_write_slitim, fuel=fuel
 
     w_slit = where( pixel_y LT top_y AND pixel_y GT bottom_y, /null)
     slitim[w_slit] = slits[i_slit].number
-   
-  endfor
-  
-  writefits, fuel.input.intermediate_dir + fuel.util.slitim_filename, slitim
-  
 
-END 
+  endfor
+
+  writefits, fuel.input.intermediate_dir + fuel.util.slitim_filename, slitim
+
+
+END
 
 
 ;******************************************************************
@@ -568,19 +571,19 @@ PRO flame_getslits_cutout_extract, slitim, slit_structure, science_filenames, ou
   ; loop through science frames
   for i_frame=0, n_elements(science_filenames)-1 do begin
 
-    ; read in science frame 
+    ; read in science frame
     im = readfits(science_filenames[i_frame], header)
 
     ; select pixels belonging to this slit
     w_slit = where(slitim eq slit_structure.number, /null)
     if w_slit eq !NULL then message, slit_structure.name + ': slit not found in slitim!'
 
-    ; create a mask that selects only pixels belonging to the slit 
+    ; create a mask that selects only pixels belonging to the slit
     slit_mask = im
     slit_mask[*] = !values.d_nan
     slit_mask[w_slit] = 1.0
 
-    ; create a new frame where everything outside the slit is a Nan 
+    ; create a new frame where everything outside the slit is a Nan
     im_masked = im * slit_mask
 
     ; convert indices to 2D
@@ -614,9 +617,9 @@ PRO flame_getslits_cutout, fuel=fuel
 
   print,'Slits: ', n_elements(slits)
   for i_slit=0, n_elements(slits)-1 do begin
-  
+
     print,'Working on slit ', slits[i_slit].name, ' - ', slits[i_slit].number
-    
+
     ; create directory
     slitdir = fuel.input.intermediate_dir + 'slit' + string(slits[i_slit].number,format='(I02)') + '/'
     file_delete, slitdir, /allow_nonexistent, /recursive
@@ -639,11 +642,11 @@ PRO flame_getslits_cutout, fuel=fuel
   endfor
 
 END
-  
+
 
 ;******************************************************************
 
-     
+
 PRO flame_getslits, fuel=fuel
 
   ; identify all slits from the data, and write the fuel.slits structures
@@ -655,13 +658,13 @@ PRO flame_getslits, fuel=fuel
   ; write slitim (FITS file with slit image)
   flame_getslits_write_slitim, fuel=fuel
 
-  ; if we are reducing only one slit, then delete all the others 
+  ; if we are reducing only one slit, then delete all the others
   if fuel.input.reduce_only_oneslit ne 0 then begin
     new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:fuel.slits[fuel.input.reduce_only_oneslit-1] }
-    fuel=new_fuel    
+    fuel=new_fuel
   endif
 
-  ; cutout slits 
+  ; cutout slits
   flame_getslits_cutout, fuel=fuel
 
 END

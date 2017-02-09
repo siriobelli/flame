@@ -15,7 +15,7 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 ; optionally, outputs an image with the number of masked pixels
 ;
 
-	; number of frames 
+	; number of frames
 	N_frames = n_elements(filenames)
 
 	; read first frame
@@ -24,7 +24,7 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 	; make big cube containing all frames
 	im_cube = dblarr( N_frames, (size(im_0))[1], (size(im_0))[2] )
 
-	; read all frames 
+	; read all frames
 	for i_frame=0,N_frames-1 do im_cube[i_frame,*,*] = readfits(filenames[i_frame])
 
 	; calculate median at each pixel of the image
@@ -44,7 +44,7 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 	for i_frame=0,N_frames-1 do sigma_cube[i_frame, *, *] = sigma_im
 
 	; for each pixel in the cube, calculate the deviation from the median in units of sigma
-	deviation = (im_cube - median_cube)/sigma_cube 
+	deviation = (im_cube - median_cube)/sigma_cube
 
 	; and now make a mask that indicates those pixels that are more than sigma_clip off from the median
 	mask_cube = fix(im_cube)
@@ -80,7 +80,7 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
 	; select all A frames
 	w_A = where(diagnostics.offset_pos eq 'A', /null)
-	
+
 	; select all B frames
 	w_B = where(diagnostics.offset_pos eq 'B', /null)
 
@@ -124,23 +124,23 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
 		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=3.0, rejected_im=rejected_im_B)
 		writefits, filename_prefix + '_stack_B.fits', stack_B, header
-	
+
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
 		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=3.0, rejected_im=rejected_im_B)
 		writefits, filename_prefix + '_stack_B_skysub.fits', stack_B_skysub, header
-	
+
 	endif
 
 	if w_X ne !NULL then begin
-	
+
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
 		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=3.0, rejected_im=rejected_im_X)
 		writefits, filename_prefix + '_stack_X.fits', stack_X, header
-	
+
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
 		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=3.0, rejected_im=rejected_im_X)
 		writefits, filename_prefix + '_stack_X_skysub.fits', stack_X_skysub, header
-	
+
 	endif
 
 
@@ -184,8 +184,7 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	stack_BA = -stack_AB
 
 	; find the dithering length, which for now we take from the first A and the first B frames
-	; (A is always the one on top)
-	dithering_length = round(diagnostics[w_A[0]].position - diagnostics[w_B[0]].position)
+	dithering_length = abs( round(diagnostics[w_A[0]].position - diagnostics[w_B[0]].position) )
 
 	; zero padding on top
 	padding = dblarr( (size(stack_A))[1], dithering_length )
@@ -221,7 +220,7 @@ END
 
 
 PRO flame_combine, fuel=fuel
- 
+
 
 	print, ' '
 	print, 'Combine frames'
@@ -244,6 +243,3 @@ PRO flame_combine, fuel=fuel
 
 
 END
-
-
-

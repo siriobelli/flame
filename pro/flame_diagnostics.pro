@@ -3,8 +3,8 @@
 FUNCTION flame_monitor_fit_trace, frame, xrange=xrange, yrange=yrange, est_width=est_width, $
     plot_extra=plot_extra
 ;
-; this function fits a Gaussian to the spatial profile and returns 
-; the results of the fit in a structure 
+; this function fits a Gaussian to the spatial profile and returns
+; the results of the fit in a structure
 ;
 
   ; make cutout where the trace is
@@ -15,10 +15,10 @@ FUNCTION flame_monitor_fit_trace, frame, xrange=xrange, yrange=yrange, est_width
 
   ; make vertical axis with the pixel position
   ypixel = yrange[0] + indgen(n_elements(profile))
-  
+
   ; initial estimates for the Gaussian curve
   est_peak = max(profile, i_max, /nan)-median(profile)
-  est_center = ypixel[i_max] 
+  est_center = ypixel[i_max]
   est_width = est_width
   est_continuum = median(profile)
 
@@ -57,66 +57,75 @@ END
 
 FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
   ;
-  ; Takes a raw frame and identifies whether the star trace is in the A 
+  ; Takes a raw frame and identifies whether the star trace is in the A
   ; or in the B position, by trying to fit a Gaussian to the spatial profile.
   ; It outputs 'A', 'B', or 'X' when cannot find a trace
   ; It uses flame_monitor_fit_trace
   ;
-
-  ; read in the frame
-  frame = readfits(frame_filename, /silent)
-
-  ; x range in which to fit a Gaussian to the star trace
-  xrange=fuel.input.xrange_star
-
-  ; estimate width of trace in pixels: 0.8 arcsec (compromise between seeing-limited and ARGOS)
-  est_seeing = 0.8  ; FWHM in arcsec
-  est_width = (est_seeing / 2.355) / fuel.instrument.pixel_scale   ; sigma in pixels
-
-  ; determine the vertical range to consider for finding the star trace
-  half_range = 6.0 * est_width
-
-  ; A frames (always the one on top)
-  A_yrange = max(fuel.input.startrace_y_pos) + [-half_range, half_range]
-
-  ; B frames
-  B_yrange = min(fuel.input.startrace_y_pos) + [-half_range, half_range]
-
-  ; fit a Gaussian at the A position
-  fit_A = flame_monitor_fit_trace( frame, xrange=xrange, yrange=A_yrange, est_width=est_width, $
-      plot_extra = {title:frame_filename, layout:[1,2,1]})
-
-  ; fit a Gaussian at the B position
-  fit_B = flame_monitor_fit_trace( frame, xrange=xrange, yrange=B_yrange, est_width=est_width, $
-      plot_extra = {layout:[1,2,2]})
-
-  ; label the plots
-  cgtext, 'A', 0.18, 0.85, /normal
-  cgtext, 'B', 0.18, 0.38, /normal
-
-  ; new page for the next plots
-  erase
 
   ; let's define a "good" fit one that satisfies these criteria:
   ; - Gaussian width not larger than 5 times the estimated value
   ; - peak must be positive
   ; - signal/noise ratio of the peak must be larger than 5
 
-  ; check if the A fit makes sense 
-  if fit_A.width LT 5.0*est_width and fit_A.peak GT 0.0 and fit_A.peak/fit_A.peak_err GT 5.0 $
-    then A_ok = 1 else A_ok = 0
+  ; read in the frame
+  frame = readfits(frame_filename, /silent)
 
-  ; check if the B fit makes sense 
-  if fit_B.width LT 5.0*est_width and fit_B.peak GT 0.0 and fit_B.peak/fit_B.peak_err GT 5.0 $
-    then B_ok = 1 else B_ok = 0
+  ; x range in which to fit a Gaussian to the star trace
+  xrange=fuel.input.star_x_range
 
-  ; decide if A or B contains the trace 
+  ; estimate width of trace in pixels: starting guess is 0.8 arcsec
+  est_seeing = 0.8  ; FWHM in arcsec
+  est_width = (est_seeing / 2.355) / fuel.instrument.pixel_scale   ; sigma in pixels
+
+  ; determine the vertical range to consider for finding the star trace
+  half_range = 6.0 * est_width
+
+  ; let's see if there is a star in the A position
+  if fuel.input.star_y_A ne 0 then begin
+
+    ; fit a Gaussian at the A position
+    A_yrange = fuel.input.star_y_A + [-half_range, half_range]
+    fit_A = flame_monitor_fit_trace( frame, xrange=xrange, yrange=A_yrange, est_width=est_width, $
+        plot_extra = {title:frame_filename, layout:[1,2,1]})
+
+    ; label the plot
+    cgtext, 'A', 0.18, 0.85, /normal
+
+    ; check if the A fit makes sense
+    if fit_A.width LT 5.0*est_width and fit_A.peak GT 0.0 and fit_A.peak/fit_A.peak_err GT 5.0 $
+      then A_ok = 1 else A_ok = 0
+
+  endif else A_ok = 0
+
+  ; let's see if there is a star in the B position
+  if fuel.input.star_y_B ne 0 then begin
+
+    ; fit a Gaussian at the B position
+    B_yrange = fuel.input.star_y_B + [-half_range, half_range]
+    fit_B = flame_monitor_fit_trace( frame, xrange=xrange, yrange=B_yrange, est_width=est_width, $
+        plot_extra = {layout:[1,2,2]})
+
+    ; label the plot
+    cgtext, 'B', 0.18, 0.38, /normal
+
+    ; check if the B fit makes sense
+    if fit_B.width LT 5.0*est_width and fit_B.peak GT 0.0 and fit_B.peak/fit_B.peak_err GT 5.0 $
+      then B_ok = 1 else B_ok = 0
+
+  endif else B_ok = 0
+
+
+  ; new page for the next plots
+  erase
+
+  ; decide if A or B contains the trace
 
   ; if only one of the two makes sense, then it's that one
   if A_ok eq 1 and B_ok eq 0 then return, 'A'
   if A_ok eq 0 and B_ok eq 1 then return, 'B'
 
-  ; if both make sense, take the one with the larger peak
+  ; if both make sense, take the one with the largest peak
   if A_ok eq 1 and B_ok eq 1 then $
     if fit_A.peak GT fit_B.peak then return, 'A' $
       else return, 'B'
@@ -137,14 +146,14 @@ END
 
 FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_pos, fuel=fuel
   ;
-  ; Takes a frame, subtracts the sky, and fits a Gaussian 
+  ; Takes a frame, subtracts the sky if needed, and fits a Gaussian
   ; to the spatial profile at the A or B position.
   ; It outputs a diagnostics structure
   ; It uses flame_monitor_fit_trace
   ;
 
   ; read frame number from file name
-  frame_num = (strsplit(frame_filename, '.', /extract))[-2]
+  frame_num = (strsplit(frame_filename, '._-', /extract))[-2]
 
   ; read in the frame
   frame_star = readfits(frame_filename, header, /silent)
@@ -164,14 +173,19 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
     return, diagnostics
   endif
 
-  ; read in the frame to be used a sky
-  frame_sky = readfits(sky_filename, /silent)
-  
-  ; subtract sky
-  frame = frame_star - frame_sky
+  ; do we have to subtract the sky?
+  if fuel.input.AB_subtraction then begin
+
+    ; read in the frame to be used a sky
+    frame_sky = readfits(sky_filename, /silent)
+
+    ; subtract sky
+    frame = frame_star - frame_sky
+
+  endif else frame = frame_star
 
   ; x range in which to fit a Gaussian to the star trace
-  xrange=fuel.input.xrange_star
+  xrange=fuel.input.star_x_range
 
   ; estimate width of trace in pixels: 0.8 arcsec (compromise between seeing-limited and ARGOS)
   est_seeing = 0.8  ; FWHM in arcsec
@@ -181,8 +195,8 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   half_range = 5.0 * est_width
 
   ; find expected position of star trace
-  if offset_pos eq 'A' then ycenter = max(fuel.input.startrace_y_pos) $
-    else ycenter = min(fuel.input.startrace_y_pos) 
+  if offset_pos eq 'A' then ycenter = fuel.input.star_y_A $
+    else ycenter = fuel.input.star_y_B
 
   ; vertical range to be considered for the fit
   yrange = ycenter + [-half_range, half_range]
@@ -211,22 +225,20 @@ END
 FUNCTION flame_diagnostics_fromdata, fuel
 
 ;
-; used when there is a reference star on the slit 
+; used when there is a reference star on the slit
 ; the trace is fit with a Gaussian profile in each frame
 ; and offset, transmission, and seeing are calculated
 ;
 
 
-  ; 1)  For each frame, decide whether it is an A or B position 
+  ; 1)  For each frame, decide whether it is an A or B position
   ;     by looking at which one of the two "windows" is more likely
   ;     to contain a star trace
 
-  ; *********A is always the one on top***************
-
-  ; this string array will keep track of the 'A' and 'B' position. 'X' means undecided
+  ; this string array will keep track of the 'A' and 'B' position. 'X' means undecided (i.e. sky)
   offset_pos = strarr(fuel.util.N_frames)
-  
-  ; identify A and B frames  
+
+  ; identify A and B frames
   cgPs_open, fuel.input.intermediate_dir + 'startrace_identify_AB.ps', /nomatch
     for i_frame=0,fuel.util.N_frames-1 do begin
        offset_pos[i_frame] = flame_diagnostics_AorB( fuel.util.science_filenames[i_frame], fuel=fuel )
@@ -235,7 +247,7 @@ FUNCTION flame_diagnostics_fromdata, fuel
   cgPS_close
 
 
-  ; 2)  Now do a proper fit from the sky-subtracted frame. 
+  ; 2)  Now do a proper fit, with sky-subtraction if needed.
   ;     Need to identify the closest frame with a different offset position
   ;     to use as sky frame
 
@@ -245,19 +257,25 @@ FUNCTION flame_diagnostics_fromdata, fuel
   diagnostics = []
 
   print, 'Fitting the star trace for each frame...'
-  
+
   for i_frame=0, fuel.util.N_frames-1 do begin
- 
+
     print, 'fitting star trace for ', fuel.util.science_filenames[i_frame] + ' at position ' + offset_pos[i_frame]
-    
-    ; need to find the closest available frame (starting with the next one)
-    distance = abs( i_frame+0.01 - indgen(fuel.util.N_frames) )
-    closest_frames = sort(distance) ; this array contains the frame numbers from the closest to the farthest
-    ii = 1
-    while offset_pos[closest_frames[ii]] EQ offset_pos[i_frame] do ii++
-    i_frame_background = closest_frames[ii]   ; this is the frame to use a background
-    
-    ; fit a Gaussian to the sky-subtracted frame and obtain diagnostics
+
+    ; if doing an A-B subtraction, then needs to find the sky frame
+    if fuel.input.AB_subtraction then begin
+
+      ; need to find the closest available frame (starting with the next one)
+      distance = abs( i_frame+0.01 - indgen(fuel.util.N_frames) )
+      closest_frames = sort(distance) ; this array contains the frame numbers from the closest to the farthest
+      ii = 1
+      while offset_pos[closest_frames[ii]] EQ offset_pos[i_frame] do ii++
+      i_frame_background = closest_frames[ii]   ; this is the frame to use a background
+
+    ; if not doing an A-B subtraction, then the background frame is not meaningful
+    endif else i_frame_background = i_frame
+
+    ; fit a Gaussian and obtain diagnostics
     diagnostics_thisframe = flame_diagnostics_fit( fuel.util.science_filenames[i_frame], $
       fuel.util.science_filenames[i_frame_background], offset_pos=offset_pos[i_frame], fuel=fuel )
 
@@ -265,7 +283,7 @@ FUNCTION flame_diagnostics_fromdata, fuel
     diagnostics = [ diagnostics , diagnostics_thisframe ]
 
   endfor
-  
+
   cgPS_close
 
   return, diagnostics
@@ -279,14 +297,14 @@ END
 FUNCTION flame_diagnostics_blind, fuel
 
 ;
-; used when there is no reference star on the slit 
+; used when there is no reference star on the slit
 ; a dither file is needed, where the dither positions
 ; are given for all frames
 ;
 
   ; read pixel scale
   pixel_scale = fuel.instrument.pixel_scale    ; arcsec/pixel
-  
+
   ; check that dither blind positions were specified
   if ~finite(fuel.util.dither_blind_positions[0]) then message, 'dither_filelist needs to be specified'
 
@@ -299,7 +317,7 @@ FUNCTION flame_diagnostics_blind, fuel
       position: !values.f_NaN, $
       airmass: !values.f_NaN}
 
-  ; array of diagnostics 
+  ; array of diagnostics
   diagnostics = replicate(diagnostics_tmp, fuel.util.N_frames)
 
   ; read frame numbers from file names
@@ -334,7 +352,7 @@ PRO flame_diagnostics_plot, diagnostics
 
 ;
 ; make a plot with five panels and show the trend of flux, FWHM,
-; vertical position in A frames, vertical position in B frames, 
+; vertical position in A frames, vertical position in B frames,
 ; and airmass for the star trace as a function of frame number
 ;
 
@@ -349,8 +367,8 @@ PRO flame_diagnostics_plot, diagnostics
  frame_num = diagnostics.frame_num
 
   ; check if a reference star was measured
-  if where( finite(diagnostics.flux), /null) NE !NULL then begin   
-   
+  if where( finite(diagnostics.flux), /null) NE !NULL then begin
+
     ; if there are multiple frames with the same number (e.g. from two different nights)
     ; then use sequential numbers instead
     if n_elements( uniq(frame_num, sort(frame_num)) ) NE n_elements(frame_num) then $
@@ -388,8 +406,8 @@ PRO flame_diagnostics_plot, diagnostics
   cgplot, frame_num, diagnostics.airmass, $
     _extra = extra_structure, xra=xra, $
     ytit='airmass', xtit='frame number', position=[x0,y1-5.0*delta_y,x1,y1-4.0*delta_y]
-  
-  
+
+
 
 END
 
@@ -403,11 +421,11 @@ PRO flame_diagnostics, fuel=fuel
   ;----------------------------------------
 
   ; check if a reference star position has been set
-  if fuel.input.startrace_y_pos[0] GT 0.0 and fuel.input.startrace_y_pos[1] GT 0.0 then $
+  if fuel.input.star_y_A GT 0.0 or fuel.input.star_y_B GT 0.0 then $
 
     ; if a valid reference star position is given, then monitor the star
     diagnostics = flame_diagnostics_fromdata(fuel) $
-  
+
   else $
 
     ; otherwise use the dither file to get the offset position for each frame
@@ -420,11 +438,11 @@ PRO flame_diagnostics, fuel=fuel
   cgPS_open, fuel.input.intermediate_dir + 'diagnostics.ps', /nomatch
     flame_diagnostics_plot, diagnostics
   cgPS_close
-  
+
 
   ; 3 - write text file with diagnostics
   ;----------------------------------------
-  
+
   forprint, diagnostics.frame_num, '    ' + '    ' + cgnumber_formatter(diagnostics.offset_pos, decimals=2), $
     '    ' + cgnumber_formatter(diagnostics.seeing, decimals=2), '    ' + cgnumber_formatter(diagnostics.flux, decimals=1), $
     '    ' + cgnumber_formatter(diagnostics.flux/median(diagnostics.flux), decimals=2), '    ' + cgnumber_formatter(diagnostics.position, decimals=1), $
@@ -436,6 +454,6 @@ PRO flame_diagnostics, fuel=fuel
   ;----------------------------------------
 
   new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:diagnostics, slits:fuel.slits }
-  fuel=new_fuel    
-    
+  fuel=new_fuel
+
 END

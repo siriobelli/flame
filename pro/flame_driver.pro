@@ -25,11 +25,15 @@
   ; text file containing the list of FITS files with flat field
   ; if 'none', the default flat field will be used
   input.flats_filelist = 'none'
-  
-  ; array with y-pixel positions for the traces of the reference star. [0,0] if there is no reference star
-  input.startrace_y_pos = [1281, 1300]
 
-  
+  ; do you want to apply A-B sky subtraction?
+  input.AB_subtraction = 1
+
+  ; array with y-pixel positions for the traces of the reference star. 0 if there is no reference star
+  input.star_y_A = 1281
+  input.star_y_B = 1300
+
+
   ; ADVANCED OPTIONS
   ;**********************************
 
@@ -37,7 +41,7 @@
   input.reduce_only_oneslit = 5
 
   ; if you want to change the range in x-coordinates used to extract the star traces:
-  ;input.xrange_star = [100, 500]
+  ;input.star_x_range = [100, 500]
 
   ; if we don't have a star on the slit then we have to specify the dithering
   ;input.dither_filelist = 'input/dither.txt'
@@ -77,15 +81,15 @@
   ;****************************************************
   ;                 MONITOR STAR
   ;****************************************************
-  
-  
+
+
   flame_diagnostics, fuel=fuel
-  
+
 
   ;****************************************************
   ;                 QUICK LOOK
   ;****************************************************
-  
+
 
   flame_quickstack, fuel=fuel
 
@@ -93,23 +97,23 @@
   ;****************************************************
   ;                 DATA CORRECTION
   ;****************************************************
-  
+
 
   flame_correct, fuel=fuel
 
-  
+
   ;****************************************************
   ;               IDENTIFY AND CUTOUT SLITS
   ;****************************************************
-  
+
 
   flame_getslits, fuel=fuel
 
-  
+
   ;****************************************************
   ;                 WAVELENGTH CALIBRATION
   ;****************************************************
-  
+
 
   flame_wavecal, fuel=fuel
 
@@ -120,30 +124,30 @@
 
 
   flame_skysub, fuel=fuel
-  
+
 
   ;****************************************************
   ;                 RECTIFICATION
   ;****************************************************
-  
+
 
   flame_rectify, fuel=fuel
 
-  
+
   ;****************************************************
   ;                 COMBINE FRAMES
   ;****************************************************
-  
-  
+
+
   flame_combine, fuel=fuel
-  
+
 
   ;****************************************************
   ;                 END: save fuel structure
   ;****************************************************
-  
+
 
   save, fuel, filename='fuel.sav'
 
-  
+
 ;END
