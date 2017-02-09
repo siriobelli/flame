@@ -27,18 +27,18 @@
   input.flats_filelist = 'none'
 
   ; do you want to apply A-B sky subtraction?
-  input.AB_subtraction = 1
+  input.AB_subtraction = 0
 
   ; array with y-pixel positions for the traces of the reference star. 0 if there is no reference star
-  input.star_y_A = 1281
-  input.star_y_B = 1300
+  input.star_y_A = 1575
+  input.star_y_B = 0
 
 
   ; ADVANCED OPTIONS
   ;**********************************
 
   ; if 0, then reduce all slits. If n, then reduce slit number n (starting from 1).
-  input.reduce_only_oneslit = 5
+  ;input.reduce_only_oneslit = 5
 
   ; if you want to change the range in x-coordinates used to extract the star traces:
   ;input.star_x_range = [100, 500]
@@ -48,22 +48,27 @@
 
   ; if you want to use the sky background to trace the slit edges
   ; use if OH lines are not enough (e.g. in the K band or in the optical)
-  ;input.use_sky_edge = 1
+  input.use_sky_edge = 1
 
   ; for longslit
   ;input.longslit = 1
   ;input.longslit_edge = [1133, 1179]
 
+  ; manual slit positions
+  input.slit_position_file = 'slit_edges.reg'
 
   ;**********************************
   ;**********************************
-
 
   ; create the fuel structure
   fuel = flame_create_fuel(input)
 
   ; initialize
-  flame_initialize_luci, fuel=fuel
+  flame_initialize_lris, fuel=fuel
+
+
+  ;**********************************
+  ;**********************************
 
 
   ; check that everything is good
@@ -112,7 +117,7 @@
 
   flame_getslits, fuel=fuel
 
-
+stop
   ;****************************************************
   ;                 WAVELENGTH CALIBRATION
   ;****************************************************
