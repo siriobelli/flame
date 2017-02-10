@@ -52,11 +52,11 @@ PRO flame_wavecal_writeds9, OH_lines, filename=filename
   	this_x = OH_lines[w_thisline, 1]
  	this_y = OH_lines[w_thisline, 2]
 
- 	; sort points by y coordinate 
+ 	; sort points by y coordinate
  	wsort = sort(this_y)
  	this_x = this_x[wsort]
  	this_y = this_y[wsort]
- 	
+
     ; concatenate points
     ;all_x = [top_x, reverse(bottom_x)]
     ;all_y = [top_y, reverse(bottom_y)]
@@ -114,7 +114,7 @@ PRO flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=mode
 	;
 	; Estimate the wavelength solution by comparing the observed sky spectrum with a model sky spectrum
 	; Loop through a grid of pixel scale values and at each step cross-correlate the spectra to find the lambda shift
-	; The wavelength solution is parameterized as an exponential function of the pixel coordinate. 
+	; The wavelength solution is parameterized as an exponential function of the pixel coordinate.
 	; The free parameters are central lambda, pixel scale at central pixel, and relative variation in
 	; pixel scale between adjacent pixels
 	; Return the wavelength axis.
@@ -137,10 +137,10 @@ PRO flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=mode
 
 		; this is the new wavelength axis, with the chosen pixel scale and pixel scale variation
 		lambda_axis = flame_generate_lambda_axis(N_pixels=n_elements(sky), lambda_central=lambda_central, delta_lambda=pix_scale_grid[i], delta_delta_lambda=pix_scale_variation_grid[j])
-		
+
 		; need to interpolate the model onto the new wavelength axis
 		new_model_flux = interpol( model_flux, model_lambda, lambda_axis)
-		
+
 		; find the best wavelength shift
 		crosscorr = c_correlate(sky, new_model_flux, lag)
 		max_cc = max(crosscorr, ind, /nan)
@@ -157,7 +157,7 @@ PRO flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=mode
 
 	; wavelength shift in pixels
 	best_delta = delta_array[ind]
-	
+
 	; pixel scale and its variation
 	if size(crosscorr_array, /n_dimensions) eq 2 then begin
 		ind_2d = array_indices(crosscorr_array, ind)
@@ -174,7 +174,7 @@ PRO flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=mode
 	print, 'delta = ', best_delta
   	print, 'pixel scale = ', best_pix_scale
 	print, 'pixel scale variation = ', best_pix_scale_variation
-	
+
 	; generate the wavelength axis given the best-fit pixel scale and pixel scale variation
 	; make an array longer than needed to account for shifting
 	lambda_axis = flame_generate_lambda_axis(N_pixels=n_elements(sky) + 2*abs(best_delta), $
@@ -191,7 +191,7 @@ PRO flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=mode
 	; interpolate model flux onto new wavelength axis
 	new_model_flux = interpol( model_flux, model_lambda, lambda_axis)
 	new_model_flux /= max(new_model_flux, /nan)
-	
+
 	cgplot, lambda_axis, sky-0.05, charsize=1, thick=3, xtit='wavelength (micron)', title=title
 	cgplot, lambda_axis, new_model_flux, color='red', /overplot, thick=3
 	cgtext, 0.75, 0.80, 'observed sky', charsize=1, /normal
@@ -235,7 +235,7 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 		; estimate width of OH lines
 		approximate_linewidth_A = median(wavelength_axis_guess) / wavecal_settings.instrument_resolution
 		approximate_linewidth_pix = approximate_linewidth_A / ( wavelength_axis_guess[3] - wavelength_axis_guess[2] )
-			
+
 		; fit a Gaussian to every sky line
 		for i_line=0,n_elements(line_list)-1 do begin
 
@@ -251,7 +251,7 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 				print, 'GAUSSFIT ERROR STATUS: ' + strtrim(error_gaussfit,2)
 				catch, /cancel
 				continue
-			endif 
+			endif
 
 			; estimate parameters of the Gaussian
 			est_peak = max( median( y[w_fit], 3) , /nan)
@@ -283,13 +283,13 @@ FUNCTION flame_wavecal_skylines, x=x, y=y, $
 			skylines_chisq = [ skylines_chisq, chisq ]
 
 		endfor
-		
+
 		; if too few lines were found, then no reliable wavelength solution exists
 		if n_elements(skylines_pixel) LT wavecal_settings.Nmin_lines then return, replicate(!values.d_nan, n_elements(x))
 
 		; fit a polynomial to the skyline positions
 		wavesol_coeff = poly_fit( skylines_pixel, skylines_wavelength, wavecal_settings.poly_degree )
-		
+
 		; calculate polynomial solution
 		poly_wl = poly(x, wavesol_coeff)
 
@@ -360,7 +360,7 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 
 	; create the x-axis in pixel coordinates
 	pix_axis = dindgen( n_elements(sky) )
-	
+
 	; trim edge to avoid problems
 	sky[0:10] = 0.
 	sky[-11:-1] = 0.
@@ -487,10 +487,10 @@ PRO flame_wavecal_accurate, slit_filename=slit_filename, $
 	cgPS_close
 
 
-	; output the coordinates of the OH lines 
+	; output the coordinates of the OH lines
 	OH_lines = [ [OH_wavelength], [OH_xpixel], [OH_ypixel] ]
 
-	; write a ds9 region file with the identified OH lines 
+	; write a ds9 region file with the identified OH lines
 	flame_wavecal_writeds9, OH_lines, filename =  $
 		flame_util_replace_string(slit_filename, '.fits', '_OHlines.reg')
 
@@ -506,7 +506,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	;
 	; Two steps:
 	; First, use a coarse, logarithmic grid with constant pixel scale (uniform wavelength solution)
-	; Second, use a fine grid centered on the coarse value of pixel scale, and explore also the 
+	; Second, use a fine grid centered on the coarse value of pixel scale, and explore also the
 	; pix_scale_variation parameter for non-uniform wavelength solution
 	;
 
@@ -515,7 +515,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 
 	model_lambda = wavecal_settings.model_lambda
 	model_flux = wavecal_settings.model_flux
-	
+
 	; select the range of interest for this particular slit
 	w_slit = where( model_lambda GT this_slit.approx_wavelength_lo $
 		and model_lambda LT this_slit.approx_wavelength_hi, /null )
@@ -547,7 +547,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 
 	; create the x-axis in pixel coordinates
 	pix_axis = dindgen( n_elements(sky) )
-	
+
 	; trim edge to avoid problems
 	sky[0:10] = 0.
 	sky[-11:-1] = 0.
@@ -566,20 +566,32 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 	print, 'FIRST STEP: rough estimate of lambda and delta_lambda'
 	print, '-----------------------------------------------------'
 
-	; let's smooth observed and model sky so that we can get an approximate match
-	sky_sm = gauss_smooth(sky, wavecal_settings.smoothing_length)
-	model_flux_sm = gauss_smooth(model_flux, 3)
+	; estimated pixel scale from the approximate wavelength range
+	estimated_pix_scale = (this_slit.approx_wavelength_hi-this_slit.approx_wavelength_lo) $
+		/ double(n_elements(sky))
 
-	; remove continuum variation from the observed sky (important in the K band)
-	sky_sm -= median(sky, 100)
+	; estimated central wavelength
+	estimated_lambda = 0.5*(this_slit.approx_wavelength_hi+this_slit.approx_wavelength_lo)
+
+	; pixel scale for the model
+	model_pix_scale = abs( median(model_lambda - shift(model_lambda,-1)) )
+
+	; spectral resolution at which to smooth both model and observed sky
+	smoothing_R = 500
+
+	; let's smooth observed and model sky so that we can get an approximate match
+	;sky_sm = gauss_smooth(sky, wavecal_settings.smoothing_length)
+	smoothing_sigma = estimated_lambda / (2.36 * smoothing_R)
+	sky_sm = gauss_smooth(sky, smoothing_sigma / estimated_pix_scale )
+	model_flux_sm = gauss_smooth(model_flux, smoothing_sigma / model_pix_scale)
+
+	; WARNING: THIS CAUSES A PROBLEM WITH LRIS, BECAUSE 100 pixels are not enough for a continuum-level smoothing!
+	; ; remove continuum variation from the observed sky (important in the K band)
+	; sky_sm -= median(sky, 100)
 
 	; renormalize spectra
 	sky_sm /= max(sky_sm)
 	model_flux_sm /= max(model_flux_sm)
-
-	; estimated pixel scale from the approximate wavelength range
-	estimated_pix_scale = (this_slit.approx_wavelength_hi-this_slit.approx_wavelength_lo) $
-		/ double(n_elements(sky_sm))
 
 	; show spectra before cross-correlation
 	cgplot, this_slit.approx_wavelength_lo + estimated_pix_scale * dindgen(n_elements(sky_sm)), sky_sm-0.05, $
@@ -590,7 +602,7 @@ PRO flame_wavecal_approximate, slit_filename=slit_filename, this_slit=this_slit,
 
 	; there are two parameters that define the wavelength axis: central pixel scale and variation in the pixel scale
 	; first, we assume a constant pixel scale, in micron per pixels:
-	;coarse_pix_scale_grid = 10^(-4.5 + 2.5*dindgen(1000)/999.) 
+	;coarse_pix_scale_grid = 10^(-4.5 + 2.5*dindgen(1000)/999.)
 	coarse_pix_scale_grid = estimated_pix_scale * (10.0+dindgen(500))/500.0*2.0
 
 	flame_wavecal_crosscorr, sky=sky_sm, model_lambda=model_lambda, model_flux=model_flux_sm, $
@@ -671,7 +683,7 @@ PRO flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
 		1d-5, $
 		1d-5]
 
-	; fit a 3rd degree polynomial to all the OH lines found at each pixel row 
+	; fit a 3rd degree polynomial to all the OH lines found at each pixel row
 	fit_params = mpfit2dfun('flame_poly_surface', $
 		OH_xpixel, OH_ypixel, OH_wavelength, replicate(1.0, n_elements(OH_xpixel)), start_params, /quiet)
 
@@ -702,7 +714,7 @@ PRO flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
 	slit.outlambda_delta = lambda_delta_out
  	slit.outlambda_Npix = round( (lambda_max - lambda_min) / lambda_delta_out + 0.5 )
 
-END 
+END
 
 
 ; ---------------------------------------------------------------------------------------------------------------------------
@@ -712,7 +724,7 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_line
 
 ; This routine calculates the 2D wavelength solution and y-rectification.
 ; These are two mappings from the observed pixel coordinates to the rectified grid
-; lambdax, gamma, where lambdax is a pixel grid linear in lambda and gamma is the 
+; lambdax, gamma, where lambdax is a pixel grid linear in lambda and gamma is the
 ; vertical distance to the edge of the slit (taking warping into account)
 ; The result of this routine is a pair of matrices, Klambda and Kgamma, saved in fuel.slits,
 ; that can be used to rectify the image via poly_2D()
@@ -733,7 +745,7 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_line
 	ymin_edge = min(bottom_edge)
 
 	; this is the y-coordinate of the bottom pixel row in the cutout
-	first_pixel =  ceil(ymin_edge)	
+	first_pixel =  ceil(ymin_edge)
 
 	; OH line coordinates
 	OH_lambda = OH_lines[*,0]
@@ -781,7 +793,7 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_line
 	; calculate transformation Kx,Ky from (lambda, gamma) to (x,y)
 	polywarp, OH_x[w_goodpix], OH_y[w_goodpix], $
 		OH_lambdax[w_goodpix], OH_gamma[w_goodpix], degree, Kx, Ky, /double, status=status
-	
+
 	; save into slit structure
 	this_rectification = {Klambda:Klambda, Kgamma:Kgamma, Kx:Kx, Ky:Ky}
 	*slit.rectification = [ *slit.rectification, this_rectification]
@@ -805,16 +817,16 @@ PRO flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 
 	; the degree of the polynomial used to describe the wavelength solution
 	poly_degree = 3
-	
+
 	; minimum number of OH lines for a reliable wavelength solution
-	Nmin_lines = 6 
-	
+	Nmin_lines = 6
+
 	; normally, extract individual pixel rows and detect OH lines
 	use_more_pixelrows = 0
 
 	; read in sky model
 	readcol, fuel.util.sky_emission_filename, model_lambda, model_flux	; lambda in micron
-	
+
 	; create the wavecal_settings structure
 	wavecal_settings = { $
 		line_list : line_list, $
@@ -850,7 +862,7 @@ PRO flame_wavecal, fuel=fuel, verbose=verbose
 	flame_wavecal_init, fuel=fuel, wavecal_settings=wavecal_settings
 
 	; loop through all slits
-	for i_slit=0, n_elements(slits)-1 do begin 
+	for i_slit=0, n_elements(slits)-1 do begin
 
 		this_slit = fuel.slits[i_slit]
 
