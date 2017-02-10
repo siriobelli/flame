@@ -38,7 +38,7 @@ FUNCTION flame_create_fuel, input
   if strlowcase(input.darks_filelist) EQ 'none' then darks_filenames = '' else begin
     if ~file_test(input.darks_filelist) then message, 'file ' + input.darks_filelist + ' not found'
     readcol, input.darks_filelist, darks_filenames, format='A'
-  endelse 
+  endelse
 
   ; check that the flats file exists and read it
   if strlowcase(input.flats_filelist) EQ 'none' then flats_filenames = '' else begin
@@ -59,10 +59,10 @@ FUNCTION flame_create_fuel, input
     corrscience_filenames: corrscience_filenames, $
     darks_filenames: darks_filenames, $
     flats_filenames: flats_filenames, $
-    dither_blind_positions: dither_blind_positions, $	
+    dither_blind_positions: dither_blind_positions, $
     slitim_filename: 'slitim.fits', $
     flame_data_dir : data_dir, $
-    sky_emission_filename : data_dir + 'sky_emission_model.dat', $
+    sky_emission_filename : data_dir + 'sky_emission_model_nir.dat', $
     linelist_filename: data_dir + 'line_list.dat', $
     start_time : systime(/seconds) $
    }
@@ -75,7 +75,7 @@ FUNCTION flame_create_fuel, input
     diagnostics : ptr_new(), $
     slits : ptr_new() $
     }
-      
+
 return, fuel
 
 END

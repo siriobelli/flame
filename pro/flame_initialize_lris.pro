@@ -183,6 +183,14 @@ PRO flame_initialize_lris, fuel=fuel
   ; LRIS-specific routine that initializes the fuel.instrument structure
   ;
 
+  ; -----------------------------------------------------------------
+  ; need to use the optical sky spectrum
+  ; HANDLE THIS IN A BETTER WAY PLEASE
+  fuel.util.sky_emission_filename = $
+    fuel.util.flame_data_dir + 'sky_emission_model_optical.dat'
+
+  ; -----------------------------------------------------------------
+
     ; read FITS header of first science frame
     science_header = headfits(fuel.util.science_filenames[0])
 
