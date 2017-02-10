@@ -541,8 +541,8 @@ PRO flame_getslits_write_slitim, fuel=fuel
   slitim = fix(0 * readfits((fuel.util.corrscience_filenames)[0], hdr))
 
   ; construct the coordinates for the pixels in the image
-  N_pix_x = (size(slitim))[2]
-  N_pix_y = (size(slitim))[1]
+  N_pix_x = (size(slitim))[1]
+  N_pix_y = (size(slitim))[2]
   x_axis = indgen(N_pix_x)
   y_axis = indgen(N_pix_y)
   pixel_x = x_axis # replicate(1, N_pix_y)
@@ -566,7 +566,7 @@ END
 
 ;******************************************************************
 
-PRO flame_getslits_cutout_extract, slitim, slit_structure, science_filenames, output_filenames
+PRO flame_getslits_cutout_extract, slit_structure, science_filenames, output_filenames
 
   ; loop through science frames
   for i_frame=0, n_elements(science_filenames)-1 do begin
@@ -574,27 +574,34 @@ PRO flame_getslits_cutout_extract, slitim, slit_structure, science_filenames, ou
     ; read in science frame
     im = readfits(science_filenames[i_frame], header)
 
+    ; construct the coordinates for the pixels in the image
+    N_pix_x = (size(im))[1]
+    N_pix_y = (size(im))[2]
+    x_axis = indgen(N_pix_x)
+    y_axis = indgen(N_pix_y)
+    pixel_x = x_axis # replicate(1, N_pix_y)
+    pixel_y = transpose(y_axis # replicate(1, N_pix_x))
+
+    ; calculate slit edges
+    top_y = (poly(x_axis, slit_structure.bottom_poly) + slit_structure.height) # replicate(1, N_pix_x)
+    bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_x)
+
     ; select pixels belonging to this slit
-    w_slit = where(slitim eq slit_structure.number, /null)
-    if w_slit eq !NULL then message, slit_structure.name + ': slit not found in slitim!'
+    w_slit = where( pixel_y LT top_y AND pixel_y GT bottom_y, /null, complement=w_outside_slit)
+    if w_slit eq !NULL then message, slit_structure.name + ': slit not valid!'
 
-    ; create a mask that selects only pixels belonging to the slit
-    slit_mask = im
-    slit_mask[*] = !values.d_nan
-    slit_mask[w_slit] = 1.0
-
-    ; create a new frame where everything outside the slit is a Nan
-    im_masked = im * slit_mask
+    ; Set to NaN all pixels outside the slit
+    im[w_outside_slit] = !values.d_nan
 
     ; convert indices to 2D
-    w_slit2d = array_indices(slitim, w_slit)
+    w_slit2d = array_indices(im, w_slit)
 
     ; calculate upper and lower limits
     max_y = max(w_slit2d[1,*])
     min_y = min(w_slit2d[1,*])
 
     ; extract the slit as a rectangle
-    this_slit = im_masked[ * , min_y:max_y]
+    this_slit = im[ * , min_y:max_y]
 
     ; write this out
     writefits, output_filenames[i_frame], this_slit, header
@@ -611,9 +618,6 @@ PRO flame_getslits_cutout, fuel=fuel
 
   ; extract slits structure
   slits = fuel.slits
-
-  ; read in the slitim image
-  slitim = readfits(fuel.input.intermediate_dir + fuel.util.slitim_filename)
 
   print,'Slits: ', n_elements(slits)
   for i_slit=0, n_elements(slits)-1 do begin
@@ -634,7 +638,7 @@ PRO flame_getslits_cutout, fuel=fuel
 
     ; extract slit
     print,'*** Cutting out slit ', slits[i_slit].name
-    flame_getslits_cutout_extract, slitim, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames
+    flame_getslits_cutout_extract, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames
 
     ; add filenames to the slit structure
     *slits[i_slit].filenames = output_filenames
@@ -655,7 +659,7 @@ PRO flame_getslits, fuel=fuel
   ; write ds9 region file with the slit traces
   flame_getslits_writeds9, fuel=fuel
 
-  ; write slitim (FITS file with slit image)
+  ; write slitim (FITS file with slit image - just for diagnostics purpose)
   flame_getslits_write_slitim, fuel=fuel
 
   ; if we are reducing only one slit, then delete all the others
