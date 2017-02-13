@@ -1,13 +1,93 @@
 ;
 ; reads the raw science frames and writes out the "corrected" science frames, which are:
 ; - corrected for non-linearity of the detector
-; - corrected for bad pixels (replaced by NaNs) 
+; - corrected for bad pixels (replaced by NaNs)
 ;  (generate the bad pixel mask from the dark frames, if needed)
 ; - converted from ADU to electrons
 ;
 ; TO-DO: flat field correction
 ;
 
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+FUNCTION flame_correct_makemaster, fuel=fuel, calib=calib
+  ;
+  ; calib (input): 'dark', 'pixelflat', 'illumflat', 'arc'
+  ; output the name of the master file,
+  ; or an empty string if no calibration will be applied
+  ;
+
+  ; select the type of calibration ---------------------------------------------
+  case calib of
+    'dark': begin
+      filelist = fuel.input.dark_filelist
+      default_master = fuel.instrument.default_dark
+      filenames = fuel.util.filenames_dark
+      master_file = fuel.util.master_dark
+    end
+    'pixelflat': begin
+      filelist = fuel.input.pixelflat_filelist
+      default_master = fuel.instrument.default_pixelflat
+      filenames = fuel.util.filenames_pixelflat
+      master_file = fuel.util.master_pixelflat
+    end
+    'illumflat': begin
+      filelist = fuel.input.illumflat_filelist
+      default_master = fuel.instrument.default_illumflat
+      filenames = fuel.util.filenames_illumflat
+      master_file = fuel.util.master_illumflat
+    end
+    'arc': begin
+      filelist = fuel.input.arc_filelist
+      default_master = fuel.instrument.default_arc
+      filenames = fuel.util.filenames_arc
+      master_file = fuel.util.master_arc
+    end
+    else: message, 'calib keyword not valid: ' + calib
+  endcase
+
+  ; get input from user
+  filelist_norm = strlowcase( strtrim(filelist, 2) )
+
+  ; 1) do not use this calibration ---------------------------------------------
+  if filelist_norm eq '' or filelist_norm eq 'none' then begin
+    print, calib + ' not used'
+    return, ''
+  endif
+
+  ; 2) use the default master file ---------------------------------------------
+  if filelist_norm eq 'default' then begin
+
+    ; check that the default dark frame is defined
+    if ~file_test(default_master) then $
+      message, 'default calibration ' + default_master + ' not found!'
+
+    ; copy the default master frame to the local (intermediate) directory
+    file_copy, default_master, master_file, /overwrite
+
+    return, master_file
+
+  endif
+
+
+  ; 3) use the frames provided by the user -------------------------------------
+
+  print, 'making master out of', filenames
+
+
+
+  return, master_file
+
+END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 
@@ -22,7 +102,7 @@ PRO flame_correct_makeflat, fuel=fuel
   ; median combine all the flat frames
   master_flat = median(flats, dimension=3)
 
-  ; heavily smoothed version of the flat - this is to ignore the hot pixels 
+  ; heavily smoothed version of the flat - this is to ignore the hot pixels
   smoothed_flat = gauss_smooth(master_flat, 5, /edge_truncate)
 
   ; determine the brightest spot on the master flat - excluding hot pixels
@@ -37,7 +117,7 @@ PRO flame_correct_makeflat, fuel=fuel
   master_flat[w_notilluminated] = !values.d_nan
   smoothed_flat[w_notilluminated] = !values.d_nan
 
-  ; create horizontal and vertical profiles (the trick is to normalize each row first) 
+  ; create horizontal and vertical profiles (the trick is to normalize each row first)
   norm_y = median( master_flat, dimension=1 ) ## replicate(1, 2048)
   x_profile = median(master_flat / norm_y, dimension=2)
 
@@ -47,7 +127,7 @@ PRO flame_correct_makeflat, fuel=fuel
   ; make a model for the illumination using the smoothed profiles
   flat_model = median(x_profile, 101) # median(y_profile, 101)
 
-  ; divide the model out 
+  ; divide the model out
   smallscale_field = master_flat / flat_model
 
   ; normalize
@@ -56,19 +136,19 @@ PRO flame_correct_makeflat, fuel=fuel
   ; save the master flat
   writefits, fuel.input.intermediate_dir + 'master_flat.fits', smallscale_field, header
 
-  ; now identify the bad pixels, truncate edges, etc 
+  ; now identify the bad pixels, truncate edges, etc
 
   ;
-  ; rename variables 
+  ; rename variables
   ; consider outputting a PS file and some info on bad pixels and flat fielding
   ;
 
 END
 
 
-
-;******************************************************************
-
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 PRO flame_correct_makemask, fuel=fuel
@@ -98,7 +178,7 @@ PRO flame_correct_makemask, fuel=fuel
   badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_dark))
   print, 'Fraction of bad pixels: ' + number_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
-  ; plot distribution 
+  ; plot distribution
   cgPS_open, fuel.input.intermediate_dir + 'master_dark_histogram.ps', /nomatch
   cghistoplot, master_dark, /freq, binsize=max([0.1*dark_sigma, 1.0]), $
     xra=dark_bias+[-10.0, 10.0]*dark_sigma, /fillpoly, $
@@ -108,7 +188,7 @@ PRO flame_correct_makemask, fuel=fuel
   cgplot, low_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
   cgplot, high_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
   cgplot, dark_bias +[0,0], [0,1.0], /overplot, thick=4
-  cgPS_close 
+  cgPS_close
 
   ; create bad pixel mask
   badpixel_mask = byte(master_dark*0.0)
@@ -116,75 +196,32 @@ PRO flame_correct_makemask, fuel=fuel
 
   ; save bad pixel mask
   writefits, fuel.input.intermediate_dir + 'badpixel_mask.fits', badpixel_mask, header
-  
+
 END
 
 
 
-;******************************************************************
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 PRO flame_correct, fuel=fuel
 
+  ; create master files ('' for those that are not to be used)
+  master_dark = flame_correct_makemaster( fuel=fuel, calib='dark')
+  master_pixelflat = flame_correct_makemaster( fuel=fuel, calib='pixelflat')
+  master_illumflat = flame_correct_makemaster( fuel=fuel, calib='illumflat')
+  master_arc = flame_correct_makemaster( fuel=fuel, calib='arc')
 
-  ; bad pixel mask - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+  ; also need to make bad pixel mask here
+  badpix = !NULL
 
-  ; are we going to use the default bad pixel mask?
-  if fuel.util.darks_filenames[0] eq '' then begin
-
-    ; is there a default file?
-    if fuel.instrument.default_badpixel_mask ne 'none' then begin
-
-      ; copy the default bad pixel mask to the intermediate directory
-      file_copy, fuel.util.flame_data_dir + fuel.instrument.default_badpixel_mask, $
-        fuel.input.intermediate_dir + 'badpixel_mask.fits', /overwrite
-
-      ; read in the bad pixel mask
-      badpix = readfits(fuel.input.intermediate_dir + 'badpixel_mask.fits')
-
-    endif else begin
-
-      print, 'no bad pixel mask'
-
-      badpix = !NULL
-
-    endelse
-
-  ; otherwise, use the data provided by the user
-  endif else begin
-
-    ; make bad pixel mask 
-    flame_correct_makemask, fuel=fuel
-    
-    ; read in the bad pixel mask
-    badpix = readfits(fuel.input.intermediate_dir + 'badpixel_mask.fits')
-
-
-  endelse
-
-
-
-  ; master flat field - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
-  ; are we going to use the default flat field?
-  if fuel.util.flats_filenames[0] eq '' then begin
-
-    print, 'no flat field'
-
-  ; otherwise, use the data provided by the user
-  endif else begin 
-
-    ; make master flat field
-    flame_correct_makeflat, fuel=fuel
-
-  endelse
-
-
-  ; apply corrections - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
-    
-  for i_frame=0,fuel.util.N_frames-1 do begin
   
+  ; apply corrections ----------------------------------------------------------
+
+  for i_frame=0,fuel.util.N_frames-1 do begin
+
     print, 'Correcting frame ', fuel.util.science_filenames[i_frame]
 
     ; read in science frame
@@ -206,8 +243,8 @@ PRO flame_correct, fuel=fuel
 
     ; save corrected frame
     writefits, (fuel.util.corrscience_filenames)[i_frame], frame_corr3, header
-    
+
   endfor
-  
-  
+
+
 END

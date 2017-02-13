@@ -8,12 +8,12 @@ FUNCTION flame_create_input
   ; create the input substructure and set the default values
   input = { $
     science_filelist : 'science.txt', $
-    darks_filelist: 'none', $
-    flats_filelist: 'none', $
+    dark_filelist: 'none', $
+    pixelflat_filelist: 'none', $
+    illumflat_filelist: 'none', $
+    arc_filelist: 'none', $
     dither_filelist: 'none', $
     slit_position_file: 'none', $
-    intermediate_dir : 'intermediate/', $
-    output_dir: 'output/', $
     AB_subtraction: 1, $
     star_y_A: 0, $
     star_y_B: 0, $
@@ -22,7 +22,9 @@ FUNCTION flame_create_input
     longslit: 0, $
     longslit_edge: [0,0], $
     wavecal_approx_smooth : 5, $
-    use_sky_edge : 0 $
+    use_sky_edge : 0, $
+    intermediate_dir : 'intermediate/', $
+    output_dir: 'output/' $
     }
 
   return, input

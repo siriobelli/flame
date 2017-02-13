@@ -52,8 +52,10 @@ FUNCTION flame_initialize_lris_settings, science_header
 
   ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - -
   default_badpixel_mask = 'none'
-  default_flat_field = 'none'
-
+  default_dark = 'none'
+  default_pixelflat = 'none'
+  default_illumflat = 'none'
+  default_arc = 'none'
 
   ; create the instrument structure - - - - - - - - - - - - - - - - - - -
   instrument = { $
@@ -71,7 +73,10 @@ FUNCTION flame_initialize_lris_settings, science_header
     resolution_slit1arcsec: 2000.0, $
     linearity_correction: linearity_correction, $
     default_badpixel_mask: default_badpixel_mask, $
-    default_flatfield: default_flat_field $
+    default_dark: default_dark, $
+    default_pixelflat: default_pixelflat, $
+    default_illumflat: default_illumflat, $
+    default_arc: default_arc $
     }
 
   ; ; now use the instrument structure to calculate the spectral resolution

@@ -18,13 +18,17 @@
   ; text file containing the list of science FITS files that need to be reduced
   input.science_filelist = 'science.txt'
 
-  ; text file containing the list of FITS files with dark frames (used for bad pixel mask)
-  ; if 'none', the default dark will be used
-  input.darks_filelist = 'none'
+  ; text file containing the list of FITS files with dark frames
+  input.dark_filelist = 'none'
 
-  ; text file containing the list of FITS files with flat field
-  ; if 'none', the default flat field will be used
-  input.flats_filelist = 'none'
+  ; text file containing the list of FITS files for pixel-flat field
+  input.pixelflat_filelist = 'none'
+
+  ; text file containing the list of FITS files for illumination-flat field
+  input.illumflat_filelist = 'none'
+
+  ; text file containing the list of FITS files with arcs for wavelength calibration
+  input.arc_filelist = 'none'
 
   ; do you want to apply A-B sky subtraction?
   input.AB_subtraction = 1
