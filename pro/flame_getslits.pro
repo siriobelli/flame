@@ -450,6 +450,7 @@ PRO flame_getslits_findedges, fuel=fuel
         'height', old_slits_struc.approx_top - old_slits_struc.approx_bottom, $
         'bottom_poly', old_slits_struc.approx_bottom, $
         'filenames', ptr_new(/allocate_heap), $
+        'rough_wavecal', ptr_new(/allocate_heap), $
         'rectification', ptr_new(/allocate_heap), $
         'outlambda_min', 0d, $
         'outlambda_delta', 0d, $
@@ -496,6 +497,7 @@ PRO flame_getslits_findedges, fuel=fuel
           'height', slit_height, $
           'bottom_poly', poly_coeff, $
           'filenames', ptr_new(/allocate_heap), $
+          'rough_wavecal', ptr_new(/allocate_heap), $
           'rectification', ptr_new(/allocate_heap), $
           'outlambda_min', 0d, $
           'outlambda_delta', 0d, $

@@ -23,6 +23,7 @@ FUNCTION flame_create_input
     longslit_edge: [0,0], $
     wavecal_approx_smooth : 5, $
     use_sky_edge : 0, $
+    rough_wavecal_R : 500, $
     intermediate_dir : 'intermediate/', $
     output_dir: 'output/' $
     }
