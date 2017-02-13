@@ -57,7 +57,7 @@ The following three external IDL libraries must be installed before running \fla
 \begin{enumerate}
 \item NASA's \href{http://idlastro.gsfc.nasa.gov/}{IDL Astronomy User's Library};
 \item David Fanning's \href{http://www.idlcoyote.com/code_tips/installcoyote.php}{Coyote Library};
-\item Craig Markwardt's \href{https://www.physics.wisc.edu/~craigm/idl/fitting.html}{mpfit} (only the mpfit.pro and mpfit2dfun.pro files are needed). 
+\item Craig Markwardt's \href{https://www.physics.wisc.edu/~craigm/idl/fitting.html}{mpfit} (only the mpfit.pro and mpfit2dfun.pro files are needed).
 \end{enumerate}
 Make sure to have the most recent versions of these libraries (at least more recent than the January 2016 release).
 
@@ -79,6 +79,7 @@ Download the \flame\ IDL code from \url{http://siriobelli.github.io/flame/}. Eit
 % ***********************************************************************************************
 
 
+\newpage
 
 \section{Setting up the Data Reduction}
 
@@ -86,8 +87,7 @@ Go to the directory that you want to use for the reduction of a data set (it is 
 \begin{itemize}
 \item Copy the file \texttt{flame\_driver.pro} from the flame/pro/ directory to the current directory.
 \item Create an ASCII file with, in each line, the full name (including absolute path) of a raw science file (e.g., science.txt)
-\item \emph{(optional)} Create an ASCII file with the names of the flat field frames (e.g., flats.txt)
-\item \emph{(optional)} Create an ASCII file with the names of the dark frames (e.g., darks.txt)
+\item \emph{(optional)} Create additional ASCII files with the names of the calibration frames (e.g., darks.txt, flats.txt, etc.)
 \end{itemize}
 
 
@@ -100,20 +100,22 @@ The very first step is to create the \inp\ structure:
  input = flame_create_input()
 \end{lstlisting}
 We now need to populate the fields in the \inp\ structure with values that are appropriate for the data set that we are reducing.
-We start by specifying the ASCII files containing the FITS file names:
+We start by specifying the ASCII files containing the FITS file names; for example like this:
 \begin{lstlisting}
 input.science_filelist = 'science.txt'
-input.darks_filelist = 'darks.txt'
-input.flats_filelist = 'none'
+input.dark_filelist = 'dark.txt'
+input.pixelflat_filelist = 'default'
+input.illumflat_filelist = 'none'
+input.arc_filelist = 'none'
 \end{lstlisting}
-In this example the flat field frames are not available and the corresponding field is set to \textquoteleft none\textquoteright. The same can be done for the dark frames. The science frames must, of course, always be specified.
+The science frames must always be specified, while for the other fields there are three possibilities: they can be set to \textquoteleft none\textquoteright\ (no calibration applied), to \textquoteleft default\textquoteright\ (the default calibration will be applied), or can be set to a text file containing the user-supplied calibration frames (such as \textquoteleft dark.txt\textquoteright).
 
-The last required input is the y pixel position of a reference star in both the A and the B position. These coordinates do not need to be exact. If the trace is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. The A and B coordinates need to be specified as the two elements of an array, for example:
+Finally, the y pixel position of a reference star in both the A and the B position must be provided:
 \begin{lstlisting}
-input.startrace_y_pos = [547, 560]
+input.star_y_A = 547
+input.star_y_B = 560
 \end{lstlisting}
-When no reference star is available, the dithering pattern must be specified manually. These and other advanced features are explained in the next section.
-
+These coordinates do not need to be exact. If the trace is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the dithering pattern must be specified manually. These and other advanced features are explained in the next section.
 
 
 \subsection{Advanced options}
@@ -127,17 +129,20 @@ The \inp\ structure contains additional fields that can be used to specify advan
 \tablehead{
 \colhead{Field} & \colhead{Default Value} & \colhead{Description} }
 \startdata
-science\_filelist   	& science.txt 		& name of ASCII file containing the list of science frames \\
-darks\_filelist   		& none 				& name of ASCII file containing the list of dark frames\\
-flats\_filelist   		& none 				& name of ASCII file containing the list of flat field frames	\\
+science\_filelist   	     & science.txt 		& name of ASCII file containing the list of science frames \\
+dark\_filelist   		       & none 				& name of ASCII file containing the list of dark frames\\
+pixelflat\_filelist        & none 				& name of ASCII file containing the list of frames for pixel flat field	\\
+illumflat\_filelist   		 & none 				& name of ASCII file containing the list of frames for illumination flat field	\\
+arc\_filelist   		  & none 				& name of ASCII file containing the list of lamp arc frames	\\
 dither\_filelist   		& none 				& name of ASCII file containing the list of dither positions \\
-intermediate\_dir		& intermediate/		& directory that will contain the intermediate products \\
-output\_dir				& output/			& directory that will contain the final output \\
-startrace\_y\_pos 		& [0, 0]			& pixel y-coordinate of the A and B position of the star trace \\
+intermediate\_dir		 & intermediate/		& directory that will contain the intermediate products \\
+output\_dir				   & output/			& directory that will contain the final output \\
+input.star\_y\_A 		 & 0			& pixel y-coordinate of the A position of the star trace \\
+input.star\_y\_B 		 & 0			& pixel y-coordinate of the B position of the star trace \\
 reduce\_only\_oneslit 	& 0 				& if non-zero, reduce only that one slit \\
 longslit 				& 0 				& set to one to reduce long-slit data \\
 longslit\_edge			& [0, 0] 			& when reducing long-slit data, only consider this range of pixel y-coordinate \\
-xrange\_star 			& [1000, 1200]		& range of star trace (in pixel x-coordinate) that will be extracted \\
+star\_x\_range 			& [1000, 1200]		& range of star trace (in pixel x-coordinate) that will be extracted \\
 wavecal\_approx\_smooth 	& 5 				& smoothing length used in the approximate wavecal calibration \\
 use\_sky\_edge			& 0 				& if set, the slit detection is based on the sky continuum instead of OH lines
 \enddata
@@ -330,7 +335,7 @@ Finally, all the slits are extracted from each corrected frame and saved as FITS
 % ---------------------------------------------------
 \subsection{\texttt{flame\_wavecal}}
 
-This is the most important and difficult step in the data reduction. An accurate wavelength calibration is not only useful for the scientific interpretation of the data, but is also necessary for a correct sky subtraction. 
+This is the most important and difficult step in the data reduction. An accurate wavelength calibration is not only useful for the scientific interpretation of the data, but is also necessary for a correct sky subtraction.
 
 For each slit, the wavelength calibration consists of two successive steps.
 
