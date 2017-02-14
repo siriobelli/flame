@@ -61,6 +61,9 @@
   ; manual slit positions
   input.slit_position_file = 'slit_edges.reg'
 
+  ; there are lots of cosmic rays on each individual frame
+  input.clean_individual_frames = 1
+
   ;**********************************
   ;**********************************
 

@@ -24,6 +24,7 @@ FUNCTION flame_create_input
     wavecal_approx_smooth : 5, $
     use_sky_edge : 0, $
     rough_wavecal_R : 500, $
+    clean_individual_frames : 0, $
     intermediate_dir : 'intermediate/', $
     output_dir: 'output/' $
     }
