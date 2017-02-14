@@ -627,7 +627,8 @@ PRO flame_getslits_cutout, fuel=fuel
     print,'Working on slit ', slits[i_slit].name, ' - ', slits[i_slit].number
 
     ; create directory
-    slitdir = fuel.input.intermediate_dir + 'slit' + string(slits[i_slit].number,format='(I02)') + '/'
+    slitdir = file_expand_path(fuel.input.intermediate_dir) + $
+      '/slit' + string(slits[i_slit].number,format='(I02)') + '/'
     file_delete, slitdir, /allow_nonexistent, /recursive
     file_mkdir, slitdir
 

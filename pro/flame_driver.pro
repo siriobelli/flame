@@ -122,7 +122,9 @@
   ;****************************************************
 
 
-  flame_wavecal, fuel=fuel
+  flame_wavecal_rough, fuel=fuel
+
+  flame_wavecal_accurate, fuel=fuel
 
 
   ;****************************************************

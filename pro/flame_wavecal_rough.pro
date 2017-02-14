@@ -175,7 +175,8 @@ FUNCTION flame_wavecal_approximate, fuel=fuel, this_slit=this_slit
 	; how many pixels on the spatial direction
 	N_spatial_pix = (size(im))[2]
 
-	; sky spectrum: extract along the central 5 pixels 			; NB: NEED TO MAKE SURE THAT THIS IS, INDEED, SKY, AND NOT THE OBJECT
+	; sky spectrum: extract along the central 5 pixels
+  ; NB: NEED TO MAKE SURE THAT THIS IS, INDEED, SKY, AND NOT THE OBJECT
 	sky = median(im[*, N_spatial_pix/2-3 : N_spatial_pix/2+2], dimension=2)
 
 	; get rid of NaNs, which create problems for the cross-correlation
@@ -192,9 +193,7 @@ FUNCTION flame_wavecal_approximate, fuel=fuel, this_slit=this_slit
 	sky /= max(sky, /nan)
 
 	; start PS file
-	filename_pieces = strsplit(slit_filename, '/', /extract) ; necessary for finding the slit directory
-	filename_pieces[-1] = 'wavelength_solution_estimate.ps'
-	ps_filename =  strjoin(filename_pieces, '/')
+  ps_filename = file_dirname(slit_filename, /mark_directory) + 'wavelength_solution_estimate.ps'
 	cgPS_open, ps_filename, /nomatch
 
 
@@ -275,6 +274,32 @@ FUNCTION flame_wavecal_approximate, fuel=fuel, this_slit=this_slit
 		 approx_lambda_central=coarse_lambda_central, pix_scale_grid=pix_scale_grid, pix_scale_variation_grid=pix_scale_variation_grid, $
 		 lambda_axis=lambda_axis, title='after second cross-correlation'
 
+
+	print, ''
+	print, 'THIRD STEP: further refine wavelength solution'
+	print, '-----------------------------------------------------------------------------'
+
+
+	; set the size of the grid
+	N_pix_scale = 20
+	N_pix_scale_variation = 20
+
+
+	; make the grid
+	; for the pixel scale, bracket the value found in the second step, +/- 15% of its value
+	i_mid = n_elements(lambda_axis)/2
+ 	approx_pixel_scale = lambda_axis[i_mid+1] - lambda_axis[i_mid]
+	pix_scale_grid = approx_pixel_scale + 0.15*approx_pixel_scale * (-0.5 + dindgen(N_pix_scale)/double(N_pix_scale-1) )
+
+	; the other parameter is the relative variation in pixel scale
+	approx_pix_scale_variation = (lambda_axis[i_mid+1]-lambda_axis[i_mid]) / (lambda_axis[i_mid] - lambda_axis[i_mid-1]) - 1d
+	pix_scale_variation_grid = approx_pix_scale_variation + 0.15*approx_pix_scale_variation * (-0.5 + dindgen(N_pix_scale_variation)/double(N_pix_scale_variation-1) )
+
+	; cross-correlate the observed and model sky spectra and find a good wavelength solution
+	flame_wavecal_crosscorr, sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
+		 approx_lambda_central=median(lambda_axis), pix_scale_grid=pix_scale_grid, pix_scale_variation_grid=pix_scale_variation_grid, $
+		 lambda_axis=lambda_axis, title='after third cross-correlation'
+
   cgPS_close
 
 	; return the approximate wavelength axis
@@ -293,6 +318,12 @@ END
 
 PRO flame_wavecal_rough, fuel=fuel
 
+	start_time = systime(/seconds)
+
+  print, ' '
+  print, 'flame_wavecal_rough'
+  print, '*******************'
+  print, ' '
 
 	; extract the slits structures
 	slits = fuel.slits
@@ -303,12 +334,16 @@ PRO flame_wavecal_rough, fuel=fuel
 		this_slit = fuel.slits[i_slit]
 
 	  print, 'Rough wavelength calibration for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
-		print, '*************************************************************'
+		print, ' '
 
 		rough_wavecal = flame_wavecal_approximate( fuel=fuel, this_slit=this_slit)
     *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
 
   endfor
 
+
+	; revert to original !QUIET state
+	!QUIET = quiet_state
+	print, 'It took ', systime(/seconds) - start_time, ' seconds'
 
 END
