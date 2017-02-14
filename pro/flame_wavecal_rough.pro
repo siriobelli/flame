@@ -341,9 +341,6 @@ PRO flame_wavecal_rough, fuel=fuel
 
   endfor
 
-
-	; revert to original !QUIET state
-	!QUIET = quiet_state
 	print, 'It took ', systime(/seconds) - start_time, ' seconds'
 
 END
