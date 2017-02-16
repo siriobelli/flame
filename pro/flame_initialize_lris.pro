@@ -162,7 +162,7 @@ FUNCTION flame_initialize_lris_gain, instrument
   ; LRIS - RED
   if (strsplit(instrument.detector, /extract))[0] eq 'LRIS-R' then begin
 
-    gain = [1.55, 1.56, 1.63, 1.70]
+    gain = [1.255, 1.180, 1.191, 1.162]
 
   endif
 

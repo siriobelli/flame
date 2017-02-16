@@ -205,7 +205,7 @@ PRO flame_wavecal_writeds9, OH_lines, filename=filename
 
   ; write header
   printf, lun, '# Region file format: DS9 version 4.1'
-  printf, lun, 'global color=green dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
+  printf, lun, 'global color=red dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
   printf, lun, 'image'
 
   for i_line=0, n_elements(uniq_lambdas)-1 do begin
@@ -519,6 +519,8 @@ PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
 	flame_wavecal_writeds9, OH_lines, filename =  $
 		flame_util_replace_string(slit_filename, '.fits', '_OHlines.reg')
 
+  ; write a FITS file with the pixel-by-pixel wavelength solution
+  writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), wavelength_solution, hdr
 
 END
 
