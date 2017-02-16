@@ -224,10 +224,12 @@ PRO flame_wavecal_writeds9, OH_lines, filename=filename
  	this_y = this_y[wsort]
 
     ; concatenate points
-    ;all_x = [top_x, reverse(bottom_x)]
-    ;all_y = [top_y, reverse(bottom_y)]
     all_x = [ this_x, reverse(this_x) ]
     all_y = [ this_y, reverse(this_y) ]
+
+		; in ds9, the first pixel is (1,1), not (0,0)
+		all_x += 1
+		all_y += 1
 
     ; make the string with all the points
     all_points = ''
