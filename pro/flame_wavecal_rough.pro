@@ -118,9 +118,9 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
 	cgplot, poly(indgen(N_skypix), approx_coeff), sky, $
 		charsize=1, thick=3, xtit='', title=plot_title, layout=[1,2,1]
 	cgplot, model_l, model_f, color='red', /overplot, thick=3
-  cgtext, 0.5, 0.9, 'before cross-correlation', charsize=1, /normal, alignment=0.5
-	cgtext, 0.75, 0.88, 'observed sky', charsize=1, /normal
-	cgtext, 0.75, 0.84, 'model sky', charsize=1, /normal, color='red'
+  cgtext, 0.5, 0.94, 'before cross-correlation', charsize=0.8, /normal, alignment=0.5
+	cgtext, 0.75, 0.94, 'observed sky', charsize=0.8, /normal
+	cgtext, 0.75, 0.91, 'model sky', charsize=0.8, /normal, color='red'
 
 
   ; cross-correlation
@@ -150,50 +150,42 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
 		print, strjoin(replicate(string(8B),10)) + $
       strtrim( round( 100. * float(i3+i2*N3+i1*N2*N3)/float(N1*N2*N3-1) ) , 2) + '%' , format='(a,$)'
 
+    ; coefficients for this loop
     this_coeff = [ approx_lambda_0, pix_scale_grid[i1], a2_grid[i2], a3_grid[i3] ]
-
-		; ; this is the new wavelength axis, with the chosen coefficients
-    ; lambda_axis = poly(indgen(N_skypix), this_coeff )
-    ;
-		; ; need to interpolate the model onto the new wavelength axis
-		; new_model_f = interpol( model_f, model_l, lambda_axis)
 
     ; calculate the cross-correlation
     ; ----------------------
 
+    ; sky vector of fixed size, normalized
     x = sky - mean(sky, /nan)
     x /= max(x, /nan)
-    N = n_elements(x)
 
+    ; array that will contain the cross-correlation values
     cross = dblarr(n_elements(lag))
 
+    ; loop through all the lag values
     for k=0L, n_elements(lag)-1 do begin
 
-      ; need to interpolate the model onto the new wavelength axis
+      ; set the zero-point for this particular lag
       this_coeff[0] = approx_lambda_0 + lag[k]*this_coeff[1]
+
+      ; interpolate the model onto the new wavelength axis
       lambda_axis = poly(indgen(N_skypix), this_coeff )
-		  new_model_f = interpol( model_f, model_l, lambda_axis)
-      y = new_model_f - mean(new_model_f)
+		  y = interpol( model_f, model_l, lambda_axis)
+
+      ; normalize model
+      y -= mean(y, /nan)
       y /= max(y, /nan)
 
-      ; cgplot, lambda_axis, y, xra=extended_waverange, /xsty, color='red'
-      ; cgplot, lambda_axis, x, /overplot
-
-      cross[k] = total( x * y ) / sqrt( total(x^2) * total(y^2) )    ; divide by the variance
-
-      ; if lag[k] GE 0.0 then $
-      ;   cross[k] = total( x[ 0 : N-1 - lag[k] ] * y[ lag[k] : * ] ) $
-      ; else $
-      ;   cross[k] = total( y[ 0 : N-1 + lag[k] ] * x[ -lag[k] : * ] )
+      ; calculate cross-correlation (total of product divided by variance)
+      cross[k] = total( x * y ) / sqrt( total(x^2) * total(y^2) )
 
     endfor
 
-    crosscorr = cross
+    ; find the lag that maximizes the cross-correlation
+		max_cc = max(cross, ind, /nan)
 
-		;crosscorr = c_correlate(sky, new_model_f, lag)
-    ; ----------------------
-
-		max_cc = max(crosscorr, ind, /nan)
+    ; keep only the lag and cc value at the peak
 		cc_table[i3, i2, i1] = max_cc
 		delta_table[i3, i2, i1] = lag[ind]
 
@@ -238,7 +230,7 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
   ; show spectra with new wavelength calibration
 	cgplot, lambda_axis, sky, charsize=1, thick=3, xtit='wavelength (micron)', title=title, layout=[1,2,2]
 	cgplot, lambda_axis, new_model_f, color='red', /overplot, thick=3
-  cgtext, 0.5, 0.4, 'after cross-correlation', charsize=1, /normal, alignment=0.5
+  cgtext, 0.5, 0.44, 'after cross-correlation', charsize=0.8, /normal, alignment=0.5
 
 	; return the wavelength solution
 	wavecal_coefficients = new_coefficients
@@ -292,24 +284,22 @@ FUNCTION flame_wavecal_approximate, fuel=fuel, this_slit=this_slit
 		/ double(n_elements(sky))
 
 	; first, we assume a constant pixel scale, in micron per pixels:
-  pix_scale_grid = estimated_pix_scale * 10.0^(-0.66 + 1.32*dindgen(1000)/999.0)
-  pix_scale_grid = 7.9d-5 * (0.9 + 0.20 *dindgen(10)/9.0)
+  ;pix_scale_grid = estimated_pix_scale * 10.0^(-0.66 + 1.32*dindgen(50)/49.0)
+  pix_scale_grid = estimated_pix_scale * (0.5 + 1.0 *dindgen(51)/50.0)
 
   flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 	 approx_lambda_0=this_slit.approx_wavelength_lo, pix_scale_grid=pix_scale_grid, $
    R_smooth = fuel.input.rough_wavecal_R, plot_title='first: find pixel scale and zero-point', $
 	 wavecal_coefficients=wavecal_coefficients
 
-  cgPS_close
-   return, poly(indgen(n_elements(sky)), wavecal_coefficients)
 
 	print, ''
 	print, 'SECOND STEP: refine wavelength solution by using non-uniform wavelength axis'
 	print, '-----------------------------------------------------------------------------'
 
 	; set the size of the grid
-	N1 = 11
-	N2 = 11
+	N1 = 3
+	N2 = 21
 
 	; make the grid
 	; for the pixel scale, bracket the value found in the coarse fit, +/- 5% of its value
