@@ -39,7 +39,8 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_lines
+PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_lines, $
+		wavecal_accurate=wavecal_accurate
 
 ; This routine calculates the 2D wavelength solution and y-rectification.
 ; These are two mappings from the observed pixel coordinates to the rectified grid
@@ -116,6 +117,18 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OH_lines=OH_line
 	; save into slit structure
 	this_rectification = {Klambda:Klambda, Kgamma:Kgamma, Kx:Kx, Ky:Ky}
 	*slit.rectification = [ *slit.rectification, this_rectification]
+
+	; finally, output the actual wavelength calibration as a 2D array
+	wavecal_accurate = im * 0.0
+
+	; order of polynomial
+	Nord = (size(Klambda))[1]
+	xexp  = findgen(Nord)
+	yexp  = findgen(Nord)
+
+	for ix=0.0,N_imx-1 do $
+		for iy=0.0,N_imy-1 do $
+			wavecal_accurate[ix,iy] = lambda_0 + delta_lambda * total(((iy)^xexp # (ix)^yexp ) * Klambda)
 
 END
 
@@ -635,6 +648,9 @@ PRO flame_wavecal_accurate, fuel=fuel
 		; make sure there are no old rectification coefficients left over
 		this_slit.rectification = ptr_new(/allocate_heap)
 
+		; the initial guess for the first frame is from the rough wavelength calibration
+		guess_lambda_axis = *this_slit.rough_wavecal
+
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
 
       ; if needed, clean the cutout from cosmic rays
@@ -642,17 +658,20 @@ PRO flame_wavecal_accurate, fuel=fuel
         flame_wavecal_clean, slit=this_slit, index=i_frame
 
 			flame_wavecal_oneslit, fuel=fuel, slit_filename=(*slits[i_slit].filenames)[i_frame], $
-				approx_lambda_axis=*this_slit.rough_wavecal, $
+				approx_lambda_axis=guess_lambda_axis, $
 				OH_lines=OH_lines, wavelength_solution=wavelength_solution
 
 			flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
 				OH_lines=OH_lines, slit=this_slit
 
 			flame_wavecal_2D_calibration, filename=(*slits[i_slit].filenames)[i_frame], $
-				slit=this_slit, OH_lines=OH_lines
+				slit=this_slit, OH_lines=OH_lines, wavecal_accurate=wavecal_accurate
 
 			; update the slit structure with the output wavelength grid of the last frame
 			fuel.slits[i_slit] = this_slit
+
+			; use the accurate wavecal of the central pixel row as guess for the next frame
+			guess_lambda_axis = wavecal_accurate[ * , (size(wavecal_accurate))[2]/2 ]
 
 		endfor
 
