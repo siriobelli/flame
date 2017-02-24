@@ -314,7 +314,7 @@ FUNCTION flame_wavecal_skylines, fuel=fuel, x=x, y=y, $
 	for i_line=0,n_elements(line_list)-1 do begin
 
 		; select the region to fit
-		w_fit = where( abs(wavelength_axis_guess-line_list[i_line]) LT 4.0*approximate_linewidth_A, /null )
+		w_fit = where( abs(wavelength_axis_guess-line_list[i_line]) LT 3.0*approximate_linewidth_A, /null )
 
 		; check that the region is within the observed range
 		if w_fit eq !NULL then continue
@@ -411,7 +411,7 @@ PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
 	print, '*************************************************************************************************'
 	print, ' '
 
-	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_wavecal.ps'), /nomatch
+;	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_wavecal.ps'), /nomatch
 
 
 	; load the slit image
