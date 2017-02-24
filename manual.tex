@@ -143,7 +143,7 @@ reduce\_only\_oneslit 	& 0 				& if non-zero, reduce only that one slit \\
 longslit 				& 0 				& set to one to reduce long-slit data \\
 longslit\_edge			& [0, 0] 			& when reducing long-slit data, only consider this range of pixel y-coordinate \\
 star\_x\_range 			& [1000, 1200]		& range of star trace (in pixel x-coordinate) that will be extracted \\
-wavecal\_approx\_smooth 	& 5 				& smoothing length used in the approximate wavecal calibration \\
+rough\_wavecal\_R 	& 500				& target spectral resolution for the rough wavecal calibration \\
 use\_sky\_edge			& 0 				& if set, the slit detection is based on the sky continuum instead of OH lines
 \enddata
 %\tablecomments{Some comment here.}
@@ -257,7 +257,7 @@ idl flame_driver.pro
 \end{lstlisting}
 Another possibility, which allows some interaction and testing, is to copy line-by-line the content of the driver file onto an interactive IDL session. In this way one can explore the output files and the fuel structure after every step.
 
-The second part of the driver file contains eight steps or modules, which we are going to examine in detail in this section. Every module is an IDL routine whose name starts with \texttt{flame\_} and which is saved in a .pro file with the same name in the directory flame/pro/. All modules accept (and require) only one argument, which is the \fuel\ structure, so that the IDL code for each module looks the same:
+The second part of the driver file contains nine steps or modules, which we are going to examine in detail in this section. Every module is an IDL routine whose name starts with \texttt{flame\_} and which is saved in a .pro file with the same name in the directory flame/pro/. All modules accept (and require) only one argument, which is the \fuel\ structure, so that the IDL code for each module looks the same:
 \begin{lstlisting}
 flame_modulename, fuel=fuel
 \end{lstlisting}
@@ -333,19 +333,14 @@ Finally, all the slits are extracted from each corrected frame and saved as FITS
 
 
 % ---------------------------------------------------
-\subsection{\texttt{flame\_wavecal}}
+\subsection{\texttt{flame\_wavecal\_rough}}
 
-This is the most important and difficult step in the data reduction. An accurate wavelength calibration is not only useful for the scientific interpretation of the data, but is also necessary for a correct sky subtraction.
+The wavelength calibration is arguably the most important and difficult step in the data reduction. An accurate calibration is not only useful for the scientific interpretation of the data, but is also necessary for a correct sky subtraction.
 
-For each slit, the wavelength calibration consists of two successive steps.
-
-
-\subsubsection{Approximate Wavelength Calibration}
-
-The first step finds an approximate wavelength calibration for the entire slit, using only the first science frame. The sky spectrum is extracted from the central five pixels of the slit, and is compared to a model spectrum. A very rough wavelength range is calculated from the header during the initialization, and the model sky is trimmed to a reasonable range. The comparison consists of two successive steps:
+In \flame, the wavelength calibration is split into two steps. The first step finds an approximate wavelength calibration for the central part of the slit, using only the first science frame. The sky spectrum is extracted from the central five pixels of the slit, and is compared to a model spectrum. The comparison consists of two successive steps:
 \begin{enumerate}
-\item Both the observed and the model sky spectra are smoothed, and a series of values for the pixel scale (in micron per pixel) are tested. At each loop, cross-correlation is used to find the initial wavelength, and the pixel scale that gives the largest value of the cross-correlation is selected.
-\item Once the pixel scale and the initial wavelength are roughly known, a finer comparison is necessary. In this case the spectra are not smoothed, so that the narrow OH lines can be used for a very effective comparison. The relation between $x$ pixel coordinate and wavelength is typically not linear, and a second-order polynomial is used: $\lambda(x) = a_0 + a_1 x + a_2 x^2$. A fine grid of values for $a_1$ and $a_2$ is used, and at each loop cross-correlation is used to determine the best value for $a_0$.
+\item Both the observed and the model sky spectra are smoothed to an intermediate spectral resolution ($R=500$, but this value is stored in the input structure and can be changed by the user), and a series of values for the pixel scale (in micron per pixel) are tested. At each loop, cross-correlation is used to find the initial wavelength, and the pixel scale that gives the largest value of the cross-correlation is selected.
+\item Once the pixel scale and the initial wavelength are roughly known, a finer comparison is performed. In this case the spectra are not heavily smoothed, so that the narrow OH lines can be used for a very effective comparison. The relation between $x$ pixel coordinate and wavelength is typically not linear, and a second-order polynomial is used: $\lambda(x) = a_0 + a_1 x + a_2 x^2$. A fine grid of values for $a_1$ and $a_2$ is used, and at each loop cross-correlation is used to determine the best value for $a_0$.
 \end{enumerate}
 
 Two plots, illustrating the two comparisons of observed and model sky spectra, are saved as ps files (wavelength\_solution\_estimate.ps). An example is given in Figure \ref{fig:wavecal_approx}.
@@ -363,11 +358,12 @@ Two plots, illustrating the two comparisons of observed and model sky spectra, a
 \end{figure*}
 
 
-\subsubsection{Accurate Wavelength Calibration}
+% ---------------------------------------------------
+\subsection{\texttt{flame\_wavecal\_accurate}}
 
-The previous procedure gives only a rough wavelength calibration that is valid for the pixel rows at the center of the slits. Since the wavelength solution typically varies with spatial coordinate within the slit (particularly for tilted slits), the calibration needs to be calculated for each individual pixel row.
+The previous procedure gives only a rough wavelength calibration that is valid for the pixel rows at the center of the slits. Since the wavelength solution typically varies with spatial coordinate within the slit (particularly for tilted slits), the calibration needs to be calculated for each individual pixel row, which is done in this step.
 
-Initially, the spectrum of the central pixel row is extracted, and the individual OH emission lines are identified using the approximate wavelength solution. The $x$ coordinate (in pixels) of the center of each line is calculated via fitting of a Gaussian profile. The relation between the $x$ coordinate and the expected wavelength is then fit with a low order polynomial (see example in Figure \ref{fig:wavecal_accurate}). This procedure is then repeated for the next pixel row, using the wavelength solution from the previous pixel row as first guess. This is always a good assumption as long as the wavelength solution varies smoothly with position, without abrupt changes from one pixel position to the next.
+Initially, the spectrum of the central pixel row is extracted, and the individual OH emission lines are identified using the rough wavelength solution. A Gaussian fit is performed on each line, and the $x$ pixel coordinate corresponding to the center is stored. It is therefore necessary that the calibration found in the previous step is accurate to within the window used in the Gaussian fit, otherwise the identification of the OH lines will not be possible. The relation between the $x$ coordinate and the expected wavelength of each OH line is then fit with a low order polynomial (see example in Figure \ref{fig:wavecal_accurate}). This procedure is then repeated for the next pixel row, using the wavelength solution from the previous pixel row as first guess. This is always a good assumption as long as the wavelength solution varies smoothly with position, without abrupt changes from one pixel position to the next.
 
 After all the pixel rows have been processed, the final result is a number of $x,y$ coordinates of detected OH lines, and the corresponding theoretical wavelength. A ds9 region file (OHlines.reg) showing the detected location of the OH lines is produced. These coordinates are used to construct the transformation between the observed $(x,y)$ pixel position and the wavelength value. The IDL procedure POLYWARP is used to calculate the polynomial coefficients that describe the transformation.
 
