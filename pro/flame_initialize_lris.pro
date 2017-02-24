@@ -110,8 +110,10 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
   ; trace the edges of the slits using the sky emission lines
   for i_slit=0, n_elements(slit_y)/2-1 do begin
 
-  ; NEED TO calculate approximate wavelength range
-  lambda_range = [0.6, 0.9]
+  ; NEED TO calculate these values for different settings
+  range_lambda0 = [0.4, 0.7]
+  range_pixel_scale = [5d-5, 10d-5]
+
 
     this_slit = { $
       number:i_slit+1, $
@@ -120,8 +122,8 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
       approx_bottom:slit_y[2*i_slit], $
       approx_top:slit_y[2*i_slit+1], $
       approx_target: 0.5 * (slit_y[2*i_slit] + slit_y[2*i_slit+1]), $
-      approx_wavelength_lo:lambda_range[0], $
-      approx_wavelength_hi:lambda_range[1] }
+      range_lambda0:range_lambda0, $
+      range_pixel_scale:range_pixel_scale }
 
     slits = [slits, this_slit]
 

@@ -55,6 +55,14 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
     lambda_range = $
      flame_initialize_luci_waverange(instrument, 162.0)
 
+     ; range in lambda0 to be realistically considered
+     lambda_wide = lambda_range[1] - lambda_range[0]
+     range_lambda0 = [ lambda_range[0] - 0.5*lambda_wide, lambda_range[1] + 0.5*lambda_wide]
+
+     ; calculate pixel scale and its possible variation
+     pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
+     range_pixel_scale = pixel_scale*[0.5,1.5]
+
     ; create slit structure
     slits = { $
       number:1, $
@@ -63,8 +71,8 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
       approx_bottom:input.longslit_edge[0], $
       approx_top:input.longslit_edge[1], $
       approx_target:mean(input.longslit_edge), $
-      approx_wavelength_lo:lambda_range[0], $
-      approx_wavelength_hi:lambda_range[1] }
+      range_lambda0:range_lambda0, $
+      range_pixel_scale:range_pixel_scale }
 
   return, slits
 
@@ -289,6 +297,14 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument
     ; calculate approximate wavelength range
     lambda_range = flame_initialize_luci_waverange(instrument, slit_hdr[i_slit].x_mm)
 
+    ; range in lambda0 to be realistically considered
+    lambda_wide = lambda_range[1] - lambda_range[0]
+    range_lambda0 = [ lambda_range[0] - 0.5*lambda_wide, lambda_range[1] + 0.5*lambda_wide]
+
+    ; calculate pixel scale and its possible variation
+    pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
+    range_pixel_scale = pixel_scale*[0.5,1.5]
+
     this_slit = { $
       number:slit_num[i_slit], $
       name:slit_name[i_slit], $
@@ -296,8 +312,8 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument
       approx_bottom:bottom[i_slit], $
       approx_top:top[i_slit], $
       approx_target:target[i_slit], $
-      approx_wavelength_lo:lambda_range[0], $
-      approx_wavelength_hi:lambda_range[1] }
+      range_lambda0:range_lambda0, $
+      range_pixel_scale:range_pixel_scale }
 
     slits = [slits, this_slit]
 

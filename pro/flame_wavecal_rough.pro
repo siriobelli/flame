@@ -12,14 +12,14 @@
 
 
 PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambda, model_flux=model_flux, $
-	 approx_lambda_0=approx_lambda_0, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, a3_grid=a3_grid, $
+	 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, a3_grid=a3_grid, $
    R_smooth = R_smooth, plot_title=plot_title, $
 	 wavecal_coefficients=wavecal_coefficients
 
    ; inputs:
    ; observed_sky (1D spectrum)
    ; model_lambda, model_flux (1D spectrum and corresponding wavelength axis)
-   ; approx_lambda_0 (scalar, approximate wavelength of first pixel of observed_sky)
+   ; lambda0_range (array, the two values bracketing the wavelength of the first pixel)
    ; pix_scale_grid (array of pixel scale values to be considered)
    ; a2_grid (optional, array of a2 values to be considered)
    ; a3_grid (optional, array of a3 values to be considered)
@@ -55,7 +55,7 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
   if keyword_set(R_smooth) then begin
 
     ; calculate the sigma for smoothing given the spectral resolution R
-    expected_lambdacen = approx_lambda_0 + 0.5*median(pix_scale_grid)*N_skypix
+    expected_lambdacen = mean(lambda0_range) + 0.5*median(pix_scale_grid)*N_skypix
   	smoothing_sigma = expected_lambdacen / (2.36 * R_smooth)
 
     ; smooth observed sky
@@ -64,15 +64,18 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
   endif
 
   ; trim edge to avoid problems
-  sky[0:10] = 0.
-  sky[-11:-1] = 0.
+  sky[0:10] = !values.d_nan
+  sky[-11:-1] = !values.d_nan
+
+  ; normalize spectrum
+  sky -= median(sky)
+  sky /= max(sky, /nan)
 
   ; get rid of NaNs, which create problems for the cross-correlation
   sky[where(~finite(sky), /null)] = 0
 
-  ; normalize spectrum
-  sky -= mean(sky, /nan)
-  sky /= max(sky, /nan)
+  ; let's assume the mid-point lambda as the reference one
+  lambda_ref = mean(lambda0_range)
 
 
   ; setup model spectrum
@@ -90,18 +93,11 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
   model_f -= median(model_f)
   model_f /= max(model_f, /nan)
 
-  ; get rid of NaNs, which create problems for the cross-correlation
-  model_f[where(~finite(model_f), /null)] = 0
-
-  ; for a tidy extrapolation, first and last elements of model should be zeros
-  model_f[0:5] = 0.
-  model_f[-5:*] = 0.
-
 
 	; show spectra before cross-correlation
   ;-----------------------------------------------------------------------------
   erase
-  approx_coeff = [approx_lambda_0, median(pix_scale_grid), median(a2_grid), median(a3_grid) ]
+  approx_coeff = [lambda_ref, median(pix_scale_grid), median(a2_grid), median(a3_grid) ]
 	cgplot, poly(indgen(N_skypix), approx_coeff), sky, $
 		charsize=1, thick=3, xtit='', title=plot_title, layout=[1,2,1]
 	cgplot, model_l, model_f, color='red', /overplot, thick=3
@@ -135,8 +131,8 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
 		print, strjoin(replicate(string(8B),10)) + $
       strtrim( round( 100. * float(i3+i2*N3+i1*N2*N3)/float(N1*N2*N3-1) ) , 2) + '%' , format='(a,$)'
 
-    ; coefficients for this loop
-    this_coeff = [ approx_lambda_0, pix_scale_grid[i1], a2_grid[i2], a3_grid[i3] ]
+    ; coefficients for this loop, assuming the reference lambda
+    this_coeff = [ lambda_ref, pix_scale_grid[i1], a2_grid[i2], a3_grid[i3] ]
 
     ; calculate the lambda axis corresponding to these coefficients
     lambda_axis = poly(indgen(N_skypix), this_coeff )
@@ -154,8 +150,8 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
     ; interpolate the observed sky on a linear axis wavelength
     sky_linear = interpol( sky, lambda_axis, lambda_axis_linear)
 
-    ; identify the indices corresponding to the sky spectrum assuming approx_lambda_0
-    w_start = (where(this_model_l GT approx_lambda_0, /null))[0]
+    ; identify the indices corresponding to the sky spectrum assuming the reference lambda
+    w_start = (where(this_model_l GE lambda_ref, /null))[0]
     w_end = w_start + N_skypix-1
     if w_end GE n_elements(this_model_f) then begin
       print, 'sky model does not cover enough wavelength range'
@@ -166,7 +162,10 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
     ; ----------------------
 
     ; wavelength shift values to probe
-   	lag = -n_elements(sky_linear)/2 + indgen(n_elements(sky_linear))	; in pixels
+    lag = indgen( (lambda0_range[1]-lambda0_range[0]) / this_coeff[1] ) ; in pixels
+
+    ; but with zero corresponding to the reference lambda, at the center of the range
+    lag -= n_elements(lag)/2
 
     ; array that will contain the cross-correlation values
     cross = dblarr(n_elements(lag))
@@ -181,8 +180,11 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
       y = y[w_start: w_end]
 
       ; normalize model
-      y -= mean(y, /nan)
+      y -= median(y)
       y /= max(y, /nan)
+
+      ; get rid of NaNs, which create problems for the cross-correlation
+      y[where(~finite(y), /null)] = 0
 
       ; cgplot, sky_linear, title=number_formatter(this_coeff[1], decimals=4)
       ; cgplot, y, /overplot, color='red'
@@ -205,10 +207,6 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
 	; find the best point in the grid, the one with the highest value of cross-correlation
 	max_cc = max(cc_table, ind)
 
-  ; check that we are within the boundary
-	if ind eq 0 or ind eq n_elements(max_cc)-1 then $
-		print, 'WARNING: Cross correlation selected value at the edge of the grid!'
-
 	; wavelength shift in pixels
 	best_delta = delta_table[ind]
 
@@ -218,9 +216,10 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
     ind3d = [ind2d[0], ind2d[1], 0]
   endif else $
 	 ind3d = array_indices(cc_table, ind)
-  best_coefficients = [ approx_lambda_0, pix_scale_grid[ind3d[2]], a2_grid[ind3d[1]], a3_grid[ind3d[0]] ]
+  best_coefficients = [ lambda_ref, pix_scale_grid[ind3d[2]], a2_grid[ind3d[1]], a3_grid[ind3d[0]] ]
 
 	print, ''
+  print, 'cross correlation at peak = ', max_cc
   print, 'pixel shift = ', best_delta
   print, 'pixel scale = ', best_coefficients[1]
 
@@ -262,10 +261,6 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
 	; pix_scale_variation parameter for non-uniform wavelength solution
 	;
 
-  range_start_lambda = [0.4, 0.7]
-  range_pixel_scale = [5d-5, 10d-5]
-
-
 	; load the slit image
 	;---------------------
 
@@ -283,9 +278,8 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
   ; NB: NEED TO MAKE SURE THAT THIS IS, INDEED, SKY, AND NOT THE OBJECT
 	sky = median(im[*, N_spatial_pix/2-3 : N_spatial_pix/2+2], dimension=2)
 
-  ; estimated pixel scale from the approximate wavelength range
-	; estimated_pix_scale = (this_slit.approx_wavelength_hi-this_slit.approx_wavelength_lo) $
-	; 	/ double(n_elements(sky))
+  range_pixel_scale = this_slit.range_pixel_scale
+  range_start_lambda = this_slit.range_lambda0
 
 
   ; load the model sky spectrum
@@ -293,7 +287,6 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
   readcol, fuel.util.sky_emission_filename, model_lambda, model_flux	; lambda in micron
 
   ; cut out a reasonable range
-  ;extra_range = 0.5*(this_slit.approx_wavelength_hi-this_slit.approx_wavelength_lo)
   wide_range = [ range_start_lambda[0], range_start_lambda[1] + range_pixel_scale[1]*n_elements(sky) ]
   w_reasonable = where(model_lambda GT wide_range[0] $
     and model_lambda LT wide_range[1], /null)
@@ -315,15 +308,11 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
 	print, '-----------------------------------------------------'
 
 	; first, we assume a constant pixel scale, in micron per pixels:
-  ;pix_scale_grid = estimated_pix_scale * (0.7 + 0.6 *dindgen(301)/300.0)
-  ;pix_scale_grid = 8.0973307e-05* (0.8 + 0.4 *dindgen(101)/100.0)
   pix_scale_grid = range_pixel_scale[0] + $
     (range_pixel_scale[1]-range_pixel_scale[0])*dindgen(51)/50.0
 
-  approx_lambda_0 = mean(range_start_lambda)
-
   flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
-	 approx_lambda_0=approx_lambda_0, pix_scale_grid=pix_scale_grid, $
+	 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
    R_smooth = fuel.input.rough_wavecal_R, plot_title='first: find pixel scale and zero-point', $
 	 wavecal_coefficients=wavecal_coefficients
 
@@ -334,11 +323,11 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
 
 	; set the size of the grid
 	N1 = 21
-	N2 = 30
+	N2 = 80
 
 	; make the grid
-  ; for the pixel scale, bracket the value found in the coarse fit, +/- 15% of its value
-	pix_scale_grid = wavecal_coefficients[1] *( 0.85 + 0.30*dindgen(N1)/double(N1-1) )
+  ; for the pixel scale, bracket the value found in the coarse fit, +/- 10% of its value
+	pix_scale_grid = wavecal_coefficients[1] *( 0.90 + 0.20*dindgen(N1)/double(N1-1) )
 
   ; we assume that the pixel scale does not vary by more than a factor of 2
   ; across the full spectrum. This gives us the extreme negative values for a2:
@@ -350,13 +339,14 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
   ; the grid for a2 needs to include 0, and be logarithmic but also positive and negative
   a2_grid = [ -a2_ref * reverse(log_grid), 0.0, a2_ref * log_grid ]
 
+  ; there should not be a large shift in wavelength now
+  lambda0_range = [0.95, 1.05]*wavecal_coefficients[0]
+
+
   flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
-	 approx_lambda_0=wavecal_coefficients[0], pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
+	 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
    R_smooth = 3000, plot_title='second: use second-order polynomial', $
 	 wavecal_coefficients=wavecal_coefficients
-
-
-;stop
 
 	; print, ''
 	; print, 'THIRD STEP: further refine wavelength solution using 3rd order polynomial'
