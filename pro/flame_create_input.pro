@@ -21,7 +21,6 @@ FUNCTION flame_create_input
     reduce_only_oneslit : 0, $
     longslit: 0, $
     longslit_edge: [0,0], $
-    wavecal_approx_smooth : 5, $
     use_sky_edge : 0, $
     rough_wavecal_R : 500, $
     clean_individual_frames : 0, $
