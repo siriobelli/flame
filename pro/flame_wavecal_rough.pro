@@ -66,13 +66,11 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
   ; trim edge to avoid problems
   sky[0:10] = !values.d_nan
   sky[-11:-1] = !values.d_nan
+	sky[where(sky eq 0.0, /null)] = !values.d_nan
 
   ; normalize spectrum
   sky -= median(sky)
   sky /= max(sky, /nan)
-
-  ; get rid of NaNs, which create problems for the cross-correlation
-  sky[where(~finite(sky), /null)] = 0
 
   ; let's assume the mid-point lambda as the reference one
   lambda_ref = mean(lambda0_range)
@@ -113,7 +111,6 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
   N1 = n_elements(pix_scale_grid)
   N2 = n_elements(a2_grid)
   N3 = n_elements(a3_grid)
-
 
   ; these tables will store the result of the cross correlation
   ; note: need to store the parameters backwards (N3, N2, N1) so that even
@@ -183,15 +180,12 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
       y -= median(y)
       y /= max(y, /nan)
 
-      ; get rid of NaNs, which create problems for the cross-correlation
-      y[where(~finite(y), /null)] = 0
-
       ; cgplot, sky_linear, title=number_formatter(this_coeff[1], decimals=4)
       ; cgplot, y, /overplot, color='red'
       ; wait, 0.000001
 
       ; calculate cross-correlation (total of product divided by variance)
-      cross[k] = total( sky_linear * y ) / sqrt( total(sky_linear^2) * total(y^2) )
+      cross[k] = total( sky_linear * y, /nan ) / sqrt( total(sky_linear^2, /nan) * total(y^2, /nan) )
 
     endfor
 
@@ -314,6 +308,36 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
   flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 	 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
    R_smooth = fuel.input.rough_wavecal_R, plot_title='first: find pixel scale and zero-point', $
+	 wavecal_coefficients=wavecal_coefficients
+
+
+ 	print, 'again but now allow second-order variation'
+
+	; set the size of the grid
+	N1 = 9
+	N2 = 40
+
+	; make the grid
+  ; for the pixel scale, bracket the value found in the coarse fit, +/- 10% of its value
+	pix_scale_grid = wavecal_coefficients[1] *( 0.90 + 0.20*dindgen(N1)/double(N1-1) )
+
+  ; we assume that the pixel scale does not vary by more than a factor of 2
+  ; across the full spectrum. This gives us the extreme negative values for a2:
+  a2_ref = wavecal_coefficients[1] / (4d*n_elements(sky) + 1d)
+
+  ; then we make a generic grid, from 1/1000 to 1 with logarithmic spacing
+  log_grid = 10.0^( -3.0 + 3.0*dindgen(N2/2)/double(N2/2-1))
+
+  ; the grid for a2 needs to include 0, and be logarithmic but also positive and negative
+  a2_grid = [ -a2_ref * reverse(log_grid), 0.0, a2_ref * log_grid ]
+
+  ; there should not be a large shift in wavelength now
+	fullrange = wavecal_coefficients[1]*n_elements(sky)
+  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.15,0.15]
+
+  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
+	 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
+   R_smooth = fuel.input.rough_wavecal_R, plot_title='one and a half: use second-order polynomial', $
 	 wavecal_coefficients=wavecal_coefficients
 
 
