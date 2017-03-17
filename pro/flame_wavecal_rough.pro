@@ -216,6 +216,7 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
   print, 'cross correlation at peak = ', max_cc
   print, 'pixel shift = ', best_delta
   print, 'pixel scale = ', best_coefficients[1]
+	print, 'a2 = ', best_coefficients[2]
 
   ; applying the shift best_delta to the polynomial we find another polynomial function:
   new_coefficients = [ poly(best_delta, best_coefficients), $
@@ -290,7 +291,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
   model_flux = model_flux[w_reasonable]
 
 
-  ; first step: find zero-point and pixel scale
+  ; first step: smoothed spectrum, find zero-point and pixel scale
 	;---------------------
 
 	; start PS file
@@ -307,19 +308,24 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
 
   flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 	 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
-   R_smooth = fuel.input.rough_wavecal_R, plot_title='first: find pixel scale and zero-point', $
+   R_smooth = fuel.input.rough_wavecal_R[0], plot_title='first: find pixel scale and zero-point', $
 	 wavecal_coefficients=wavecal_coefficients
 
 
- 	print, 'again but now allow second-order variation'
+  ; second step: smoothed spectrum, add second-order variations
+	;---------------------
+
+	print, ''
+	print, 'SECOND STEP: rough estimate of second-order variation'
+	print, '-----------------------------------------------------'
 
 	; set the size of the grid
-	N1 = 9
+	N1 = 20
 	N2 = 40
 
 	; make the grid
-  ; for the pixel scale, bracket the value found in the coarse fit, +/- 10% of its value
-	pix_scale_grid = wavecal_coefficients[1] *( 0.90 + 0.20*dindgen(N1)/double(N1-1) )
+  ; for the pixel scale, bracket the value found in the coarse fit, +/- 20% of its value
+	pix_scale_grid = wavecal_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
 
   ; we assume that the pixel scale does not vary by more than a factor of 2
   ; across the full spectrum. This gives us the extreme negative values for a2:
@@ -331,45 +337,44 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
   ; the grid for a2 needs to include 0, and be logarithmic but also positive and negative
   a2_grid = [ -a2_ref * reverse(log_grid), 0.0, a2_ref * log_grid ]
 
-  ; there should not be a large shift in wavelength now
+  ; there should not be a large shift in wavelength now - allow up to 30% of the full lambda range
 	fullrange = wavecal_coefficients[1]*n_elements(sky)
-  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.15,0.15]
+  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.3,0.3]
+
+	print, 'lambda0: ', lambda0_range
+	print, 'a1: ', pix_scale_grid[0], pix_scale_grid[-1]
+	print, 'a2: ', a2_grid[0], a2_grid[-1]
+	print, a2_grid
 
   flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 	 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-   R_smooth = fuel.input.rough_wavecal_R, plot_title='one and a half: use second-order polynomial', $
+   R_smooth = fuel.input.rough_wavecal_R[1], plot_title='second: use second-order polynomial', $
 	 wavecal_coefficients=wavecal_coefficients
 
 
 	print, ''
-	print, 'SECOND STEP: refine wavelength solution by using non-uniform wavelength axis'
+	print, 'THIRD STEP: refine wavelength solution by using non-uniform wavelength axis'
 	print, '-----------------------------------------------------------------------------'
 
 	; set the size of the grid
 	N1 = 21
-	N2 = 80
+	N2 = 41
 
 	; make the grid
-  ; for the pixel scale, bracket the value found in the coarse fit, +/- 10% of its value
+  ; for the pixel scale, bracket the value found in the previous fit, +/- 10% of its value
 	pix_scale_grid = wavecal_coefficients[1] *( 0.90 + 0.20*dindgen(N1)/double(N1-1) )
 
-  ; we assume that the pixel scale does not vary by more than a factor of 2
-  ; across the full spectrum. This gives us the extreme negative values for a2:
-  a2_ref = wavecal_coefficients[1] / (4d*n_elements(sky) + 1d)
-
-  ; then we make a generic grid, from 1/1000 to 1 with logarithmic spacing
-  log_grid = 10.0^( -3.0 + 3.0*dindgen(N2/2)/double(N2/2-1))
-
-  ; the grid for a2 needs to include 0, and be logarithmic but also positive and negative
-  a2_grid = [ -a2_ref * reverse(log_grid), 0.0, a2_ref * log_grid ]
+	; for the a2 grid, bracket the value found in the previous fit, +/- a factor of 3
+  a2_grid =  wavecal_coefficients[2] *( 0.3 + 2.7*dindgen(N1)/double(N1-1) )
 
   ; there should not be a large shift in wavelength now
-  lambda0_range = [0.95, 1.05]*wavecal_coefficients[0]
+	fullrange = wavecal_coefficients[1]*n_elements(sky)
+  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.1,0.1]
 
 
   flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 	 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-   R_smooth = 3000, plot_title='second: use second-order polynomial', $
+   R_smooth = fuel.input.rough_wavecal_R[2], plot_title='third: use second-order polynomial', $
 	 wavecal_coefficients=wavecal_coefficients
 
 	; print, ''
