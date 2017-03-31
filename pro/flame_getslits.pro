@@ -1,4 +1,50 @@
 
+; ****************************************************************************************
+
+
+FUNCTION flame_getslits_findshift, fuel=fuel
+  ;
+  ; find the shift between the expected slit positions and the real ones
+  ;
+
+  ; for longslits this shift makes no sense
+  if fuel.input.longslit then return, 0.0
+
+  ; if the user specified the slit positions manually, then do not apply a shift
+  if fuel.input.slit_position_file ne 'none' then return, 0.0
+
+  ; read one FITS file
+  spec2d = readfits((fuel.util.corrscience_filenames)[0])
+
+  ; integrate the 2D spectrum along the wavelength direction, and smooth
+  x = median(total(spec2d, 1, /nan), 15)
+
+  ; find the edges of the slits (1d profile where positive peaks mark the beginning and negative peaks mark the end of the slit)
+  edges = x - shift(x, 4)
+  edges[ where( abs(edges) LT stddev(edges, /nan), /null ) ] = 0
+  edges[ where(edges GT 0.0, /null) ] =  1.0
+  edges[ where(edges LT 0.0, /null) ] = -1.0
+
+  ; these are the expected edges
+  expected_edges = dblarr( n_elements(edges) )
+  expected_edges[fuel.slits.approx_top] = -1.
+  expected_edges[fuel.slits.approx_bottom] = 1.
+
+  ; cross-correlate to find the shift between expected and measured slit edges
+  lag = indgen(400)-200
+  crosscorr = c_correlate(edges, expected_edges, lag)
+  max_crosscorr = max( crosscorr, max_ind, /nan)
+  delta = lag[max_ind]
+
+  ; return the shift
+  return, delta
+
+END
+
+
+; ****************************************************************************************
+
+
 FUNCTION flame_getslits_trace_smear, array, filter_length, up=up, down=down
   ;
   ; little pretty function that "smears" a 2D array along the vertical direction.
@@ -138,18 +184,14 @@ END
 
 
 
-FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, slit_angle=slit_angle
+FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom
 
   ;
   ; Given a frame containing bright sky emission lines, it traces the edge of a slit.
   ; One of the two keywords /top and /bottom must be specified
   ; The output is a 1D array with the y-coordinate of the edge at each x position.
   ; Pixels with no detected edges are set to NaN
-  ; If the slit is tilted, slit_angle must be specified
   ;
-
-  ; NEED TO FIGURE OUT WHY THIS IS!!!!!
-  mysterious_constant = 1.5
 
   ; check keywords
   if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
@@ -162,9 +204,6 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   ; how big, in the y direction, is the cutout?
   cutout_size = 34      ; even number please
 
-  ; of these pixels, we assume that the first ... are certainly inside the slit
-  Npix_slit_fiducial = 10
-
   ; let's extract a cutout centered on the edge
   cutout_bottom_ycoord = approx_edge-cutout_size/2
   cutout = image[ * , cutout_bottom_ycoord : cutout_bottom_ycoord + cutout_size - 1 ]
@@ -172,14 +211,68 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom, 
   ; from now on, the code assumes that we are interested in finding the top edge of a slit
   ; if instead we want the bottom edge, simply flip vertically the cutout
   if keyword_set(bottom) then cutout = reverse(cutout, 2)
-  if keyword_set(bottom) then slit_angle *= -1.0
 
   ; get rid of negative values and NaNs
   cutout[ where(cutout LT 0.0 or ~finite(cutout), /null) ] = 0.0
 
-  ; if the slit is tilted, undo the tilt so that the OH lines are roughly vertical
-  if slit_angle NE 0.0 then for i_ypixel=0, (size(cutout))[2]-1 do $
-    cutout[*,i_ypixel] = shift( cutout[*,i_ypixel], mysterious_constant*tan(slit_angle * !PI/180d)*i_ypixel )
+  ; rectify the OH lines
+  ;----------------------
+
+  ; use this as reference (assume is within the slit)
+  bottom_row = cutout[*,0]
+
+  ; these are the shifts considered (in pixels)
+  lag = -30 + indgen(61)
+
+  ; this array will contain the shift value for each row
+  shift = intarr(cutout_size)
+
+  ; cross-correlate all the other rows and find the shift
+  for i_row=1, cutout_size-1 do begin
+
+    ; cross-correlate this row with the bottom row
+    cc = c_correlate( bottom_row, cutout[*,i_row], lag)
+
+    ; find the peak of the cross-correlation
+    !NULL = max(cc, indmax)
+
+    ; store this shift and move on to the next row
+    shift[i_row] = lag[indmax]
+
+  endfor
+
+  ; find the differential shift at each row
+  differential_shift = shift - shift(shift, 1)
+  differential_shift = differential_shift[1:*]
+
+  ; assume the first three rows are definitely within in the slit
+  ; and find the row at which the shift is discontinuous
+  for i_row=3, n_elements(differential_shift)-1 do begin
+
+    previous_shifts = differential_shift[0:i_row-1]
+    tolerance = stddev(previous_shifts) > 1
+    if abs( differential_shift[i_row] - median(previous_shifts) ) GT 3.0*tolerance then break
+
+  endfor
+
+  ; was a discontinuity found?
+  if i_row LT n_elements(differential_shift) then begin
+
+    ; take the row closest to the discontinuity as the reference for the shift
+    shift = shift[i_row] - shift
+
+    ; do not apply shifts above that point
+    shift[i_row+1:*] = 0
+
+    ; determine the 'fiducial' number of pixels in the slit
+    Npix_slit_fiducial = i_row-1
+
+  endif else Npix_slit_fiducial = 10
+
+  ; rectify the cutout
+  for i_row=0, cutout_size-1 do cutout[*,i_row] = shift(cutout[*,i_row], shift[i_row])
+
+  ;----------------------
 
   ; extract a spectrum from the fiducial slit regions
   sky_spectrum = median(cutout[*,0:Npix_slit_fiducial-1], dimension=2)
@@ -315,8 +408,8 @@ PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=po
     bottom_edge = flame_getslits_trace_skyedge(image, expected_bottom, /bottom )
   endif else begin
     ; identify top and bottom edge using OH lines
-    top_edge = flame_getslits_trace_edge(image, expected_top, /top, slit_angle=slits.PA )
-    bottom_edge = flame_getslits_trace_edge(image, expected_bottom, /bottom, slit_angle=slits.PA )
+    top_edge = flame_getslits_trace_edge(image, expected_top, /top )
+    bottom_edge = flame_getslits_trace_edge(image, expected_bottom, /bottom )
   endelse
 
   ; calculate the slit height
@@ -333,48 +426,6 @@ PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=po
 
 END
 
-
-; ****************************************************************************************
-
-
-FUNCTION flame_getslits_findshift, fuel=fuel
-  ;
-  ; find the shift between the expected slit positions and the real ones
-  ;
-
-  ; for longslits this shift makes no sense
-  if fuel.input.longslit then return, 0.0
-
-  ; if the user specified the slit positions manually, then do not apply a shift
-  if fuel.input.slit_position_file ne 'none' then return, 0.0
-
-  ; read one FITS file
-  spec2d = readfits((fuel.util.corrscience_filenames)[0])
-
-  ; integrate the 2D spectrum along the wavelength direction, and smooth
-  x = median(total(spec2d, 1, /nan), 15)
-
-  ; find the edges of the slits (1d profile where positive peaks mark the beginning and negative peaks mark the end of the slit)
-  edges = x - shift(x, 4)
-  edges[ where( abs(edges) LT stddev(edges, /nan), /null ) ] = 0
-  edges[ where(edges GT 0.0, /null) ] =  1.0
-  edges[ where(edges LT 0.0, /null) ] = -1.0
-
-  ; these are the expected edges
-  expected_edges = dblarr( n_elements(edges) )
-  expected_edges[fuel.slits.approx_top] = -1.
-  expected_edges[fuel.slits.approx_bottom] = 1.
-
-  ; cross-correlate to find the shift between expected and measured slit edges
-  lag = indgen(400)-200
-  crosscorr = c_correlate(edges, expected_edges, lag)
-  max_crosscorr = max( crosscorr, max_ind, /nan)
-  delta = lag[max_ind]
-
-  ; return the shift
-  return, delta
-
-END
 
 
 ;******************************************************************
