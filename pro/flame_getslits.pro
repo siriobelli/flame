@@ -373,63 +373,6 @@ END
 
 ;******************************************************************
 
-
-PRO flame_getslits_writeds9, fuel=fuel
-  ;
-  ; write a ds9 region files that shows the slit edges
-  ;
-
-  ; name of the region file
-  region_filename = 'slits.reg'
-
-  ; read the slits structures
-  slits = fuel.slits
-
-  ; number of horizontal pixel in one frame
-  N_pix_x = (size( readfits((fuel.util.corrscience_filenames)[0]) ) )[1]
-
-  ; open file
-  openw, lun, fuel.input.intermediate_dir + region_filename, /get_lun
-
-  ; write header
-  printf, lun, '# Region file format: DS9 version 4.1'
-  printf, lun, 'global dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
-  printf, lun, 'image'
-
-  for i_slit=0, n_elements(slits)-1 do begin
-
-    ; generate points from the polynomial fit
-    top_x = 8*indgen(N_pix_x/8) ; one point every 8 pixels
-    top_y = poly(top_x, slits[i_slit].bottom_poly) + slits[i_slit].height
-    bottom_x = top_x
-    bottom_y = poly(bottom_x, slits[i_slit].bottom_poly)
-
-    ; concatenate top and bottom points
-    all_x = [top_x, reverse(bottom_x)]
-    all_y = [top_y, reverse(bottom_y)]
-
-    ; make the string with all the points
-    all_points = ''
-    for i=0,n_elements(all_x)-2 do all_points += strtrim(all_x[i],2) + ',' + cgnumber_formatter(all_y[i], decimals=1) + ','
-    ; add the last two points without the final comma
-    all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
-
-    ; alternate colors for clarity
-    color_string = (['green', 'red'])[i_slit mod 2]
-
-    ; write the line corresponding to this slit
-    printf, lun, 'polygon(' + all_points + ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + ' - ' + slits[i_slit].name + '}'
-
-  endfor
-
-  ; close file
-  free_lun, lun
-
-END
-
-
-;******************************************************************
-
 PRO flame_getslits_findedges, fuel=fuel
 
   ; read in the frame
@@ -533,6 +476,63 @@ END
 ;******************************************************************
 
 
+PRO flame_getslits_writeds9, fuel=fuel
+  ;
+  ; write a ds9 region files that shows the slit edges
+  ;
+
+  ; name of the region file
+  region_filename = 'slits.reg'
+
+  ; read the slits structures
+  slits = fuel.slits
+
+  ; number of horizontal pixel in one frame
+  N_pix_x = (size( readfits((fuel.util.corrscience_filenames)[0]) ) )[1]
+
+  ; open file
+  openw, lun, fuel.input.intermediate_dir + region_filename, /get_lun
+
+  ; write header
+  printf, lun, '# Region file format: DS9 version 4.1'
+  printf, lun, 'global dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
+  printf, lun, 'image'
+
+  for i_slit=0, n_elements(slits)-1 do begin
+
+    ; generate points from the polynomial fit
+    top_x = 8*indgen(N_pix_x/8) ; one point every 8 pixels
+    top_y = poly(top_x, slits[i_slit].bottom_poly) + slits[i_slit].height
+    bottom_x = top_x
+    bottom_y = poly(bottom_x, slits[i_slit].bottom_poly)
+
+    ; concatenate top and bottom points
+    all_x = [top_x, reverse(bottom_x)]
+    all_y = [top_y, reverse(bottom_y)]
+
+    ; make the string with all the points
+    all_points = ''
+    for i=0,n_elements(all_x)-2 do all_points += strtrim(all_x[i],2) + ',' + cgnumber_formatter(all_y[i], decimals=1) + ','
+    ; add the last two points without the final comma
+    all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
+
+    ; alternate colors for clarity
+    color_string = (['green', 'red'])[i_slit mod 2]
+
+    ; write the line corresponding to this slit
+    printf, lun, 'polygon(' + all_points + ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + ' - ' + slits[i_slit].name + '}'
+
+  endfor
+
+  ; close file
+  free_lun, lun
+
+END
+
+
+;******************************************************************
+
+
 PRO flame_getslits_write_slitim, fuel=fuel
   ; make an image where the pixels belonging to a slit have the slit number as a value, otherwise zero
 
@@ -568,91 +568,6 @@ END
 
 ;******************************************************************
 
-PRO flame_getslits_cutout_extract, slit_structure, science_filenames, output_filenames
-
-  ; loop through science frames
-  for i_frame=0, n_elements(science_filenames)-1 do begin
-
-    ; read in science frame
-    im = readfits(science_filenames[i_frame], header)
-
-    ; construct the coordinates for the pixels in the image
-    N_pix_x = (size(im))[1]
-    N_pix_y = (size(im))[2]
-    x_axis = indgen(N_pix_x)
-    y_axis = indgen(N_pix_y)
-    pixel_x = x_axis # replicate(1, N_pix_y)
-    pixel_y = transpose(y_axis # replicate(1, N_pix_x))
-
-    ; calculate slit edges
-    top_y = (poly(x_axis, slit_structure.bottom_poly) + slit_structure.height) # replicate(1, N_pix_x)
-    bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_x)
-
-    ; select pixels belonging to this slit
-    w_slit = where( pixel_y LT top_y AND pixel_y GT bottom_y, /null, complement=w_outside_slit)
-    if w_slit eq !NULL then message, slit_structure.name + ': slit not valid!'
-
-    ; Set to NaN all pixels outside the slit
-    im[w_outside_slit] = !values.d_nan
-
-    ; convert indices to 2D
-    w_slit2d = array_indices(im, w_slit)
-
-    ; calculate upper and lower limits
-    max_y = max(w_slit2d[1,*])
-    min_y = min(w_slit2d[1,*])
-
-    ; extract the slit as a rectangle
-    this_slit = im[ * , min_y:max_y]
-
-    ; write this out
-    writefits, output_filenames[i_frame], this_slit, header
-
-  endfor
-
-END
-
-
-;******************************************************************
-
-
-PRO flame_getslits_cutout, fuel=fuel
-
-  ; extract slits structure
-  slits = fuel.slits
-
-  print,'Slits: ', n_elements(slits)
-  for i_slit=0, n_elements(slits)-1 do begin
-
-    print,'Working on slit ', slits[i_slit].name, ' - ', slits[i_slit].number
-
-    ; create directory
-    slitdir = file_expand_path(fuel.input.intermediate_dir) + $
-      '/slit' + string(slits[i_slit].number,format='(I02)') + '/'
-    file_delete, slitdir, /allow_nonexistent, /recursive
-    file_mkdir, slitdir
-
-    ; file names for the cutouts
-    output_filenames = strarr(fuel.util.n_frames)
-    for i_frame=0, fuel.util.n_frames-1 do begin
-      naked_filename = ( strsplit((fuel.util.corrscience_filenames)[i_frame], '/', /extract) )[-1]
-      output_filenames[i_frame] = flame_util_replace_string( slitdir + naked_filename, '.fits', '_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'  )
-    endfor
-
-    ; extract slit
-    print,'*** Cutting out slit ', slits[i_slit].name
-    flame_getslits_cutout_extract, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames
-
-    ; add filenames to the slit structure
-    *slits[i_slit].filenames = output_filenames
-
-  endfor
-
-END
-
-
-;******************************************************************
-
 
 PRO flame_getslits, fuel=fuel
 
@@ -671,7 +586,5 @@ PRO flame_getslits, fuel=fuel
     fuel=new_fuel
   endif
 
-  ; cutout slits
-  flame_getslits_cutout, fuel=fuel
 
 END

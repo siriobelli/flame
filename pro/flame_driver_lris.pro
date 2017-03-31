@@ -124,6 +124,8 @@
 
   flame_getslits, fuel=fuel
 
+  flame_cutout_slits, fuel=fuel
+
 
   ;****************************************************
   ;                 WAVELENGTH CALIBRATION
