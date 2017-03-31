@@ -230,10 +230,6 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument
 ; and wavelength at the center of the slit. It return the slits structure.
 ;
 
-  ; only tweakable settings: maximum width in arcsec allowed for science slits.
-  ; slits wider than this value are considered alignment boxes
-  maxwidth_arcsec = 2.0
-
   ; array of structures that will contain the info for each slit
   slit_hdr = []
 
@@ -262,8 +258,28 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument
   ; exclude reference slits
   slit_hdr = slit_hdr( where( strtrim(slit_hdr.name,2) ne 'refslit', /null) )
 
-  ; exclude alignment boxes
-  slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LT maxwidth_arcsec, /null) ]
+  ; now we need to identify the alignment boxes
+  ; get the slit widths in arcsec
+  widths = slit_hdr.width_arcsec
+
+  ; sort them in decreasing order
+  sorted_widths = widths[sort(-widths)]
+
+  ; if they all are of the same width, then assume there are no alignment boxes
+  if sorted_widths[0] eq sorted_widths[-1] then $
+    print, 'All slits have the same width of ', sorted_widths[0], ' arcsec. No alignment boxes found.' $
+  else begin
+
+    ; otherwise, select all the slits that have the same width as the wider one
+    maxwidth = sorted_widths[0]
+
+    print, n_elements(where(sorted_widths eq maxwidth, /null)), $
+      ' alignment boxes (', number_formatter(maxwidth, decimals=2), ' arcsec) found.'
+
+    ; exclude alignment boxes
+    slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LT maxwidth, /null) ]
+
+  endelse
 
   ; calculate the conversion between arcsec and mm
   mmtoarcsec = median(slit_hdr.length_arcsec/slit_hdr.length_mm)
