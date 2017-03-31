@@ -298,8 +298,8 @@ END
 ; ****************************************************************************************
 
 
-PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, $
-  poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
+PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
+
 ;
 ; traces the top and bottom edges of a slit in the image and return the slit height and the
 ; coefficients of a polynomial fit describing the *bottom* edge
@@ -337,13 +337,19 @@ END
 ; ****************************************************************************************
 
 
-FUNCTION flame_getslits_findshift, frame, top, bottom
+FUNCTION flame_getslits_findshift, fuel=fuel
   ;
   ; find the shift between the expected slit positions and the real ones
   ;
 
+  ; for longslits this shift makes no sense
+  if fuel.input.longslit then return, 0.0
+
+  ; if the user specified the slit positions manually, then do not apply a shift
+  if fuel.input.slit_position_file ne 'none' then return, 0.0
+
   ; read one FITS file
-  spec2d = readfits(frame)
+  spec2d = readfits((fuel.util.corrscience_filenames)[0])
 
   ; integrate the 2D spectrum along the wavelength direction, and smooth
   x = median(total(spec2d, 1, /nan), 15)
@@ -356,8 +362,8 @@ FUNCTION flame_getslits_findshift, frame, top, bottom
 
   ; these are the expected edges
   expected_edges = dblarr( n_elements(edges) )
-  expected_edges[top] = -1.
-  expected_edges[bottom] = 1.
+  expected_edges[fuel.slits.approx_top] = -1.
+  expected_edges[fuel.slits.approx_bottom] = 1.
 
   ; cross-correlate to find the shift between expected and measured slit edges
   lag = indgen(400)-200
@@ -373,7 +379,7 @@ END
 
 ;******************************************************************
 
-PRO flame_getslits_findedges, fuel=fuel
+PRO flame_getslits_findedges, fuel=fuel, yshift=yshift
 
   ; read in the frame
   im=readfits((fuel.util.corrscience_filenames)[0], hdr)
@@ -417,12 +423,6 @@ PRO flame_getslits_findedges, fuel=fuel
 
  ; MOS      ---------------------------------------------------------------------
   endif else begin
-
-    ; if the approximate slit positions have been inserted by hand, then skip the zero-th order shift
-    if fuel.input.slit_position_file ne 'none' then yshift = 0.0 else $
-      ; compare the expected position with the measured ones and obtain rough shift
-      yshift = flame_getslits_findshift( (fuel.util.corrscience_filenames)[0], $
-        fuel.slits.approx_top, fuel.slits.approx_bottom )
 
     ; trace the edges of the slits using the sky emission lines or sky continuum
     for i_slit=0, n_elements(fuel.slits)-1 do begin
@@ -571,8 +571,11 @@ END
 
 PRO flame_getslits, fuel=fuel
 
+  ; get the overall vertical shift between the expected and the actual slit positions
+  yshift = flame_getslits_findshift( fuel=fuel )
+
   ; identify all slits from the data, and write the fuel.slits structures
-  flame_getslits_findedges, fuel=fuel
+  flame_getslits_findedges, fuel=fuel, yshift=yshift
 
   ; write ds9 region file with the slit traces
   flame_getslits_writeds9, fuel=fuel
@@ -582,7 +585,8 @@ PRO flame_getslits, fuel=fuel
 
   ; if we are reducing only one slit, then delete all the others
   if fuel.input.reduce_only_oneslit ne 0 then begin
-    new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:fuel.slits[fuel.input.reduce_only_oneslit-1] }
+    new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, $
+      diagnostics:fuel.diagnostics, slits:fuel.slits[fuel.input.reduce_only_oneslit-1] }
     fuel=new_fuel
   endif
 
