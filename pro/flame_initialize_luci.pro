@@ -34,7 +34,7 @@ FUNCTION flame_initialize_luci_resolution, instrument
   if R EQ !NULL then message, 'grating ' + instrument.grating + ' not supported'
 
   ;
-  ;  ARE WE SURE THAT R IS INDIPENDENT ON THE CAMERA??
+  ;  ARE WE SURE THAT R IS INDIPENDENT OF THE CAMERA??
   ;
 
   ; output the resolution for a 1"-wide slit:
@@ -221,7 +221,7 @@ END
 
 
 
-FUNCTION flame_initialize_luci_slits, header, instrument=instrument
+FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
 
 ;
 ; read the header of a LUCI science frame
@@ -258,7 +258,9 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument
   ; exclude reference slits
   slit_hdr = slit_hdr( where( strtrim(slit_hdr.name,2) ne 'refslit', /null) )
 
-  ; now we need to identify the alignment boxes
+  ; identify and exclude the alignment boxes
+  ;---------------------------------------------------------
+
   ; get the slit widths in arcsec
   widths = slit_hdr.width_arcsec
 
@@ -335,6 +337,30 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument
 
   endfor
 
+
+  ; if manual slit positions are provided, then use them
+  ;---------------------------------------------------------
+  if input.slit_position_file ne 'none' then begin
+
+    print, 'using slit position file ', input.slit_position_file
+
+    ; read in region file
+    readcol, input.slit_position_file, slit_x, slit_y
+
+    ; sort slit_y
+    slit_y = slit_y[ sort(slit_y) ]
+
+    ; now sort the slits from the header by target position
+    s = sort(slits.approx_target)
+
+    for i_slit=0, n_elements(slits)-1 do begin
+      slits[s[i_slit]].approx_bottom = slit_y[2*i_slit]
+      slits[s[i_slit]].approx_top = slit_y[2*i_slit+1]
+      slits[s[i_slit]].approx_target = 0.5*(slit_y[2*i_slit] + slit_y[2*i_slit+1])
+    endfor
+
+  endif
+
 return, slits
 
 END
@@ -370,7 +396,7 @@ PRO flame_initialize_luci, fuel=fuel
   endif else begin
 
     ; get all the info from the header
-    slits = flame_initialize_luci_slits( science_header, instrument=instrument)
+    slits = flame_initialize_luci_slits( science_header, instrument=instrument, input=fuel.input)
 
   endelse
 
