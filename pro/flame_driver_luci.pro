@@ -58,6 +58,9 @@
   ;input.longslit = 1
   ;input.longslit_edge = [1133, 1179]
 
+  ; manual slit positions
+  ; input.slit_position_file = 'slit_edges.reg'
+
 
   ;**********************************
   ;**********************************
