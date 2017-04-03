@@ -55,7 +55,7 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
   if keyword_set(R_smooth) then begin
 
     ; calculate the sigma for smoothing given the spectral resolution R
-    expected_lambdacen = mean(lambda0_range) + 0.5*median(pix_scale_grid)*N_skypix
+    expected_lambdacen = mean(lambda0_range)
   	smoothing_sigma = expected_lambdacen / (2.36 * double(R_smooth))
 
     ; smooth observed sky
@@ -252,6 +252,10 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 	range_pixel_scale = this_slit.range_pixel_scale
   range_start_lambda = this_slit.range_lambda0
 
+	rough_wavecal_R = [ 0.05*this_slit.approx_R > 500.0 , $
+		0.15*this_slit.approx_R > 1000.0 , $
+		this_slit.approx_R ]
+
 
 	  ; first step: smoothed spectrum, find zero-point and pixel scale
 		;---------------------
@@ -266,7 +270,7 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
-	   R_smooth = fuel.input.rough_wavecal_R[0], plot_title='first: find pixel scale and zero-point', $
+	   R_smooth = rough_wavecal_R[0], plot_title='first: find pixel scale and zero-point', $
 		 wavecal_coefficients=wavecal_coefficients
 
 
@@ -306,7 +310,7 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = fuel.input.rough_wavecal_R[1], plot_title='second: use second-order polynomial', $
+	   R_smooth = rough_wavecal_R[1], plot_title='second: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
 
 
@@ -332,7 +336,7 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = fuel.input.rough_wavecal_R[2], plot_title='third: use second-order polynomial', $
+	   R_smooth = rough_wavecal_R[2], plot_title='third: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
 
 		; print, ''
@@ -376,6 +380,9 @@ FUNCTION flame_wavecal_rough_fast, fuel=fuel, this_slit=this_slit, sky=sky, $
 
   range_start_lambda = this_slit.range_lambda0
 
+	rough_wavecal_R = [ 0.05*this_slit.approx_R > 500.0 , $
+		0.15*this_slit.approx_R > 1000.0 , $
+		this_slit.approx_R ]
 
 	  ; first step: smoothed spectrum, find zero-point and pixel scale
 		;---------------------
@@ -391,7 +398,7 @@ FUNCTION flame_wavecal_rough_fast, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
-	   R_smooth = fuel.input.rough_wavecal_R[1], plot_title='first: find pixel scale and zero-point', $
+	   R_smooth = rough_wavecal_R[0], plot_title='first: find pixel scale and zero-point', $
 		 wavecal_coefficients=wavecal_coefficients
 
 
@@ -424,7 +431,7 @@ FUNCTION flame_wavecal_rough_fast, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = fuel.input.rough_wavecal_R[1], plot_title='second: use second-order polynomial', $
+	   R_smooth = rough_wavecal_R[1], plot_title='second: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
 
 
@@ -449,7 +456,7 @@ FUNCTION flame_wavecal_rough_fast, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = fuel.input.rough_wavecal_R[2], plot_title='third: use second-order polynomial', $
+	   R_smooth = rough_wavecal_R[2], plot_title='third: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
 
 
