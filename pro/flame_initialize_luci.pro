@@ -215,6 +215,8 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
       approx_bottom:input.longslit_edge[0], $
       approx_top:input.longslit_edge[1], $
       approx_target:mean(input.longslit_edge), $
+      width_arcsec:!values.d_nan, $
+      approx_R:instrument.resolution_slit1arcsec, $
       range_lambda0:range_lambda0, $
       range_pixel_scale:range_pixel_scale }
 
