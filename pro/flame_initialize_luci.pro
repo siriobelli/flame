@@ -3,10 +3,10 @@
 
 FUNCTION flame_initialize_luci_resolution, instrument
 ;
-; return the estimated spectral resolution *for a slit width of 1.0 arcsec*
+; return the estimated spectral resolution *for a slit width of 1.0 arcsec*.
+; the resolution depends on both the camera and the grating.
 ;
 
-; the resolution depends on both the camera and the grating
 ; get the first part of the grating name
 grating = (strsplit(instrument.grating, /extract))[0]
 
@@ -18,7 +18,7 @@ camera = (strsplit(instrument.camera, /extract))[0]
 ; and the N1.80 camera
 
   ; grating G210
-  if (strsplit(instrument.grating, /extract))[0] eq 'G210' then case instrument.grating_order of
+  if grating eq 'G210' then case instrument.grating_order of
     '2': R = 5000. ; K
     '3': R = 5900. ; H
     '4': R = 5800. ; J
@@ -27,14 +27,14 @@ camera = (strsplit(instrument.camera, /extract))[0]
   endcase
 
   ; grating G200
-  if (strsplit(instrument.grating, /extract))[0] eq 'G200' then case instrument.grating_order of
+  if grating eq 'G200' then case instrument.grating_order of
     '1': R = 2250. ; HK
     '2': R = 2250. ; zJ
     else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
   endcase
 
   ; grating G150
-  if (strsplit(instrument.grating, /extract))[0] eq 'G150' then case instrument.grating_order of
+  if grating eq 'G150' then case instrument.grating_order of
     '2': R = 4150. ; Ks
     else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
   endcase
@@ -46,7 +46,7 @@ camera = (strsplit(instrument.camera, /extract))[0]
   R_1arcsec = R / 2.0
 
   ; 2 - correct for different camera
-  if camera ne 'N1.80' then $
+  if camera ne 'N1.8' then $
     if camera eq 'N3.75' then R_1arcsec *= 2.1 else $
       message, 'camera ' + instrument.camera + ' not supported'
 
@@ -61,13 +61,20 @@ END
 FUNCTION flame_initialize_luci_waverange, instrument, slit_xmm
 ;
 ; return the estimated wavelength range for a slit
+; it depends on grating and camera
 ;
 
+; get the first part of the grating name
+grating = (strsplit(instrument.grating, /extract))[0]
 
-  ; look up the wavelength range (in um) covered by the detector: -------------------
+; get the first part of the camera name
+camera = (strsplit(instrument.camera, /extract))[0]
+
+
+  ;1 - look up the wavelength range (in um) covered by the detector, assuming grating N1.8
 
   ; grating G210
-  if (strsplit(instrument.grating, /extract))[0] eq 'G210' then case instrument.grating_order of
+  if grating eq 'G210' then case instrument.grating_order of
     '2': wavelength_range = 0.328 ; K
     '3': wavelength_range = 0.202 ; H
     '4': wavelength_range = 0.150 ; J
@@ -76,14 +83,14 @@ FUNCTION flame_initialize_luci_waverange, instrument, slit_xmm
   endcase
 
   ; grating G200
-  if (strsplit(instrument.grating, /extract))[0] eq 'G200' then case instrument.grating_order of
+  if grating eq 'G200' then case instrument.grating_order of
     '1': wavelength_range = 0.880 ; HK
     '2': wavelength_range = 0.440 ; zJ
     else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
   endcase
 
   ; grating G150
-  if (strsplit(instrument.grating, /extract))[0] eq 'G150' then case instrument.grating_order of
+  if grating eq 'G150' then case instrument.grating_order of
     '2': wavelength_range = 0.533 ; Ks
     else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
   endcase
@@ -91,14 +98,14 @@ FUNCTION flame_initialize_luci_waverange, instrument, slit_xmm
   ; check whether no grating has been found
   if wavelength_range EQ !NULL then message, 'grating ' + instrument.grating + ' not supported'
 
-  ; finally, if the camera is not the default N1.8, then scale by the ratio of pixel scales
-  if (strsplit(instrument.camera, /extract))[0] NE 'N1.8' then $
-    if (strsplit(instrument.camera, /extract))[0] eq 'N3.75' then wavelength_range *= 0.47 else $
+
+  ; 2 - correct for the camera (scale by the ratio of pixel scales)
+  if camera NE 'N1.8' then $
+    if camera eq 'N3.75' then wavelength_range *= 0.47 else $
       message, 'camera ' + instrument.camera + ' not supported'
 
-; -------------------------------------------------------------------------------------
 
-  ; rough wavelength range; mask is roughly 2*162mm across; x=0mm means centered slit.
+  ; 3 - rough wavelength range; mask is roughly 2*162mm across; x=0mm means centered slit.
   lambda_min = instrument.central_wavelength - (162.0 + slit_xmm) / 162.0 * wavelength_range / 2.0
   lambda_max = lambda_min + wavelength_range
 
