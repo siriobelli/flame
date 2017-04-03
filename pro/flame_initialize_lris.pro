@@ -122,6 +122,8 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
       approx_bottom:slit_y[2*i_slit], $
       approx_top:slit_y[2*i_slit+1], $
       approx_target: 0.5 * (slit_y[2*i_slit] + slit_y[2*i_slit+1]), $
+      width_arcsec:!values.d_NaN, $
+      approx_R:instrument.resolution_slit1arcsec, $
       range_lambda0:range_lambda0, $
       range_pixel_scale:range_pixel_scale }
 

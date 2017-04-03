@@ -3,10 +3,19 @@
 
 FUNCTION flame_initialize_luci_resolution, instrument
 ;
-; return the estimated spectral resolution for a slit width of 0.75 arcsec
+; return the estimated spectral resolution *for a slit width of 1.0 arcsec*
 ;
 
-  ; tabulated values for R - note they assume a slit width of 0.5 arcsec
+; the resolution depends on both the camera and the grating
+; get the first part of the grating name
+grating = (strsplit(instrument.grating, /extract))[0]
+
+; get the first part of the camera name
+camera = (strsplit(instrument.camera, /extract))[0]
+
+; 1 - look up the resolution for this grating
+; Note that the tabulated values for R assume a slit width of 0.5 arcsec
+; and the N1.80 camera
 
   ; grating G210
   if (strsplit(instrument.grating, /extract))[0] eq 'G210' then case instrument.grating_order of
@@ -33,12 +42,13 @@ FUNCTION flame_initialize_luci_resolution, instrument
   ; check whether no grating has been found
   if R EQ !NULL then message, 'grating ' + instrument.grating + ' not supported'
 
-  ;
-  ;  ARE WE SURE THAT R IS INDIPENDENT OF THE CAMERA??
-  ;
-
-  ; output the resolution for a 1"-wide slit:
+  ; convert to the resolution for a 1"-wide slit:
   R_1arcsec = R / 2.0
+
+  ; 2 - correct for different camera
+  if camera ne 'N1.80' then $
+    if camera eq 'N3.75' then R_1arcsec *= 2.1 else $
+      message, 'camera ' + instrument.camera + ' not supported'
 
   return, R_1arcsec
 
@@ -46,42 +56,6 @@ END
 
 
 ;******************************************************************
-
-
-
-FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
-
-  ; rough wavelength range (slit should be central, x ~ 162 mm)
-    lambda_range = $
-     flame_initialize_luci_waverange(instrument, 162.0)
-
-     ; range in lambda0 to be realistically considered
-     lambda_wide = lambda_range[1] - lambda_range[0]
-     range_lambda0 = [ lambda_range[0] - 0.5*lambda_wide, lambda_range[1] + 0.5*lambda_wide]
-
-     ; calculate pixel scale and its possible variation
-     pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
-     range_pixel_scale = pixel_scale*[0.5,1.5]
-
-    ; create slit structure
-    slits = { $
-      number:1, $
-      name:'longslit', $
-      PA:!values.d_nan, $
-      approx_bottom:input.longslit_edge[0], $
-      approx_top:input.longslit_edge[1], $
-      approx_target:mean(input.longslit_edge), $
-      range_lambda0:range_lambda0, $
-      range_pixel_scale:range_pixel_scale }
-
-  return, slits
-
-END
-
-
-
-;******************************************************************
-
 
 
 FUNCTION flame_initialize_luci_waverange, instrument, slit_xmm
@@ -216,6 +190,38 @@ FUNCTION flame_initialize_luci_settings, science_header
 END
 
 
+;******************************************************************
+
+
+FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
+
+  ; rough wavelength range (slit should be central, x ~ 162 mm)
+    lambda_range = $
+     flame_initialize_luci_waverange(instrument, 162.0)
+
+     ; range in lambda0 to be realistically considered
+     lambda_wide = lambda_range[1] - lambda_range[0]
+     range_lambda0 = [ lambda_range[0] - 0.5*lambda_wide, lambda_range[1] + 0.5*lambda_wide]
+
+     ; calculate pixel scale and its possible variation
+     pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
+     range_pixel_scale = pixel_scale*[0.5,1.5]
+
+    ; create slit structure
+    slits = { $
+      number:1, $
+      name:'longslit', $
+      PA:!values.d_nan, $
+      approx_bottom:input.longslit_edge[0], $
+      approx_top:input.longslit_edge[1], $
+      approx_target:mean(input.longslit_edge), $
+      range_lambda0:range_lambda0, $
+      range_pixel_scale:range_pixel_scale }
+
+  return, slits
+
+END
+
 
 ;******************************************************************
 
@@ -305,7 +311,7 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
   bottom = y_pixels - 0.5*slitheight_pixels
   top = y_pixels + 0.5*slitheight_pixels
   target = y_pixels
-
+  slit_width = slit_hdr.width_arcsec
 
   ; create array of slit structures
   slits = []
@@ -330,6 +336,8 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
       approx_bottom:bottom[i_slit], $
       approx_top:top[i_slit], $
       approx_target:target[i_slit], $
+      width_arcsec:slit_width[i_slit], $
+      approx_R:instrument.resolution_slit1arcsec / slit_width[i_slit], $
       range_lambda0:range_lambda0, $
       range_pixel_scale:range_pixel_scale }
 
