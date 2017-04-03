@@ -207,8 +207,8 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
      flame_initialize_luci_waverange(instrument, 162.0)
 
      ; range in lambda0 to be realistically considered
-     lambda_wide = lambda_range[1] - lambda_range[0]
-     range_lambda0 = [ lambda_range[0] - 0.5*lambda_wide, lambda_range[1] + 0.5*lambda_wide]
+     lambda_width = lambda_range[1] - lambda_range[0]
+     range_lambda0 = lambda_range[0] + [-0.3*lambda_width, 0.3*lambda_width]
 
      ; calculate pixel scale and its possible variation
      pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
@@ -330,9 +330,9 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
     ; calculate approximate wavelength range
     lambda_range = flame_initialize_luci_waverange(instrument, slit_hdr[i_slit].x_mm)
 
-    ; range in lambda0 to be realistically considered
-    lambda_wide = lambda_range[1] - lambda_range[0]
-    range_lambda0 = [ lambda_range[0] - 0.5*lambda_wide, lambda_range[1] + 0.5*lambda_wide]
+    ; range in lambda0 (wavelength of first pixel) to be realistically considered
+    lambda_width = lambda_range[1] - lambda_range[0]
+    range_lambda0 = lambda_range[0] + [-0.3*lambda_width, 0.3*lambda_width]
 
     ; calculate pixel scale and its possible variation
     pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
