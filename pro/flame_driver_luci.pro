@@ -42,7 +42,7 @@
   ;**********************************
 
   ; if 0, then reduce all slits. If n, then reduce slit number n (starting from 1).
-  input.reduce_only_oneslit = 5
+  ;input.reduce_only_oneslit = 2
 
   ; if you want to change the range in x-coordinates used to extract the star traces:
   ;input.star_x_range = [100, 500]
