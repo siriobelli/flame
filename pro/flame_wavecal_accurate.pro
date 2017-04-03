@@ -543,12 +543,12 @@ PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
 			median(wavelength_solution_reference[ N_lambda_pix/2-2 : N_lambda_pix/2+2 ] )
 
 	; the 3 pixels at each edge are not being fit
-	wavelength_shift[0:2] = 0.0
-	wavelength_shift[-3:-1] = 0.0
+	wavelength_shift[0:2] = !values.d_nan
+	wavelength_shift[-3:-1] = !values.d_nan
 
-	; get rid of wildly wrong rows
-	wavelength_shift[where(abs(wavelength_shift - median(wavelength_shift)) $
-		GT 5.0 *stddev(wavelength_shift, /nan), /null)] = !values.d_NaN
+	; ; get rid of wildly wrong rows
+	; wavelength_shift[where(abs(wavelength_shift - median(wavelength_shift)) $
+	; 	GT 5.0 *stddev(wavelength_shift, /nan), /null)] = !values.d_NaN
 
 	; plot the shift as a function of vertical position
 	cgplot, 1d4*wavelength_shift, psym=-16, thick=3, charsize=1, $
