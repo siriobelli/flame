@@ -130,6 +130,10 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OHlines=OHlines,
 		for iy=0.0,N_imy-1 do $
 			wavecal_accurate[ix,iy] = lambda_0 + delta_lambda * total(((iy)^xexp # (ix)^yexp ) * Klambda)
 
+	; write the accurate solution to a FITS file
+	writefits, flame_util_replace_string(filename, '.fits', '_wavecal_smooth.fits'), wavecal_accurate, hdr
+
+
 END
 
 ;*******************************************************************************
