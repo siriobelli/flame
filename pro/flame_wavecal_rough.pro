@@ -299,9 +299,9 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 	  ; the grid for a2 needs to include 0, and be logarithmic but also positive and negative
 	  a2_grid = [ -a2_ref * reverse(log_grid), 0.0, a2_ref * log_grid ]
 
-	  ; there should not be a large shift in wavelength now - allow up to 30% of the full lambda range
+	  ; there should not be a large shift in wavelength now - allow up to 15% of the full lambda range
 		fullrange = wavecal_coefficients[1]*n_elements(sky)
-	  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.3,0.3]
+	  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.15,0.15]
 
 		print, 'lambda0: ', lambda0_range
 		print, 'a1: ', pix_scale_grid[0], pix_scale_grid[-1]
