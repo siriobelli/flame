@@ -35,8 +35,7 @@ FUNCTION flame_initialize_lris_settings, science_header
   red_filter = strtrim(fxpar(science_header, 'REDFILT'), 2)
 
   ; ; read in read-out noise
-  ; readnoise = fxpar(science_header, 'RDNOISE')   ; e-/read
-
+  read_noise = 5.0 ; actually LRIS blue has 4.0
 
   ; ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - -
 
@@ -69,6 +68,7 @@ FUNCTION flame_initialize_lris_settings, science_header
     blue_filter: blue_filter, $
     red_filter: red_filter, $
     gain: gain, $
+    read_noise: read_noise, $
     pixel_scale: pixel_scale, $
     resolution_slit1arcsec: 2000.0, $
     linearity_correction: linearity_correction, $
@@ -230,6 +230,12 @@ PRO flame_initialize_lris, fuel=fuel
 
   ; update the file names in the fuel structure
   fuel.util.science_filenames = new_filenames
+
+  ; -----------------------------------------------------------------
+
+  ; clean from cosmic rays
+  print, 'Cleaning cosmic rays...'
+  la_cosmic, new_filenames, gain=instrument.gain, readn=instrument.read_noise
 
   ; -----------------------------------------------------------------
 
