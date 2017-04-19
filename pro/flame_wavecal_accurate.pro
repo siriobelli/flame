@@ -84,8 +84,11 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OHlines=OHlines,
 	w_goodpix = lindgen(n_elements(OH_x))
 	Ngoodpix = n_elements(w_goodpix)+1
 
+	; check that we have enough points to calculate warping polynomial
+	if n_elements(w_goodpix) LT (degree+1.0)^2 then message, 'not enough data points for polywarp'
+
 	; loops are used to throw away outliers and make polywarp more robust
-	WHILE n_elements(w_goodpix) LT Ngoodpix DO BEGIN
+	WHILE n_elements(w_goodpix) LT Ngoodpix AND n_elements(w_goodpix) GE (degree+1.0)^2  DO BEGIN
 
 		; save old number of good pixels
 		Ngoodpix = n_elements(w_goodpix)
