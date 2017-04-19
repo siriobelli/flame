@@ -48,6 +48,7 @@ FUNCTION flame_create_fuel, input
 
   ; setup directory structure
   if file_test(input.intermediate_dir) eq 0 then file_mkdir, input.intermediate_dir
+  if file_test(input.intermediate_dir + '/corrected_frames/') eq 0 then file_mkdir, input.intermediate_dir + '/corrected_frames/'
   if file_test(input.output_dir) eq 0 then file_mkdir, input.output_dir
 
   ; read the science filenames
@@ -61,7 +62,7 @@ FUNCTION flame_create_fuel, input
 
   ; make filenames for the corrected science frames
   corrscience_basenames = file_basename(science_filenames, '.fits') + '_corr.fits'
-  corrscience_filenames = file_expand_path(input.intermediate_dir + corrscience_basenames)
+  corrscience_filenames = file_expand_path(input.intermediate_dir + '/corrected_frames/' + corrscience_basenames)
 
   ; read dark filenames
   filenames_dark = flame_create_fuel_loadfiles(input.dark_filelist)
