@@ -69,6 +69,9 @@ END
 
 PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
+	; parameter for sigma-clipping when combining the frames
+	sigma_clip = fuel.input.sigma_clip
+
 	; prefix for output file names
 	filename_prefix = fuel.input.output_dir + 'slit' + string(slit.number, format='(I02)') + '-' + slit.name
 
@@ -98,7 +101,7 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	header = headfits(sky_filenames[0])
 
 	; stack and get the sky spectrum
-	stack_sky = flame_combine_stack(filenames=sky_filenames, sigma_clip=3.0)
+	stack_sky = flame_combine_stack(filenames=sky_filenames, sigma_clip=sigma_clip)
 
 	; write out the sky spectrum
 	writefits, filename_prefix + '_stack_sky.fits', stack_sky, header
@@ -110,11 +113,11 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	if w_A ne !NULL then begin
 
 		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
-		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=3.0, rejected_im=rejected_im_A)
+		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A)
 		writefits, filename_prefix + '_stack_A.fits', stack_A, header
 
 		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
-		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=3.0, rejected_im=rejected_im_A)
+		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A)
 		writefits, filename_prefix + '_stack_A_skysub.fits', stack_A_skysub, header
 
 	endif
@@ -122,11 +125,11 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	if w_B ne !NULL then begin
 
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
-		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=3.0, rejected_im=rejected_im_B)
+		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B)
 		writefits, filename_prefix + '_stack_B.fits', stack_B, header
 
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
-		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=3.0, rejected_im=rejected_im_B)
+		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B)
 		writefits, filename_prefix + '_stack_B_skysub.fits', stack_B_skysub, header
 
 	endif
@@ -134,11 +137,11 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	if w_X ne !NULL then begin
 
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
-		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=3.0, rejected_im=rejected_im_X)
+		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X)
 		writefits, filename_prefix + '_stack_X.fits', stack_X, header
 
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
-		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=3.0, rejected_im=rejected_im_X)
+		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X)
 		writefits, filename_prefix + '_stack_X_skysub.fits', stack_X_skysub, header
 
 	endif
