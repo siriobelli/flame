@@ -436,10 +436,6 @@ PRO flame_getslits_findedges, fuel=fuel, yshift=yshift
   ; frame to use to find the edges
   frame_filename = (fuel.util.corrscience_filenames)[0]
 
-  ; if needed, use the clean frame
-  if fuel.input.clean_individual_frames then $
-    frame_filename = flame_util_replace_string( frame_filename, '.fits', '-out.fits')
-
   ; read in the frame
   im=readfits(frame_filename, hdr)
 

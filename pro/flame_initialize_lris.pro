@@ -230,12 +230,6 @@ PRO flame_initialize_lris, fuel=fuel
 
   ; update the file names in the fuel structure
   fuel.util.science_filenames = new_filenames
-  ;
-  ; ; -----------------------------------------------------------------
-  ;
-  ; ; clean from cosmic rays
-  ; print, 'Cleaning cosmic rays...'
-  ; la_cosmic, new_filenames, gain=instrument.gain, readn=instrument.read_noise
 
   ; -----------------------------------------------------------------
 

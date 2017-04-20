@@ -1,5 +1,6 @@
 ;
 ; reads the raw science frames and writes out the "corrected" science frames, which are:
+; - cleaned from cosmic rays (if needed)
 ; - corrected for non-linearity of the detector
 ; - corrected for bad pixels (replaced by NaNs)
 ;  (generate the bad pixel mask from the dark frames, if needed)
@@ -217,15 +218,34 @@ PRO flame_correct, fuel=fuel
   ; also need to make bad pixel mask here
   badpix = !NULL
 
-  
+
   ; apply corrections ----------------------------------------------------------
 
   for i_frame=0,fuel.util.N_frames-1 do begin
 
     print, 'Correcting frame ', fuel.util.science_filenames[i_frame]
 
+    ; name for the corrected frame (i.e. the output)
+    filename_corr = (fuel.util.corrscience_filenames)[i_frame]
+
     ; read in science frame
     frame = readfits(fuel.util.science_filenames[i_frame], header)
+
+    ; CORRECTION 0: cosmic rays
+    if fuel.input.clean_individual_frames then begin
+
+      ; identify cosmic rays using L.A. Cosmic
+      la_cosmic, fuel.util.science_filenames[i_frame], gain=fuel.instrument.gain, readn=fuel.instrument.read_noise, $
+      masklist = flame_util_replace_string( filename_corr, '_corr.fits', '_mask.fits'), $
+      outlist = flame_util_replace_string( filename_corr, '_corr.fits', '_cleaned.fits')
+
+      ; read in the cosmic ray mask
+      cr_mask = readfits( flame_util_replace_string( filename_corr, '_corr.fits', '_mask.fits') )
+
+      ; set the CRs to NaNs
+      frame[where(cr_mask, /null)] = !values.d_nan
+
+    endif
 
     ; CORRECTION 1: non-linearity
     frame_corr1 = poly(frame, fuel.instrument.linearity_correction )
@@ -242,7 +262,7 @@ PRO flame_correct, fuel=fuel
     fxaddpar, header, 'BUNIT', 'electrons', ' '
 
     ; save corrected frame
-    writefits, (fuel.util.corrscience_filenames)[i_frame], frame_corr3, header
+    writefits, filename_corr, frame_corr3, header
 
   endfor
 
