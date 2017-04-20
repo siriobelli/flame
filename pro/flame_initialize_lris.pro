@@ -214,7 +214,7 @@ PRO flame_initialize_lris, fuel=fuel
   gaindata = flame_initialize_lris_gain(instrument)
 
   ; create directory where we will store the new FITS files
-  lris_dir = 'data_LRIS/'
+  lris_dir = fuel.input.intermediate_dir + 'data_LRIS/'
   if file_test(lris_dir) then file_delete, lris_dir, /recursive
   file_mkdir, lris_dir
 
