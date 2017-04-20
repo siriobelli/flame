@@ -589,81 +589,6 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_clean, slit=slit, index=i_slit
-  ;
-  ; clean cutout from cosmic rays
-  ; cosmic rays are found by comparing the observed frame
-  ; to the median of the frames in its vicinity
-  ;
-
-  ; how many frames are we using for the cosmic ray identification?
-  Nframes = 3
-
-  ; read in the cutout file names
-  filenames = *slit.filenames
-
-  ; select the adjacent ones
-  indices = indgen(n_elements(filenames))
-
-  ; distance from the index of interest
-  distance = abs( indices - i_slit )
-
-  ; sort indices by distance
-  closest_indices = indices[sort(distance)]
-
-  ; pick the closest Nframes (including the current one of course)
-  w_touse = closest_indices[0:Nframes-1]
-
-  ; read all the frames
-  stack = []
-  for i=0, Nframes-1 do stack = [ [[stack]] , [[ readfits(filenames[w_touse[i]]) ]] ]
-
-  ; this is the cleaned frame (no CRs)
-  clean = median(stack, dimension=3)
-
-  ; now take the current frame
-  current = readfits(filenames[i_slit], header)
-
-  ; and subtract the cleaned version from it
-  sub = current-clean
-
-  ; calculate properties of sub frame
-  median = median(sub)
-  sigma = stddev(sub, /nan)   ; this is a conservative sigma, because it includes all the cosmic rays
-
-  ; identify cosmic rays as positive fluctuations
-  w_cr = where( sub-median GT 3.0*sigma, /null)
-
-  ; make mask with flaggeed pixels
-  mask = current
-  mask[*] = 0.0
-  mask[w_cr] = 1.0
-
-  ; since the flagging is very conservative,
-  ; let's grow the mask by 1 pixel along the four directions
-  mask_grow = mask + shift(mask, [1,0]) + shift(mask, [-1,0]) + shift(mask, [0,1]) + shift(mask, [0,-1])
-  w_tomask = where(mask_grow GT 0.0, /null)
-
-  ; make clean cutout
-  clean = current
-  clean[w_tomask] = !values.d_NaN
-
-  ; rename the original cutout for archival reasons
-  file_move, filenames[i_slit], flame_util_replace_string(filenames[i_slit], '.fits', '_raw.fits'), /overwrite
-
-  ; write clean cutout
-  writefits, filenames[i_slit], clean, header
-
-
-END
-
-
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
-
-
-
 
 PRO flame_wavecal_accurate, fuel=fuel
 
@@ -696,10 +621,6 @@ PRO flame_wavecal_accurate, fuel=fuel
 		guess_lambda_axis = *this_slit.rough_wavecal
 
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
-
-      ; if needed, clean the cutout from cosmic rays
-      if fuel.input.clean_individual_frames then $
-        flame_wavecal_clean, slit=this_slit, index=i_frame
 
 			flame_wavecal_oneslit, fuel=fuel, slit_filename=(*slits[i_slit].filenames)[i_frame], $
 				approx_lambda_axis=guess_lambda_axis, $
