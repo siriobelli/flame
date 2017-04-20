@@ -156,7 +156,6 @@ END
 
 
 
-
 FUNCTION flame_initialize_lris_gain, instrument
   ;
   ; calculates tabulated gain (for each of the 4 amplifiers)
@@ -168,7 +167,12 @@ FUNCTION flame_initialize_lris_gain, instrument
 
     gain = [1.255, 1.180, 1.191, 1.162]
 
-  endif
+  ; LRIS - BLUE
+  endif else begin
+
+    gain = [1.55,	1.56,	1.63, 1.70]
+
+  endelse
 
   ; make a structure that will be read by readmhdufits.pro
   vidinp = ['VidInp1','VidInp2','VidInp3','VidInp4']
@@ -176,8 +180,6 @@ FUNCTION flame_initialize_lris_gain, instrument
   for i=0,3 do gaindata[i] = {GAINDATA, vidinp:vidinp[i], gain:gain[i]}
 
   return, gaindata
-
-  ; NEED TO IMPLEMENT LRIS BLUE
 
   ; ALSO WHAT ABOUT CCDGAIN AND CCDSPEED???
 
