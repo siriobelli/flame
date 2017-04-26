@@ -61,6 +61,8 @@
   ; manual slit positions
   ; input.slit_position_file = 'slit_edges.reg'
 
+  ; for when the alignment boxes have varying width
+  ; input.max_slitwidth_arcsec = 1.0
 
   ;**********************************
   ;**********************************

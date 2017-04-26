@@ -287,14 +287,27 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
     print, 'All slits have the same width of ', sorted_widths[0], ' arcsec. No alignment boxes found.' $
   else begin
 
+    ; if a maximum width for the science slits was specified, then use that to select the alignment boxes
+    if input.max_slitwidth_arcsec NE 0.0 then begin
+
+      print, n_elements(where(slit_hdr.width_arcsec GT input.max_slitwidth_arcsec, /null)), $
+        ' alignment boxes ( wider than ', number_formatter(input.max_slitwidth_arcsec, decimals=2), ' arcsec) found.'
+
+      ; exclude alignment boxes
+      slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LE input.max_slitwidth_arcsec, /null) ]
+
     ; otherwise, select all the slits that have the same width as the wider one
-    maxwidth = sorted_widths[0]
+    endif else begin
 
-    print, n_elements(where(sorted_widths eq maxwidth, /null)), $
-      ' alignment boxes (', number_formatter(maxwidth, decimals=2), ' arcsec) found.'
+      maxwidth = sorted_widths[0]
 
-    ; exclude alignment boxes
-    slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LT maxwidth, /null) ]
+      print, n_elements(where(sorted_widths eq maxwidth, /null)), $
+        ' alignment boxes (', number_formatter(maxwidth, decimals=2), ' arcsec) found.'
+
+      ; exclude alignment boxes
+      slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LT maxwidth, /null) ]
+      
+    endelse
 
   endelse
 

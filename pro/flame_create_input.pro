@@ -25,6 +25,7 @@ FUNCTION flame_create_input
     rough_wavecal_R : [500, 1000, 3000], $
     clean_individual_frames : 0, $
     sigma_clip : 2.0, $
+    max_slitwidth_arcsec : 0.0, $
     intermediate_dir : 'intermediate/', $
     output_dir: 'output/' $
     }
