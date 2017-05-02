@@ -202,9 +202,9 @@ END
 
 FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
 
-  ; rough wavelength range (slit should be central, x ~ 162 mm)
+  ; rough wavelength range (slit should be central, x ~ 0 mm)
     lambda_range = $
-     flame_initialize_luci_waverange(instrument, 162.0)
+     flame_initialize_luci_waverange(instrument, 0.0)
 
      ; range in lambda0 to be realistically considered
      lambda_width = lambda_range[1] - lambda_range[0]
@@ -306,7 +306,7 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
 
       ; exclude alignment boxes
       slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LT maxwidth, /null) ]
-      
+
     endelse
 
   endelse
