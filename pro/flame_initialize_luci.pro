@@ -203,24 +203,29 @@ END
 FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
 
   ; rough wavelength range (slit should be central, x ~ 0 mm)
-    lambda_range = $
-     flame_initialize_luci_waverange(instrument, 0.0)
+  lambda_range = $
+   flame_initialize_luci_waverange(instrument, 0.0)
 
-     ; range in lambda0 to be realistically considered
-     lambda_width = lambda_range[1] - lambda_range[0]
-     range_lambda0 = lambda_range[0] + [-0.3*lambda_width, 0.3*lambda_width]
+  ; range in lambda0 to be realistically considered
+  lambda_width = lambda_range[1] - lambda_range[0]
+  range_lambda0 = lambda_range[0] + [-0.3*lambda_width, 0.3*lambda_width]
 
-     ; calculate pixel scale and its possible variation
-     pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
-     range_pixel_scale = pixel_scale*[0.5,1.5]
+  ; calculate pixel scale and its possible variation
+  pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
+  range_pixel_scale = pixel_scale*[0.5,1.5]
+
+  ; vertical range to be considered. Default is to cut 10% of pixels on each side
+  if array_equal( input.longslit_edge, [0,0]) then $
+    yrange = [205, 1843] else $
+    yrange = input.longslit_edge
 
     ; create slit structure
     slits = { $
       number:1, $
       name:'longslit', $
       PA:!values.d_nan, $
-      approx_bottom:input.longslit_edge[0], $
-      approx_top:input.longslit_edge[1], $
+      approx_bottom:yrange[0], $
+      approx_top:yrange[1], $
       approx_target:mean(input.longslit_edge), $
       width_arcsec:!values.d_nan, $
       approx_R:instrument.resolution_slit1arcsec, $
