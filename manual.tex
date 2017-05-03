@@ -188,12 +188,16 @@ input.use_sky_edge = 1
 
 \subsubsection{Longslit observations}
 
-The reduction of longslit observation is slightly different from the reduction of a slit in a multi-object mask because the edges of the longslit are not well defined. This means that the slit curvature cannot be traced, and therefore it is advisable to reduce only the region of interest, possibly at the center of the detector. The longslit flag must be set, and the y pixel coordinates delimiting the region of interest must be provided:
+To reduce longslit observations, it is sufficient to set the longslit flag:
 \begin{lstlisting}
 input.longslit = 1
-input.longslit_edge = [1150, 1250]
 \end{lstlisting}
 
+The reduction of longslit observations is slightly different from the reduction of a slit in a multi-object mask because the edges of the longslit are not well defined. This means that the slit curvature cannot be traced, and therefore it is advisable to reduce only the region of interest, possibly at the center of the detector. The y pixel coordinates delimiting the region of interest can be specified in the following way:
+\begin{lstlisting}
+input.longslit_edge = [1150, 1250]
+\end{lstlisting}
+If the longslit\_edge keyword is not specified, the default is to reduce the full frame excluding 10\% of pixels at the bottom and 10\% at the top. For example, for a frame that is 2048 pixels tall, this would correspond to the [205, 1843] range.
 
 % Next, we need to define the directories for intermediate and final outputs:
 % \begin{lstlisting}

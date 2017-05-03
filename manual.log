@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  24 FEB 2017 16:53
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  3 MAY 2017 10:08
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -377,55 +377,54 @@ Overfull \hbox (100.73851pt too wide) in paragraph at lines 131--150
 
 [2] [3]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 208.
- [4] <diagnostics.pdf, id=166, 503.8825pt x 392.46625pt>
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 212.
+ [4] <diagnostics.pdf, id=167, 503.8825pt x 392.46625pt>
 File: diagnostics.pdf Graphic file (type pdf)
 
 <use diagnostics.pdf>
-Package pdftex.def Info: diagnostics.pdf used on input line 277.
+Package pdftex.def Info: diagnostics.pdf used on input line 281.
 (pdftex.def)             Requested size: 310.4979pt x 241.84138pt.
  [5] [6 <./diagnostics.pdf>]
-<slits.png, id=192, 948.54375pt x 902.37125pt>
+<slits.png, id=193, 948.54375pt x 902.37125pt>
 File: slits.png Graphic file (type png)
  <use slits.png>
-Package pdftex.def Info: slits.png used on input line 328.
+Package pdftex.def Info: slits.png used on input line 332.
 (pdftex.def)             Requested size: 241.49895pt x 229.73674pt.
- [7]
-<wavecal_approx_1.pdf, id=200, 471.7625pt x 385.44pt>
+ [7] [8 <./slits.png>] <wavecal_approx_1.pdf, id=209, 471.7625pt x 385.44pt>
 File: wavecal_approx_1.pdf Graphic file (type pdf)
 
 <use wavecal_approx_1.pdf>
-Package pdftex.def Info: wavecal_approx_1.pdf used on input line 352.
+Package pdftex.def Info: wavecal_approx_1.pdf used on input line 356.
 (pdftex.def)             Requested size: 155.24895pt x 126.84271pt.
 
-<wavecal_approx_2.pdf, id=201, 471.7625pt x 370.38374pt>
+<wavecal_approx_2.pdf, id=210, 471.7625pt x 370.38374pt>
 File: wavecal_approx_2.pdf Graphic file (type pdf)
 
 <use wavecal_approx_2.pdf>
-Package pdftex.def Info: wavecal_approx_2.pdf used on input line 354.
+Package pdftex.def Info: wavecal_approx_2.pdf used on input line 358.
 (pdftex.def)             Requested size: 155.24895pt x 121.88791pt.
- [8 <./slits.png>]
+
 <wavecal_accurate.pdf, id=212, 510.90875pt x 422.57875pt>
 File: wavecal_accurate.pdf Graphic file (type pdf)
 
 <use wavecal_accurate.pdf>
-Package pdftex.def Info: wavecal_accurate.pdf used on input line 372.
+Package pdftex.def Info: wavecal_accurate.pdf used on input line 376.
 (pdftex.def)             Requested size: 241.49895pt x 199.74689pt.
  [9 <./wavecal_approx_1.pdf> <./wavecal_approx_2.pdf>] [10 <./wavecal_accurate.
 pdf>]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 412.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 416.
  [11]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 412.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 416.
  (./manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 412.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 412.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 416.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 416.
 Package rerunfilecheck Info: File `manual.out' has not changed.
 (rerunfilecheck)             Checksum: 87B8C1A0E5A34BFED321430E3C6E536D;1677.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 412.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 416.
  ) 
 Here is how much of TeX's memory you used:
- 7038 strings out of 494946
- 103506 string characters out of 6177758
+ 7039 strings out of 494946
+ 103521 string characters out of 6177758
  206306 words of memory out of 5000000
  10107 multiletter control sequences out of 15000+600000
  55418 words of font info for 46 fonts, out of 8000000 for 9000
@@ -442,10 +441,10 @@ sr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/pub
 lic/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/shar
 e/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/public/l
 m/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.pfb>
-Output written on manual.pdf (11 pages, 1253822 bytes).
+Output written on manual.pdf (11 pages, 1254333 bytes).
 PDF statistics:
- 312 PDF objects out of 1000 (max. 8388607)
- 274 compressed objects within 3 object streams
- 78 named destinations out of 1000 (max. 500000)
+ 314 PDF objects out of 1000 (max. 8388607)
+ 276 compressed objects within 3 object streams
+ 79 named destinations out of 1000 (max. 500000)
  218 words of extra memory for PDF output out of 10000 (max. 10000000)
 
