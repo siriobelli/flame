@@ -639,7 +639,7 @@ PRO flame_getslits, fuel=fuel
   flame_getslits_write_slitim, fuel=fuel
 
   ; if we are reducing only one slit, then delete all the others
-  if fuel.input.reduce_only_oneslit ne 0 then begin
+  if fuel.input.reduce_only_oneslit ne 0 and n_elements(fuel.slits) GT 1 then begin
     new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, $
       diagnostics:fuel.diagnostics, slits:fuel.slits[fuel.input.reduce_only_oneslit-1] }
     fuel=new_fuel
