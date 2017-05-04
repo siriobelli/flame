@@ -431,7 +431,8 @@ END
 
 ;******************************************************************
 
-PRO flame_getslits_findedges, fuel=fuel, yshift=yshift
+
+PRO flame_getslits_multislit, fuel=fuel, yshift=yshift
 
   ; frame to use to find the edges
   frame_filename = (fuel.util.corrscience_filenames)[0]
@@ -442,23 +443,27 @@ PRO flame_getslits_findedges, fuel=fuel, yshift=yshift
   ; create array of new slit structures
   slits = []
 
-  ; LONGSLIT ---------------------------------------------------------------------
-  if fuel.input.longslit then begin
+  ; trace the edges of the slits using the sky emission lines or sky continuum
+  for i_slit=0, n_elements(fuel.slits)-1 do begin
 
     ; read the old slits structure - containing the info from the header
-    old_slits_struc = fuel.slits[0]
+    old_slits_struc = fuel.slits[i_slit]
 
-    ; make new fields for slit structure
+    ; trace slit
+    flame_getslits_trace, image=im, slits=old_slits_struc, yshift=yshift, $
+    poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
+
+    ; add new fields to slit structure
     new_slits_struc = create_struct( $
-        'yshift', !values.d_nan, $
-        'height', old_slits_struc.approx_top - old_slits_struc.approx_bottom, $
-        'bottom_poly', old_slits_struc.approx_bottom, $
-        'filenames', ptr_new(/allocate_heap), $
-        'rough_wavecal', ptr_new(/allocate_heap), $
-        'rectification', ptr_new(/allocate_heap), $
-        'outlambda_min', 0d, $
-        'outlambda_delta', 0d, $
-        'outlambda_Npix', 0L )
+    'yshift', yshift, $
+    'height', slit_height, $
+    'bottom_poly', poly_coeff, $
+    'filenames', ptr_new(/allocate_heap), $
+    'rough_wavecal', ptr_new(/allocate_heap), $
+    'rectification', ptr_new(/allocate_heap), $
+    'outlambda_min', 0d, $
+    'outlambda_delta', 0d, $
+    'outlambda_Npix', 0L )
 
     ; merge old and new slits structures
 
@@ -469,61 +474,63 @@ PRO flame_getslits_findedges, fuel=fuel, yshift=yshift
       struct_assign, new_slits_struc, old_slits_struc, /nozero
       this_slit = old_slits_struc
 
-    ; otherwise, append new fields
+      ; otherwise, append new fields
     endif else $
-      this_slit = create_struct( old_slits_struc, new_slits_struc )
+    this_slit = create_struct( old_slits_struc, new_slits_struc )
 
     ; add to array with the other slits
     slits = [slits, this_slit]
 
- ; MOS      ---------------------------------------------------------------------
-  endif else begin
-
-    ; trace the edges of the slits using the sky emission lines or sky continuum
-    for i_slit=0, n_elements(fuel.slits)-1 do begin
-
-      ; read the old slits structure - containing the info from the header
-      old_slits_struc = fuel.slits[i_slit]
-
-      ; trace slit
-      flame_getslits_trace, image=im, slits=old_slits_struc, yshift=yshift, $
-            poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
-
-        ; add new fields to slit structure
-        new_slits_struc = create_struct( $
-          'yshift', yshift, $
-          'height', slit_height, $
-          'bottom_poly', poly_coeff, $
-          'filenames', ptr_new(/allocate_heap), $
-          'rough_wavecal', ptr_new(/allocate_heap), $
-          'rectification', ptr_new(/allocate_heap), $
-          'outlambda_min', 0d, $
-          'outlambda_delta', 0d, $
-          'outlambda_Npix', 0L )
-
-      ; merge old and new slits structures
-
-      ; check if new fields are already present in the slits structure
-      if tag_exist(old_slits_struc, 'yshift') then begin
-
-        ; in that case, assign new values
-        struct_assign, new_slits_struc, old_slits_struc, /nozero
-        this_slit = old_slits_struc
-
-      ; otherwise, append new fields
-      endif else $
-        this_slit = create_struct( old_slits_struc, new_slits_struc )
-
-      ; add to array with the other slits
-      slits = [slits, this_slit]
-
-    endfor
-
-  endelse
+  endfor
 
   ; save the slit structures in fuel
   new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:slits }
   fuel=new_fuel
+
+END
+
+
+;******************************************************************
+
+
+PRO flame_getslits_longslit, fuel=fuel
+
+  ; frame to use to find the edges
+  frame_filename = (fuel.util.corrscience_filenames)[0]
+
+  ; read in the frame
+  im=readfits(frame_filename, hdr)
+
+  ; read the old slits structure - containing the info from the header
+  old_slits_struc = fuel.slits[0]
+
+  ; make new fields for slit structure
+  new_slits_struc = create_struct( $
+    'yshift', !values.d_nan, $
+    'height', old_slits_struc.approx_top - old_slits_struc.approx_bottom, $
+    'bottom_poly', old_slits_struc.approx_bottom, $
+    'filenames', ptr_new(/allocate_heap), $
+    'rough_wavecal', ptr_new(/allocate_heap), $
+    'rectification', ptr_new(/allocate_heap), $
+    'outlambda_min', 0d, $
+    'outlambda_delta', 0d, $
+    'outlambda_Npix', 0L )
+
+  ; check if new fields are already present in the slits structure
+  if tag_exist(old_slits_struc, 'yshift') then begin
+
+    ; in that case, assign new values
+    struct_assign, new_slits_struc, old_slits_struc, /nozero
+    this_slit = old_slits_struc
+
+  ; otherwise, append new fields
+  endif else $
+    this_slit = create_struct( old_slits_struc, new_slits_struc )
+
+  ; save the slit structures in fuel
+  new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:this_slit }
+  fuel=new_fuel
+
 
 END
 
@@ -630,7 +637,10 @@ PRO flame_getslits, fuel=fuel
   yshift = flame_getslits_findshift( fuel=fuel )
 
   ; identify all slits from the data, and write the fuel.slits structures
-  flame_getslits_findedges, fuel=fuel, yshift=yshift
+  if fuel.input.longslit then $
+  flame_getslits_longslit, fuel=fuel $
+    else $
+  flame_getslits_multislit, fuel=fuel, yshift=yshift
 
   ; write ds9 region file with the slit traces
   flame_getslits_writeds9, fuel=fuel
