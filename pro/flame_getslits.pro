@@ -2,23 +2,13 @@
 ; ****************************************************************************************
 
 
-FUNCTION flame_getslits_findshift, fuel=fuel
+FUNCTION flame_getslits_findshift, image, approx_top, approx_bottom
   ;
   ; find the shift between the expected slit positions and the real ones
-  ; never use the CR-cleaned files
   ;
 
-  ; for longslits this shift makes no sense
-  if fuel.input.longslit then return, 0.0
-
-  ; if the user specified the slit positions manually, then do not apply a shift
-  if fuel.input.slit_position_file ne 'none' then return, 0.0
-
-  ; read one FITS file
-  spec2d = readfits((fuel.util.corrscience_filenames)[0])
-
   ; integrate the 2D spectrum along the wavelength direction, and smooth
-  x = median(total(spec2d, 1, /nan), 15)
+  x = median(total(image, 1, /nan), 15)
 
   ; find the edges of the slits (1d profile where positive peaks mark the beginning and negative peaks mark the end of the slit)
   edges = x - shift(x, 4)
@@ -28,8 +18,8 @@ FUNCTION flame_getslits_findshift, fuel=fuel
 
   ; these are the expected edges
   expected_edges = dblarr( n_elements(edges) )
-  expected_edges[fuel.slits.approx_top] = -1.
-  expected_edges[fuel.slits.approx_bottom] = 1.
+  expected_edges[approx_top] = -1.
+  expected_edges[approx_bottom] = 1.
 
   ; cross-correlate to find the shift between expected and measured slit edges
   lag = indgen(400)-200
@@ -432,13 +422,19 @@ END
 ;******************************************************************
 
 
-PRO flame_getslits_multislit, fuel=fuel, yshift=yshift
+PRO flame_getslits_multislit, fuel=fuel
 
   ; frame to use to find the edges
   frame_filename = (fuel.util.corrscience_filenames)[0]
 
   ; read in the frame
   im=readfits(frame_filename, hdr)
+
+  ; if the user specified the slit positions manually, then do not apply a shift
+  if fuel.input.slit_position_file ne 'none' then $
+    yshift = 0.0 else $
+    ; get the overall vertical shift between the expected and the actual slit positions
+    yshift = flame_getslits_findshift( im, fuel.slits.approx_top, fuel.slits.approx_bottom )
 
   ; create array of new slit structures
   slits = []
@@ -633,14 +629,11 @@ END
 
 PRO flame_getslits, fuel=fuel
 
-  ; get the overall vertical shift between the expected and the actual slit positions
-  yshift = flame_getslits_findshift( fuel=fuel )
-
   ; identify all slits from the data, and write the fuel.slits structures
   if fuel.input.longslit then $
   flame_getslits_longslit, fuel=fuel $
     else $
-  flame_getslits_multislit, fuel=fuel, yshift=yshift
+  flame_getslits_multislit, fuel=fuel
 
   ; write ds9 region file with the slit traces
   flame_getslits_writeds9, fuel=fuel
