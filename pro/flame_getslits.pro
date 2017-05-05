@@ -62,7 +62,7 @@ END
 ; ****************************************************************************************
 
 
-FUNCTION flame_getslits_trace_skyedge, image_in, approx_edge, top=top, bottom=bottom
+FUNCTION flame_getslits_trace_continuum, image_in, approx_edge, top=top, bottom=bottom
 
   ; check keywords
   if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
@@ -175,7 +175,7 @@ END
 
 
 
-FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom
+FUNCTION flame_getslits_trace_skylines, image, approx_edge, top=top, bottom=bottom
 
   ;
   ; Given a frame containing bright sky emission lines, it traces the edge of a slit.
@@ -383,8 +383,8 @@ FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top, rectifi
     endfor
 
   ; smooth out the cross-correlation results in case one row failed
-  cc_peak = median(cc_peak, 3)
-  cc_shift = median(cc_shift, 3)
+  cc_peak = median(cc_peak, 2)
+  cc_shift = median(cc_shift, 2)
 
   ; using the expected slit edges, select a conservative region that should be inside the slit
   i_row = indgen(N_pixel_y)
@@ -423,22 +423,25 @@ PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=po
 ;
 
 
-; -----------------------------
-; introducting cross-correlation in three parts
+  ; cross-correlation: find approximate edges of the slit and make rectified image
 
-approx_edges = flame_getslits_crosscorr( image, slits.approx_bottom - yshift, slits.approx_top - yshift, rectified_image=rectified_image )
+  approx_edges = flame_getslits_crosscorr( image, slits.approx_bottom - yshift, slits.approx_top - yshift, rectified_image=rectified_image )
 
-; -----------------------------
+  ; split slit into three chunks and use cross-correlation to find slit edges
+  N_pixel_x = (size(image))[1]
+  edges_left = flame_getslits_crosscorr( image[0:N_pixel_x/3-1, *], approx_edges[0], approx_edges[1])
+  edges_center = flame_getslits_crosscorr( image[N_pixel_x/3 : N_pixel_x*2/3-1, *], approx_edges[0], approx_edges[1])
+  edges_right = flame_getslits_crosscorr( image[N_pixel_x*2/3 : -1, *], approx_edges[0], approx_edges[1])
 
 
   if keyword_set(use_sky_edge) then begin
-    ; identify top and bottom edge using sky background
-    top_edge = flame_getslits_trace_skyedge(image, approx_edges[1], /top )
-    bottom_edge = flame_getslits_trace_skyedge(image, approx_edges[0], /bottom )
+    ; identify top and bottom edge using sky background or flat lamp
+    top_edge = flame_getslits_trace_continuum(image, approx_edges[1], /top )
+    bottom_edge = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
   endif else begin
-    ; identify top and bottom edge using OH lines
-    top_edge = flame_getslits_trace_edge(rectified_image, approx_edges[1], /top )
-    bottom_edge = flame_getslits_trace_edge(rectified_image, approx_edges[0], /bottom )
+    ; identify top and bottom edge using OH lines (and in this case use the rectified image)
+    top_edge = flame_getslits_trace_skylines(rectified_image, approx_edges[1], /top )
+    bottom_edge = flame_getslits_trace_skylines(rectified_image, approx_edges[0], /bottom )
   endelse
 
   ; calculate the slit height
