@@ -381,6 +381,102 @@ END
 
 ; ****************************************************************************************
 
+FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top
+;
+; cross-correlate the pixel rows of an image to find the approximate edges of a slit
+; return [bottom, top] pixel coordinates
+;
+
+  ; vertical size of the image
+  N_pixel_y = (size(image))[2]
+
+  ; work with integer numbers
+  expected_top = round(expected_top)
+  expected_bottom = round(expected_bottom)
+
+  ; fiducial center
+  fiducial_center = (expected_top + expected_bottom) / 2
+
+  ; use this as reference (should definitely be within the slit)
+  reference_spectrum = median(image[*,fiducial_center-1 : fiducial_center+1], dimension=2)
+
+  ; these are the shifts considered (in pixels, relative to the previous row)
+  lag = -15 + indgen(31)
+
+  ; these array will contain the cross-correlation results for each row
+  cc_shift = intarr( N_pixel_y )
+  cc_peak = fltarr( N_pixel_y )
+
+  ; cross-correlate all the rows from the center going up
+  for i_row=fiducial_center, N_pixel_y-1 do begin
+
+    ; reference shift from previous rows
+    ref_shift = median(cc_shift[i_row-3:i_row-1])
+
+    ; cross-correlate this row with the reference spectrum
+    cc = c_correlate( reference_spectrum, image[*,i_row], lag + ref_shift)
+
+    ; find the peak of the cross-correlation
+    cc_peak[i_row] = max(cc, indmax)
+
+    ; store this shift and move on to the next row
+    cc_shift[i_row] = lag[indmax]
+
+  endfor
+
+    ; again but now from the center going down
+    for i_row=fiducial_center, 0, -1 do begin
+
+      ; reference shift from previous rows
+      ref_shift = median(cc_shift[i_row+1:i_row+3])
+
+      ; cross-correlate this row with the reference spectrum
+      cc = c_correlate( reference_spectrum, image[*,i_row], lag + ref_shift)
+
+      ; find the peak of the cross-correlation
+      cc_peak[i_row] = max(cc, indmax)
+
+      ; store this shift and move on to the next row
+      cc_shift[i_row] = lag[indmax]
+
+    endfor
+
+  ; smooth out the cross-correlation results in case one row failed
+  cc_peak = median(cc_peak, 3)
+  cc_shift = median(cc_shift, 3)
+
+  ; using the expected slit edges, select a conservative region that should be inside the slit
+  i_row = indgen(N_pixel_y)
+  margin = 0.15*(expected_top-expected_bottom)
+  w_inslit = where( i_row GT expected_bottom+margin and i_row LT expected_top-margin, /null )
+
+  ; find the top edge
+  for i_top = fiducial_center, N_pixel_y-1 do $
+    if cc_peak[i_top] LT 0.5 * median(cc_peak[w_inslit]) then break
+
+  ; find the bottom edge
+  for i_bottom = fiducial_center, 0, -1 do $
+    if cc_peak[i_bottom] LT 0.5 * median(cc_peak[w_inslit]) then break
+
+
+return, [i_bottom, i_top]
+
+;
+; things to add here:
+; 1 - output, in some way, the top and bottom positions
+; 2 - add the possibility to rectify the image (or output a rectified version)
+; 3 - add the possibility to break up the image into three chunks and get an idea of the slit curvature and trace
+;
+; it's probably better if some of these things are done not in this routine but in the parent one.
+
+
+END
+
+
+
+; ****************************************************************************************
+
+
 
 PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
 
@@ -389,25 +485,30 @@ PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=po
 ; coefficients of a polynomial fit describing the *bottom* edge
 ;
 
-  ; apply y shift
-  expected_top = slits.approx_top - yshift
-  expected_bottom = slits.approx_bottom - yshift
+
+; -----------------------------
+; introducting cross-correlation in three parts
+
+approx_edges = flame_getslits_crosscorr( image, slits.approx_bottom - yshift, slits.approx_top - yshift )
+
+; -----------------------------
+
 
   if keyword_set(use_sky_edge) then begin
     ; identify top and bottom edge using sky background
-    top_edge = flame_getslits_trace_skyedge(image, expected_top, /top )
-    bottom_edge = flame_getslits_trace_skyedge(image, expected_bottom, /bottom )
+    top_edge = flame_getslits_trace_skyedge(image, approx_edges[1], /top )
+    bottom_edge = flame_getslits_trace_skyedge(image, approx_edges[0], /bottom )
   endif else begin
     ; identify top and bottom edge using OH lines
-    top_edge = flame_getslits_trace_edge(image, expected_top, /top )
-    bottom_edge = flame_getslits_trace_edge(image, expected_bottom, /bottom )
+    top_edge = flame_getslits_trace_edge(image, approx_edges[1], /top )
+    bottom_edge = flame_getslits_trace_edge(image, approx_edges[0], /bottom )
   endelse
 
   ; calculate the slit height
   slit_height = median( top_edge - bottom_edge )
   if ~finite(slit_height) then slit_height = median(top_edge) - median(bottom_edge)
 
-  ; combine the top and bottom edge measurements together (i.e. subtract slit_heigh from the top edge)
+  ; combine the top and bottom edge measurements together (i.e. subtract slit_height from the top edge)
   x_to_fit = [ where(finite(top_edge), /null ), where(finite(bottom_edge), /null) ]
   y_to_fit = [ top_edge[ where(finite(top_edge), /null) ] - slit_height, bottom_edge[where(finite(bottom_edge), /null)] ]
 
