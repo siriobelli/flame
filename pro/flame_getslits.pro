@@ -322,18 +322,22 @@ END
 
 ; ****************************************************************************************
 
-FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top, rectified_image=rectified_image
+FUNCTION flame_getslits_crosscorr, image_in, expected_bottom, expected_top, rectified_image=rectified_image
 ;
 ; cross-correlate the pixel rows of an image to find the approximate edges of a slit
 ; return [bottom, top] pixel coordinates
 ;
 
   ; vertical size of the image
-  N_pixel_y = (size(image))[2]
+  N_pixel_y = (size(image_in))[2]
 
   ; work with integer numbers
   expected_top = round(expected_top)
   expected_bottom = round(expected_bottom)
+
+  ; cross-correlation does not work well with NaNs
+  image = image_in
+  image[ where( ~finite(image), /null ) ] = 0.0
 
   ; fiducial center
   fiducial_center = (expected_top + expected_bottom) / 2
@@ -358,7 +362,8 @@ FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top, rectifi
     cc = c_correlate( reference_spectrum, image[*,i_row], lag + ref_shift)
 
     ; find the peak of the cross-correlation
-    cc_peak[i_row] = max(cc, indmax)
+    cc_peak[i_row] = max(cc, indmax, /nan)
+    if ~finite(cc_peak[i_row]) then continue
 
     ; store this shift and move on to the next row
     cc_shift[i_row] = lag[indmax] + ref_shift
@@ -394,13 +399,15 @@ FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top, rectifi
   ; find the top edge
   for i_top = fiducial_center, N_pixel_y-1 do $
     if cc_peak[i_top] LT 0.5 * median(cc_peak[w_inslit]) then break
+  i_top -= 1
 
   ; find the bottom edge
   for i_bottom = fiducial_center, 0, -1 do $
     if cc_peak[i_bottom] LT 0.5 * median(cc_peak[w_inslit]) then break
+  i_bottom += 1
 
   ; rectify the slit
-  rectified_image = image
+  rectified_image = image_in
   for i=i_bottom, i_top do rectified_image[*,i] = shift(rectified_image[*,i], -cc_shift[i])
 
   ; return the slit edges
