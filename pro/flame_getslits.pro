@@ -206,67 +206,8 @@ FUNCTION flame_getslits_trace_edge, image, approx_edge, top=top, bottom=bottom
   ; get rid of negative values and NaNs
   cutout[ where(cutout LT 0.0 or ~finite(cutout), /null) ] = 0.0
 
-  ; rectify the OH lines
-  ;----------------------
-
-  ; use this as reference (assume is within the slit)
-  bottom_row = cutout[*,0]
-
-  ; these are the shifts considered (in pixels)
-  lag = -30 + indgen(61)
-
-  ; this array will contain the shift value for each row
-  shift = intarr(cutout_size)
-
-  ; cross-correlate all the other rows and find the shift
-  for i_row=1, cutout_size-1 do begin
-
-    ; cross-correlate this row with the bottom row
-    cc = c_correlate( bottom_row, cutout[*,i_row], lag)
-
-    ; find the peak of the cross-correlation
-    !NULL = max(cc, indmax)
-
-    ; store this shift and move on to the next row
-    shift[i_row] = lag[indmax]
-
-  endfor
-
-  ; find the differential shift at each row
-  differential_shift = shift - shift(shift, 1)
-  differential_shift = differential_shift[1:*]
-
-  ; assume the first three rows are definitely within in the slit
-  ; and find the row at which the shift is discontinuous
-  for i_row=3, n_elements(differential_shift)-1 do begin
-
-    previous_shifts = differential_shift[0:i_row-1]
-    tolerance = stddev(previous_shifts) > 1
-    if abs( differential_shift[i_row] - median(previous_shifts) ) GT 3.0*tolerance then break
-
-  endfor
-
-  ; was a discontinuity found?
-  if i_row LT n_elements(differential_shift) then begin
-
-    ; take the row closest to the discontinuity as the reference for the shift
-    shift = shift[i_row] - shift
-
-    ; do not apply shifts above that point
-    shift[i_row+1:*] = 0
-
-    ; determine the 'fiducial' number of pixels in the slit
-    Npix_slit_fiducial = i_row-1
-
-  endif else Npix_slit_fiducial = 10
-
-  ; rectify the cutout
-  for i_row=0, cutout_size-1 do cutout[*,i_row] = shift(cutout[*,i_row], shift[i_row])
-
-  ;----------------------
-
   ; extract a spectrum from the fiducial slit regions
-  sky_spectrum = median(cutout[*,0:Npix_slit_fiducial-1], dimension=2)
+  sky_spectrum = median(cutout[*,0:cutout_size/4], dimension=2)
 
   ; subtract the continuum from the sky spectrum (particularly important in the K band)
   sky_spectrum_padded = [replicate(0d,200), sky_spectrum, replicate(0d,200)]
@@ -381,7 +322,7 @@ END
 
 ; ****************************************************************************************
 
-FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top
+FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top, rectified_image=rectified_image
 ;
 ; cross-correlate the pixel rows of an image to find the approximate edges of a slit
 ; return [bottom, top] pixel coordinates
@@ -420,7 +361,7 @@ FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top
     cc_peak[i_row] = max(cc, indmax)
 
     ; store this shift and move on to the next row
-    cc_shift[i_row] = lag[indmax]
+    cc_shift[i_row] = lag[indmax] + ref_shift
 
   endfor
 
@@ -437,7 +378,7 @@ FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top
       cc_peak[i_row] = max(cc, indmax)
 
       ; store this shift and move on to the next row
-      cc_shift[i_row] = lag[indmax]
+      cc_shift[i_row] = lag[indmax] + ref_shift
 
     endfor
 
@@ -458,16 +399,12 @@ FUNCTION flame_getslits_crosscorr, image, expected_bottom, expected_top
   for i_bottom = fiducial_center, 0, -1 do $
     if cc_peak[i_bottom] LT 0.5 * median(cc_peak[w_inslit]) then break
 
+  ; rectify the slit
+  rectified_image = image
+  for i=i_bottom, i_top do rectified_image[*,i] = shift(rectified_image[*,i], -cc_shift[i])
 
-return, [i_bottom, i_top]
-
-;
-; things to add here:
-; 1 - output, in some way, the top and bottom positions
-; 2 - add the possibility to rectify the image (or output a rectified version)
-; 3 - add the possibility to break up the image into three chunks and get an idea of the slit curvature and trace
-;
-; it's probably better if some of these things are done not in this routine but in the parent one.
+  ; return the slit edges
+  return, [i_bottom, i_top]
 
 
 END
@@ -489,7 +426,7 @@ PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=po
 ; -----------------------------
 ; introducting cross-correlation in three parts
 
-approx_edges = flame_getslits_crosscorr( image, slits.approx_bottom - yshift, slits.approx_top - yshift )
+approx_edges = flame_getslits_crosscorr( image, slits.approx_bottom - yshift, slits.approx_top - yshift, rectified_image=rectified_image )
 
 ; -----------------------------
 
@@ -500,8 +437,8 @@ approx_edges = flame_getslits_crosscorr( image, slits.approx_bottom - yshift, sl
     bottom_edge = flame_getslits_trace_skyedge(image, approx_edges[0], /bottom )
   endif else begin
     ; identify top and bottom edge using OH lines
-    top_edge = flame_getslits_trace_edge(image, approx_edges[1], /top )
-    bottom_edge = flame_getslits_trace_edge(image, approx_edges[0], /bottom )
+    top_edge = flame_getslits_trace_edge(rectified_image, approx_edges[1], /top )
+    bottom_edge = flame_getslits_trace_edge(rectified_image, approx_edges[0], /bottom )
   endelse
 
   ; calculate the slit height
