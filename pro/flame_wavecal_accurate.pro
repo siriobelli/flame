@@ -251,12 +251,6 @@ PRO flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=slit_filename
 		illum_f[i_row] = median(OHnorm[w_thisrow])
 	endfor
 
-	; WARNING: not clear why some pixel rows have systematically lower flux.
-	; Need further investigation!!!
-
-	; for now, median-filter out the weird rows:
-	illum_f = median(illum_f, 3)
-
 	; apply illumination correction
 	for i_row=0,N_pixel_y-1 do im[*,i_row] /= illum_f[i_row]
 
@@ -471,7 +465,7 @@ PRO flame_wavecal_fitskylines, x=x, y=y, $
 	erase
 	cgplot, x, y, charsize=1, xsty=1, xtit='', ytit='sky flux', title=plot_title, $
 		position = [0.15, 0.69, 0.95, 0.96], xtickformat="(A1)", xra=[x[0], x[-1]]
-	for i_line=0, n_elements(OHlines)-1 do cgplot, OHlines[i_line].x + [0,0], [-1,1], /overplot, color='red'
+	for i_line=0, n_elements(OHlines)-1 do cgplot, OHlines[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='red'
 
 	; panel 2: show the result of Gaussian fitting
 	cgplot, OHlines.x, OHlines.lambda, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
@@ -573,8 +567,8 @@ PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
 		; extract this pixel row from the slit
 		this_row = im[*, i_row]
 
-		; normalize
-		this_row /= max(this_row, /nan)
+		; ; normalize
+		; this_row /= max(this_row, /nan)
 
 		; if this is the first row of the bottom half, then use the initial wavelength guess
 		if i_row eq i0_bottom then wavelength_axis_guess = approx_lambda_axis
