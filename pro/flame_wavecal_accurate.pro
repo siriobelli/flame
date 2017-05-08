@@ -222,8 +222,13 @@ PRO flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=slit_filename
 	; along the spatial slit axis
 	;
 
+	;
+	; WARNING: THE ILLUMINATION-CORRECTED FRAMES ARE NOT ACTUALLY USED FOR NOW
+	;
+
 	; read in slit
 	im = readfits(slit_filename, hdr)
+	N_pixel_x = (size(im))[1]
 	N_pixel_y = (size(im))[2]
 
 	; sort by wavelength
@@ -242,24 +247,39 @@ PRO flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=slit_filename
 		OHnorm[w_thisline] = OHflux[w_thisline] / median(OHflux[w_thisline])
 	endfor
 
-	; construct the median illumination curve as a function of vertical position
-	illum_y = indgen( N_pixel_y )
-	illum_f = illum_y*0.0 + 1.0
-	for i_row=0, N_pixel_y-1 do begin
-		w_thisrow = where( OHlines.y eq i_row, /null)
-		if w_thisrow eq !NULL then continue
-		illum_f[i_row] = median(OHnorm[w_thisrow])
-	endfor
+	; 2D coordinates
+	x_coordinate = dindgen(N_pixel_x) # replicate(1.0, N_pixel_y)
+	y_coordinate = replicate(1.0, N_pixel_x) # dindgen(N_pixel_y)
+
+	; guess starting parameters for smooth correction
+	start_params = [ 1.0, 0.1/double(N_pixel_x), 0.1/double(N_pixel_y), 0.1/double(N_pixel_x)^2, 0.1/(double(N_pixel_x)*double(N_pixel_y)) ]
+
+	; fit a 3rd degree polynomial to all the OH lines
+	fit_params = mpfit2dfun('flame_poly_surface', $
+		OHlines.x, OHlines.y, OHnorm, replicate(1.0, n_elements(OHlines)), start_params, /quiet)
+
+	; generate the smooth correction using the best-fit parameters
+	correction = flame_poly_surface(x_coordinate, y_coordinate, fit_params)
 
 	; apply illumination correction
-	for i_row=0,N_pixel_y-1 do im[*,i_row] /= illum_f[i_row]
+	im /= correction
 
 	; write out the illumination-corrected cutout
   writefits, flame_util_replace_string(slit_filename, '.fits', '_illumcorr.fits'), im, hdr
 
-	;
-	; WARNING: THE ILLUMINATION-CORRECTED FRAMES ARE NOT ACTUALLY USED FOR NOW
-	;
+
+ ;
+ ; ; ******************** using sfit
+ ;
+ ; !NULL = sfit( transpose( [[OHlines.x],[OHlines.y],[OHnorm]]), 2, Kx=kx )
+ ;
+ ; correction = Kx[0,0] + Kx[0,1]*x_coordinate + Kx[1,0]*y_coordinate + $
+ ; 	Kx[0,2]*x_coordinate^2 + Kx[1,1]*x_coordinate*y_coordinate + Kx[2,0]*y_coordinate^2 + $
+ ; 	Kx[1,2]*x_coordinate^2*y_coordinate + Kx[2,1]*x_coordinate*y_coordinate^2 + $
+ ; 	Kx[2,2]*x_coordinate^2*y_coordinate^2
+ ;
+ ;
+
 
 END
 
