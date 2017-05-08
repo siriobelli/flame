@@ -559,7 +559,7 @@ PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
 		i_row = sorted_rows[counter]
 
 		; skip 3 pixels at the edges to avoid the noisy part
-		if i_row LT 3 or N_spatial_pix-1-i_row LT 3 then continue
+		;if i_row LT 3 or N_spatial_pix-1-i_row LT 3 then continue
 
 		; print info on the row
 		print, 'row ' + strtrim(i_row, 2) + ' ', format='(a,$)'
