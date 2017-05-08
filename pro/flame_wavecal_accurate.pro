@@ -211,6 +211,67 @@ END
 ;*******************************************************************************
 
 
+PRO flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=slit_filename
+	;
+	; use the OH lines to dervie and apply an illumination correction
+	; along the spatial slit axis
+	;
+
+	; read in slit
+	im = readfits(slit_filename, hdr)
+	N_pixel_y = (size(im))[2]
+
+	; sort by wavelength
+	sorted_lambdas = OHlines[ sort(OHlines.lambda) ].lambda
+
+	; find unique wavelengths
+	lambdas = sorted_lambdas[uniq(sorted_lambdas)]
+
+	; calculate Gussian fluxes
+	OHflux = sqrt(2.0*3.14) * OHlines.peak * OHlines.sigma
+
+	; for each line, normalize flux to the median
+	OHnorm = OHflux * 0.0
+	for i_line=0, n_elements(lambdas)-1 do begin
+		w_thisline = where(OHlines.lambda eq lambdas[i_line], /null)
+		OHnorm[w_thisline] = OHflux[w_thisline] / median(OHflux[w_thisline])
+	endfor
+
+	; construct the median illumination curve as a function of vertical position
+	illum_y = indgen( N_pixel_y )
+	illum_f = illum_y*0.0 + 1.0
+	for i_row=0, N_pixel_y-1 do begin
+		w_thisrow = where( OHlines.y eq i_row, /null)
+		if w_thisrow eq !NULL then continue
+		illum_f[i_row] = median(OHnorm[w_thisrow])
+	endfor
+
+	; WARNING: not clear why some pixel rows have systematically lower flux.
+	; Need further investigation!!!
+
+	; for now, median-filter out the weird rows:
+	illum_f = median(illum_f, 3)
+
+	; apply illumination correction
+	for i_row=0,N_pixel_y-1 do im[*,i_row] /= illum_f[i_row]
+
+	; write out the illumination-corrected cutout
+  writefits, flame_util_replace_string(slit_filename, '.fits', '_illumcorr.fits'), im, hdr
+
+	;
+	; WARNING: THE ILLUMINATION-CORRECTED FRAMES ARE NOT ACTUALLY USED FOR NOW
+	;
+
+END
+
+
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
 PRO flame_wavecal_writeds9, OHlines, filename=filename
 ;
 ; write a ds9 region file with all the OH line detections
@@ -625,6 +686,8 @@ PRO flame_wavecal_accurate, fuel=fuel
 			flame_wavecal_oneslit, fuel=fuel, slit_filename=(*slits[i_slit].filenames)[i_frame], $
 				approx_lambda_axis=guess_lambda_axis, $
 				OHlines=OHlines, wavelength_solution=wavelength_solution
+
+			flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=(*slits[i_slit].filenames)[i_frame]
 
 			flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
 				OHlines=OHlines, slit=this_slit
