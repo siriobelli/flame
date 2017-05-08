@@ -40,12 +40,12 @@ END
 
 
 PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OHlines=OHlines, $
-		wavecal_accurate=wavecal_accurate
+		wavecal_accurate=wavecal_accurate, diagnostics=diagnostics, this_diagnostics=this_diagnostics
 
 ; This routine calculates the 2D wavelength solution and y-rectification.
 ; These are two mappings from the observed pixel coordinates to the rectified grid
 ; lambdax, gamma, where lambdax is a pixel grid linear in lambda and gamma is the
-; vertical distance to the edge of the slit (taking warping into account)
+; vertical distance to the edge of the slit (taking into account warping and also vertical drift)
 ; The result of this routine is a pair of matrices, Klambda and Kgamma, saved in fuel.slits,
 ; that can be used to rectify the image via poly_2D()
 ;
@@ -65,7 +65,7 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OHlines=OHlines,
 	ymin_edge = min(bottom_edge)
 
 	; this is the y-coordinate of the bottom pixel row in the cutout
-	first_pixel =  ceil(ymin_edge)
+	first_pixel = ceil(ymin_edge)
 
 	; OH line coordinates
 	OH_lambda = OHlines.lambda
@@ -76,9 +76,14 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OHlines=OHlines,
 	lambda_0 = slit.outlambda_min
 	delta_lambda = slit.outlambda_delta
 
+	; calculate vertical offset
+	w_this_offset = where(diagnostics.offset_pos eq this_diagnostics.offset_pos)
+	ref_diagnostics = diagnostics[w_this_offset[0]]
+	vertical_offset = this_diagnostics.position - ref_diagnostics.position
+
 	; translate every OH detection into the new coordinate system
 	OH_lambdax = (OH_lambda - lambda_0)/delta_lambda
-	OH_gamma = OH_y + first_pixel - poly(OH_x, slit.bottom_poly)
+	OH_gamma = OH_y + first_pixel - poly(OH_x, slit.bottom_poly) - vertical_offset
 
 	; indices of the pixels we want to use - start with using all of them
 	w_goodpix = lindgen(n_elements(OH_x))
@@ -693,7 +698,8 @@ PRO flame_wavecal_accurate, fuel=fuel
 				OHlines=OHlines, slit=this_slit
 
 			flame_wavecal_2D_calibration, filename=(*slits[i_slit].filenames)[i_frame], $
-				slit=this_slit, OHlines=OHlines, wavecal_accurate=wavecal_accurate
+				slit=this_slit, OHlines=OHlines, wavecal_accurate=wavecal_accurate, $
+				diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
 
 			; update the slit structure with the output wavelength grid of the last frame
 			fuel.slits[i_slit] = this_slit

@@ -47,7 +47,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	SXDELPAR, Header, 'CD1_2'
 	SXDELPAR, Header, 'CD2_1'
 	SXDELPAR, Header, 'CD2_2'
-	
+
 	; write rectified image
 	writefits, output_name, new_im, header
 
