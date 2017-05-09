@@ -216,7 +216,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=slit_filename
+PRO flame_wavecal_illum_correction, OHlines=OHlines, filename=filename, rectification=rectification, slit=slit
 	;
 	; use the OH lines to dervie and apply an illumination correction
 	; along the spatial slit axis
@@ -227,7 +227,7 @@ PRO flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=slit_filename
 	;
 
 	; read in slit
-	im = readfits(slit_filename, hdr)
+	im = readfits(filename, hdr)
 	N_pixel_x = (size(im))[1]
 	N_pixel_y = (size(im))[2]
 
@@ -251,34 +251,48 @@ PRO flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=slit_filename
 	x_coordinate = dindgen(N_pixel_x) # replicate(1.0, N_pixel_y)
 	y_coordinate = replicate(1.0, N_pixel_x) # dindgen(N_pixel_y)
 
-	; guess starting parameters for smooth correction
-	start_params = [ 1.0, 0.1/double(N_pixel_x), 0.1/double(N_pixel_y), 0.1/double(N_pixel_x)^2, 0.1/(double(N_pixel_x)*double(N_pixel_y)) ]
+	; extract the rectification matrix for gamma
+	Kgamma = rectification.Kgamma
 
-	; fit a 3rd degree polynomial to all the OH lines
-	fit_params = mpfit2dfun('flame_poly_surface', $
-		OHlines.x, OHlines.y, OHnorm, replicate(1.0, n_elements(OHlines)), start_params, /quiet)
+	; order of polynomial
+	Nord = (size(Kgamma))[1]
+	xexp  = findgen(Nord)
+	yexp  = findgen(Nord)
 
-	; generate the smooth correction using the best-fit parameters
-	correction = flame_poly_surface(x_coordinate, y_coordinate, fit_params)
+	; calculate the gamma coordinate of each OHline detection
+	OHgamma = dblarr(n_elements(OHlines))
+	for i_line=0, n_elements(OHlines)-1 do $
+		OHgamma[i_line] = total(((OHlines[i_line].y)^xexp # (OHlines[i_line].x)^yexp ) * Kgamma)
+
+	; sort by gamma
+	sorted_gamma = OHgamma[sort(OHgamma)]
+	sorted_illum = OHnorm[sort(OHgamma)]
+
+	; fit polynomial to the illumination correction as a function of gamma
+	poly_coeff = poly_fit(sorted_gamma, sorted_illum, 10)
+
+	; set the boundaries for a meaningful correction
+	gamma_min = sorted_gamma[3]
+	gamma_max = sorted_gamma[-4]
+
+	; calculate the gamma coordinate for each observed pixel
+	gamma_coordinate = im * 0.0
+	for ix=0.0,N_pixel_x-1 do $
+		for iy=0.0,N_pixel_y-1 do $
+			gamma_coordinate[ix,iy] = total(((iy)^xexp # (ix)^yexp ) * Kgamma)
+
+	; calculate the illumination correction at each pixel
+	illumination_correction = poly(gamma_coordinate, poly_coeff)
+
+	; set the correction to NaN when outside the boundary
+	illumination_correction[where(gamma_coordinate LT gamma_min OR $
+		gamma_coordinate GT gamma_max, /null)] = !values.d_NaN
 
 	; apply illumination correction
-	im /= correction
+	im /= illumination_correction
 
 	; write out the illumination-corrected cutout
-  writefits, flame_util_replace_string(slit_filename, '.fits', '_illumcorr.fits'), im, hdr
-
-
- ;
- ; ; ******************** using sfit
- ;
- ; !NULL = sfit( transpose( [[OHlines.x],[OHlines.y],[OHnorm]]), 2, Kx=kx )
- ;
- ; correction = Kx[0,0] + Kx[0,1]*x_coordinate + Kx[1,0]*y_coordinate + $
- ; 	Kx[0,2]*x_coordinate^2 + Kx[1,1]*x_coordinate*y_coordinate + Kx[2,0]*y_coordinate^2 + $
- ; 	Kx[1,2]*x_coordinate^2*y_coordinate + Kx[2,1]*x_coordinate*y_coordinate^2 + $
- ; 	Kx[2,2]*x_coordinate^2*y_coordinate^2
- ;
- ;
+  writefits, flame_util_replace_string(filename, '.fits', '_illumcorr.fits'), im, hdr
 
 
 END
@@ -706,7 +720,8 @@ PRO flame_wavecal_accurate, fuel=fuel
 				approx_lambda_axis=guess_lambda_axis, $
 				OHlines=OHlines, wavelength_solution=wavelength_solution
 
-			flame_wavecal_illum_correction, OHlines=OHlines, slit_filename=(*slits[i_slit].filenames)[i_frame]
+			flame_wavecal_illum_correction, OHlines=OHlines, filename=(*slits[i_slit].filenames)[i_frame], $
+				rectification = (*slits[i_slit].rectification)[i_frame], slit=slits[i_slit]
 
 			flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
 				OHlines=OHlines, slit=this_slit
