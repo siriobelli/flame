@@ -60,28 +60,28 @@ PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectificat
 		xra=breakpoints[ [n_elements(breakpoints)*1/4, n_elements(breakpoints)*2/4] ], $
 		title=(strsplit(slit_filename,'/', /extract))[-1]
 
-	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
-		fullbkpt=breakpoints, x2=pixel_ycoord, npoly=1, $
-		outmask=outmask, upper=4.0, lower=4.0 )
-
 	; sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
-	; 	fullbkpt=breakpoints, $
+	; 	fullbkpt=breakpoints, x2=pixel_ycoord, npoly=1, $
 	; 	outmask=outmask, upper=4.0, lower=4.0 )
+
+	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
+		fullbkpt=breakpoints, $
+		outmask=outmask, upper=4.0, lower=4.0 )
 
 	; wavelength axis finely sampled
 	wl_axis = min(pixel_wavelength) + (max(pixel_wavelength) - min(pixel_wavelength)) * dindgen( N_lambda_pix * 10 ) / double(N_lambda_pix * 10)
 
 	; overplot the B-spline model at each row
-	cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=0.0001), /overplot, color='red' ; bspline_valu bug: setting i_row=0 is interpreted as keyword not set
-	for i_row=1, N_spatial_pix-1 do cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=i_row), /overplot, color='red'
-; cgplot, wl_axis, bspline_valu(wl_axis, sset), /overplot, color='red'
+	; cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=0.0001), /overplot, color='red' ; bspline_valu bug: setting i_row=0 is interpreted as keyword not set
+	; for i_row=1, N_spatial_pix-1 do cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=i_row), /overplot, color='red'
+	cgplot, wl_axis, bspline_valu(wl_axis, sset), /overplot, color='red'
 
 	; show pixels that were masked out
 	cgplot, pixel_wavelength[where(~outmask, /null)], pixel_flux[where(~outmask, /null)], /overplot, psym=16, color='blue'
 
 	; generate sky model for the whole slit
-	sky_model = bspline_valu(wavelength_solution, sset, x2=pixel_ycoord_2d)
-	;sky_model = bspline_valu(wavelength_solution, sset)
+	;sky_model = bspline_valu(wavelength_solution, sset, x2=pixel_ycoord_2d)
+	sky_model = bspline_valu(wavelength_solution, sset)
 
 	; save sky model
 	writefits, flame_util_replace_string(slit_filename, '.fits', '_skymodel.fits'), sky_model

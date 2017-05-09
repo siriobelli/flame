@@ -725,18 +725,18 @@ PRO flame_wavecal_onecutout, fuel=fuel, i_slit=i_slit, i_frame=i_frame, $
 	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_plots.ps'), /nomatch
 	flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines
 
-	; calculate and apply the illumination correction
-	flame_wavecal_illum_correction, OHlines=OHlines, filename=slit_filename, $
-		rectification = (*this_slit.rectification)[i_frame], slit=this_slit
-
-	cgPS_close
-
 	flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
 		OHlines=OHlines, slit=this_slit
 
 	flame_wavecal_2D_calibration, filename=slit_filename, $
 		slit=this_slit, OHlines=OHlines, wavecal_accurate=wavecal_accurate, $
 		diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
+
+	; calculate and apply the illumination correction
+		flame_wavecal_illum_correction, OHlines=OHlines, filename=slit_filename, $
+		rectification = (*this_slit.rectification)[i_frame], slit=this_slit
+
+	cgPS_close
 
 	; update the slit structure with the output wavelength grid of the last frame
 	fuel.slits[i_slit] = this_slit
