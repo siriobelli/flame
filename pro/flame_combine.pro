@@ -2,8 +2,6 @@
 ;
 ; TO-DO:
 ;
-; - frames are combined by shifting A-B-A by an integer number of pixels - can you do better?
-; - dithering length is calculated from first A frame and first B frame - we need a better definition
 ; - handle better the case in which A or B are actually sky
 ;
 
@@ -183,11 +181,17 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	; A-B stack
 	stack_AB = stack_A_skysub - stack_B_skysub
 
+	; NOTE: if A is not the "top" position, then this is actually B-A.
+	; This ensures that the central trace of AB_combined is always positive
+	if diagnostics[w_A[0]].position LT diagnostics[w_B[0]].position then $
+		stack_AB = stack_B_skysub - stack_A_skysub
+
 	; invert the A-B stack
 	stack_BA = -stack_AB
 
-	; find the dithering length, which for now we take from the first A and the first B frames
-	dithering_length = abs( round(diagnostics[w_A[0]].position - diagnostics[w_B[0]].position) )
+	; find the dithering length
+	; (keep in mind that the rectification step already shifted each frame to the floor() of the reference position)
+	dithering_length = abs( floor(diagnostics[w_A[0]].position) - floor(diagnostics[w_B[0]].position) )
 
 	; zero padding on top
 	padding = dblarr( (size(stack_A))[1], dithering_length )
@@ -198,17 +202,6 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	BA_cleansum_shifted = shift(BA_cleansum_padded, 0, dithering_length)
 
 	AB_combined = mean( [ [[AB_cleansum_padded]], [[BA_cleansum_shifted]] ], dimension=3, /nan )
-
-	; ; last detail: the beginning and the end of the spectrum, outside the observed range, are NaN.
-	; ; but the zero padding added zeroes there. Let's delete them
-
-	; ; first find the x coordinates of the NaN regions, defined as columns where >90% of pixels (pre-padding) are NaNs
-	; number_NaNs = total( ~finite(AB_cleansum), 2)
-	; w_nans = where(number_NaNs GT 0.9 * (size(AB_cleansum))[2], /null )
-
-	; ; now let's set all those columns equal to NaN
-	; if w_nans NE !NULL then $
-	; 	for i=0, n_elements(w_nans)-1 do AB_combined[w_nans[i],*] = !values.d_NaN
 
 	; output final result
 	writefits, filename_prefix + '_ABcombined.fits', AB_combined, header
