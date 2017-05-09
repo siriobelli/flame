@@ -79,7 +79,7 @@ PRO flame_wavecal_2D_calibration, filename=filename, slit=slit, OHlines=OHlines,
 	; calculate vertical offset
 	w_this_offset = where(diagnostics.offset_pos eq this_diagnostics.offset_pos)
 	ref_diagnostics = diagnostics[w_this_offset[0]]
-	vertical_offset = this_diagnostics.position - ref_diagnostics.position
+	vertical_offset = this_diagnostics.position - floor(ref_diagnostics.position)
 
 	; translate every OH detection into the new coordinate system
 	OH_lambdax = (OH_lambda - lambda_0)/delta_lambda
