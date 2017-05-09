@@ -247,10 +247,6 @@ PRO flame_wavecal_illum_correction, OHlines=OHlines, filename=filename, rectific
 		OHnorm[w_thisline] = OHflux[w_thisline] / median(OHflux[w_thisline])
 	endfor
 
-	; 2D coordinates
-	x_coordinate = dindgen(N_pixel_x) # replicate(1.0, N_pixel_y)
-	y_coordinate = replicate(1.0, N_pixel_x) # dindgen(N_pixel_y)
-
 	; extract the rectification matrix for gamma
 	Kgamma = rectification.Kgamma
 
@@ -268,12 +264,27 @@ PRO flame_wavecal_illum_correction, OHlines=OHlines, filename=filename, rectific
 	sorted_gamma = OHgamma[sort(OHgamma)]
 	sorted_illum = OHnorm[sort(OHgamma)]
 
+	; do not consider measurements that are more than a factor of three off
+	w_tofit = where(sorted_illum GT 0.33 and sorted_illum LT 3.0, /null)
+
 	; fit polynomial to the illumination correction as a function of gamma
-	poly_coeff = poly_fit(sorted_gamma, sorted_illum, 10)
+	poly_coeff = poly_fit(sorted_gamma[w_tofit], sorted_illum[w_tofit], 10)
 
 	; set the boundaries for a meaningful correction
 	gamma_min = sorted_gamma[3]
 	gamma_max = sorted_gamma[-4]
+
+	; scatter plot of the illumination (show all OH lines)
+	cgplot, sorted_gamma[w_tofit], sorted_illum[w_tofit], psym=3, /ynozero, charsize=1.2, $
+		xtitle='gamma coordinate', ytitle='Illumination', title='Illumination correction'
+
+	; overplot the smooth illumination
+	x_axis = gamma_min + (gamma_max-gamma_min)*dindgen(200)/199.
+	cgplot, x_axis, poly(x_axis, poly_coeff), $
+		/overplot, color='red', thick=3
+
+	; overplot flat illumination
+	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], [1,1], /overplot, linestyle=2, thick=3
 
 	; calculate the gamma coordinate for each observed pixel
 	gamma_coordinate = im * 0.0
@@ -530,7 +541,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
+PRO flame_wavecal_find_OHlines, fuel=fuel, slit_filename=slit_filename, $
 	 approx_lambda_axis=approx_lambda_axis, $
 	 OHlines=OHlines, wavelength_solution=wavelength_solution
 
@@ -592,17 +603,11 @@ PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
 		; index of the row we are considering now
 		i_row = sorted_rows[counter]
 
-		; skip 3 pixels at the edges to avoid the noisy part
-		;if i_row LT 3 or N_spatial_pix-1-i_row LT 3 then continue
-
 		; print info on the row
 		print, 'row ' + strtrim(i_row, 2) + ' ', format='(a,$)'
 
 		; extract this pixel row from the slit
 		this_row = im[*, i_row]
-
-		; ; normalize
-		; this_row /= max(this_row, /nan)
 
 		; if this is the first row of the bottom half, then use the initial wavelength guess
 		if i_row eq i0_bottom then wavelength_axis_guess = approx_lambda_axis
@@ -633,17 +638,48 @@ PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
 
 	print, ''
 
+	cgPS_close
+
+END
+
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines
+
+	; get the dimensions
+	N_lambda_pix = (size(wavelength_solution))[1]
+	N_spatial_pix = (size(wavelength_solution))[2]
+
+	; -------------------------------------------------------
+	; plot the individual detections on a 2D view of the slit
+	cgplot, OHlines.x, OHlines.y, psym=16, xtit='x pixel', ytitle='y pixel on this slit', $
+	title='OH line detections', charsize=1, layout=[1,2,1], symsize=0.5
+
+	; show the line widths
+	cgplot, OHlines.x, OHlines.sigma, psym=16, xtit='x pixel', ytitle='line width (pixel)', $
+	charsize=1, layout=[1,2,2], symsize=0.5, yra = median(OHlines.sigma)*[0.5, 1.5]
+	cgplot, [0, 2*max(OHlines.x)], median(OHlines.sigma) + [0,0], /overplot, thick=3, linestyle=2
+
+	; -------------------------------------------------------
+	; plot the shift in wavelength as a function of spatial position
+	erase
+
 	; take the median wavelength solution as a reference
 	wavelength_solution_reference = median(wavelength_solution, dimension=2)
 
 	; calculate the typical shift in wavelength for each row from the reference solution. Take the median wl of the central 5 pixels
 	wavelength_shift = dblarr(N_spatial_pix)
 	for i_row=0, N_spatial_pix-1 do $
-		wavelength_shift[i_row] = $
-			median(wavelength_solution[ N_lambda_pix/2-2 : N_lambda_pix/2+2, i_row]) - $
-			median(wavelength_solution_reference[ N_lambda_pix/2-2 : N_lambda_pix/2+2 ] )
+	wavelength_shift[i_row] = $
+	median(wavelength_solution[ N_lambda_pix/2-2 : N_lambda_pix/2+2, i_row]) - $
+	median(wavelength_solution_reference[ N_lambda_pix/2-2 : N_lambda_pix/2+2 ] )
 
-	; the 3 pixels at each edge are not being fit
+	; cut the pixels near the edge
 	wavelength_shift[0:2] = !values.d_nan
 	wavelength_shift[-3:-1] = !values.d_nan
 
@@ -653,29 +689,64 @@ PRO flame_wavecal_oneslit, fuel=fuel, slit_filename=slit_filename, $
 
 	; plot the shift as a function of vertical position
 	cgplot, 1d4*wavelength_shift, psym=-16, thick=3, charsize=1, $
-		xtit = 'pixel position along the vertical (spatial) axis', ytit='wavelength shift from the reference pixel row (angstrom)'
+	xtit = 'pixel position along the vertical (spatial) axis', ytit='wavelength shift from the reference pixel row (angstrom)'
 	cgplot, [-1d4, 1d4], [0,0], /overplot, thick=2
 
-	; plot the individual detections on a 2D view of the slit
-	erase
-	cgplot, OHlines.x, OHlines.y, psym=16, xtit='x pixel', ytitle='y pixel on this slit', $
-		title='OH line detections', charsize=1, layout=[1,2,1], symsize=0.5
 
-	; show the line widths
-	cgplot, OHlines.x, OHlines.sigma, psym=16, xtit='x pixel', ytitle='line width (pixel)', $
-		charsize=1, layout=[1,2,2], symsize=0.5, yra = median(OHlines.sigma)*[0.5, 1.5]
-	cgplot, [0, 2*max(OHlines.x)], median(OHlines.sigma) + [0,0], /overplot, thick=3, linestyle=2
+END
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+PRO flame_wavecal_onecutout, fuel=fuel, i_slit=i_slit, i_frame=i_frame, $
+	guess_lambda_axis=guess_lambda_axis
+
+	; filename of the cutout
+	slit_filename = (*fuel.slits[i_slit].filenames)[i_frame]
+
+	; this slit
+	this_slit = fuel.slits[i_slit]
+
+	; identify and measure the OH lines
+	flame_wavecal_find_OHlines, fuel=fuel, slit_filename=slit_filename, $
+		approx_lambda_axis=guess_lambda_axis, $
+		OHlines=OHlines, wavelength_solution=wavelength_solution
+
+	; write a ds9 region file with the identified OH lines
+	flame_wavecal_writeds9, OHlines, filename=flame_util_replace_string(slit_filename, '.fits', '_OHlines.reg')
+
+	; write a FITS file with the pixel-by-pixel wavelength solution
+	writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), $
+		wavelength_solution, headfits(slit_filename)
+
+	; show plots of the wavelength calibration and OH line identification
+	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_plots.ps'), /nomatch
+	flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines
+
+	; calculate and apply the illumination correction
+	flame_wavecal_illum_correction, OHlines=OHlines, filename=slit_filename, $
+		rectification = (*this_slit.rectification)[i_frame], slit=this_slit
 
 	cgPS_close
 
-	; write a ds9 region file with the identified OH lines
-	flame_wavecal_writeds9, OHlines, filename =  $
-		flame_util_replace_string(slit_filename, '.fits', '_OHlines.reg')
+	flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
+		OHlines=OHlines, slit=this_slit
 
-  ; write a FITS file with the pixel-by-pixel wavelength solution
-  writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), wavelength_solution, hdr
+	flame_wavecal_2D_calibration, filename=slit_filename, $
+		slit=this_slit, OHlines=OHlines, wavecal_accurate=wavecal_accurate, $
+		diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
+
+	; update the slit structure with the output wavelength grid of the last frame
+	fuel.slits[i_slit] = this_slit
+
+	; use the accurate wavecal of the central pixel row as guess for the next frame
+	guess_lambda_axis = wavecal_accurate[ * , (size(wavecal_accurate))[2]/2 ]
+
 
 END
+
 
 
 ;*******************************************************************************
@@ -716,25 +787,8 @@ PRO flame_wavecal_accurate, fuel=fuel
 
 		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
 
-			flame_wavecal_oneslit, fuel=fuel, slit_filename=(*slits[i_slit].filenames)[i_frame], $
-				approx_lambda_axis=guess_lambda_axis, $
-				OHlines=OHlines, wavelength_solution=wavelength_solution
-
-			flame_wavecal_illum_correction, OHlines=OHlines, filename=(*slits[i_slit].filenames)[i_frame], $
-				rectification = (*slits[i_slit].rectification)[i_frame], slit=slits[i_slit]
-
-			flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
-				OHlines=OHlines, slit=this_slit
-
-			flame_wavecal_2D_calibration, filename=(*slits[i_slit].filenames)[i_frame], $
-				slit=this_slit, OHlines=OHlines, wavecal_accurate=wavecal_accurate, $
-				diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
-
-			; update the slit structure with the output wavelength grid of the last frame
-			fuel.slits[i_slit] = this_slit
-
-			; use the accurate wavecal of the central pixel row as guess for the next frame
-			guess_lambda_axis = wavecal_accurate[ * , (size(wavecal_accurate))[2]/2 ]
+			flame_wavecal_onecutout, fuel=fuel, i_slit=i_slit, i_frame=i_frame, $
+		 	 guess_lambda_axis=guess_lambda_axis
 
 		endfor
 
