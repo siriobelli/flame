@@ -406,7 +406,7 @@ PRO flame_wavecal_fitskylines, x=x, y=y, $
 
   ; settings:
 	; the degree of the polynomial used to describe the wavelength solution
-	poly_degree = 3
+	poly_degree = 5
 
 	; minimum number of OH lines for a reliable wavelength solution
 	Nmin_lines = 6
