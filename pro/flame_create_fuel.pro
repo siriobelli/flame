@@ -97,10 +97,10 @@ FUNCTION flame_create_fuel, input
     filenames_pixelflat: filenames_pixelflat, $
     filenames_illumflat: filenames_illumflat, $
     filenames_arc: filenames_arc, $
-    master_dark: 'master_dark.fits', $
-    master_pixelflat: 'master_pixelflat.fits', $
-    master_illumflat: 'master_illumflat.fits', $
-    master_arc: 'master_arc.fits', $
+    master_dark: input.intermediate_dir + 'master_dark.fits', $
+    master_pixelflat: input.intermediate_dir + 'master_pixelflat.fits', $
+    master_illumflat: input.intermediate_dir + 'master_illumflat.fits', $
+    master_arc: input.intermediate_dir + 'master_arc.fits', $
     dither_blind_positions: dither_blind_positions, $
     slitim_filename: 'slitim.fits', $
     flame_data_dir : data_dir, $

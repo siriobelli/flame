@@ -77,7 +77,8 @@ PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectificat
 	cgplot, wl_axis, bspline_valu(wl_axis, sset), /overplot, color='red'
 
 	; show pixels that were masked out
-	cgplot, pixel_wavelength[where(~outmask, /null)], pixel_flux[where(~outmask, /null)], /overplot, psym=16, color='blue'
+	if where(~outmask, /null) NE !NULL then $
+		cgplot, pixel_wavelength[where(~outmask, /null)], pixel_flux[where(~outmask, /null)], /overplot, psym=16, color='blue'
 
 	; generate sky model for the whole slit
 	;sky_model = bspline_valu(wavelength_solution, sset, x2=pixel_ycoord_2d)

@@ -51,7 +51,7 @@ FUNCTION flame_correct_makemaster, fuel=fuel, calib=calib
     else: message, 'calib keyword not valid: ' + calib
   endcase
 
-  ; get input from user
+  ; use file list input from user
   filelist_norm = strlowcase( strtrim(filelist, 2) )
 
   ; 1) do not use this calibration ---------------------------------------------
@@ -59,6 +59,7 @@ FUNCTION flame_correct_makemaster, fuel=fuel, calib=calib
     print, calib + ' not used'
     return, ''
   endif
+
 
   ; 2) use the default master file ---------------------------------------------
   if filelist_norm eq 'default' then begin
@@ -77,9 +78,28 @@ FUNCTION flame_correct_makemaster, fuel=fuel, calib=calib
 
   ; 3) use the frames provided by the user -------------------------------------
 
-  print, 'making master out of', filenames
+  print, 'making master out of:'
+  forprint, filenames
 
+  ; read in first frame
+  first_frame = readfits(filenames[0], hdr)
 
+  ; read the type of data (long, float, etc)
+  data_type = size(first_frame, /type)
+
+  ; make 3D array containing all frames at once
+  cube = make_array( (size(first_frame))[1], (size(first_frame))[2], n_elements(filenames), type=data_type )
+
+  ; read in all frames into the cube
+  for i=0, n_elements(filenames)-1 do cube[*,*,i] = readfits(filenames[i])
+
+  ; take the median
+  master = median(cube, dimension=3)
+
+  ; write out the master file
+  writefits, master_file, master, header
+
+  print, 'File created: ', master_file
 
   return, master_file
 
@@ -152,20 +172,13 @@ END
 ;*******************************************************************************
 
 
-PRO flame_correct_makemask, fuel=fuel
+FUNCTION flame_correct_badpix, fuel=fuel, master_dark=master_dark_file
 
-  ; identify the darks files
-  print, n_elements(fuel.util.darks_filenames), ' dark frames'
+  ; if there is input, then return !NULL
+  if master_dark_file eq '' then return, !NULL
 
-  ; read in all dark frames
-  darks = []
-  for i_frame=0, n_elements(fuel.util.darks_filenames)-1 do darks = [ [[darks]], [[ readfits(fuel.util.darks_filenames[i_frame], header) ]] ]
-
-  ; median combine all the dark frames
-  master_dark = median(darks, dimension=3)
-
-  ; save the master dark
-  writefits, fuel.input.intermediate_dir + 'master_dark.fits', master_dark, header
+  ; read in the master_dark
+  master_dark = readfits(master_dark_file, hdr)
 
   ; calculate typical value and dispersion for pixel values in a robust way
   mmm, master_dark, dark_bias, dark_sigma
@@ -196,7 +209,11 @@ PRO flame_correct_makemask, fuel=fuel
   badpixel_mask[w_badpixels] = 1
 
   ; save bad pixel mask
-  writefits, fuel.input.intermediate_dir + 'badpixel_mask.fits', badpixel_mask, header
+  badpix_filename = fuel.input.intermediate_dir + 'badpixel_mask.fits'
+  writefits, badpix_filename, badpixel_mask, header
+
+  ; return bad pixel mask
+  return, badpixel_mask
 
 END
 
@@ -209,14 +226,14 @@ END
 
 PRO flame_correct, fuel=fuel
 
-  ; create master files ('' for those that are not to be used)
+  ; create master files (strings are filenames or '' for those that are not to be used)
   master_dark = flame_correct_makemaster( fuel=fuel, calib='dark')
   master_pixelflat = flame_correct_makemaster( fuel=fuel, calib='pixelflat')
   master_illumflat = flame_correct_makemaster( fuel=fuel, calib='illumflat')
   master_arc = flame_correct_makemaster( fuel=fuel, calib='arc')
 
-  ; also need to make bad pixel mask here
-  badpix = !NULL
+  ; make bad pixel mask here
+  badpix = flame_correct_badpix( fuel=fuel, master_dark=master_dark)
 
 
   ; apply corrections ----------------------------------------------------------
