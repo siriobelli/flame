@@ -153,17 +153,16 @@ FUNCTION flame_initialize_luci_settings, science_header
   ; read in gain
   gain = fxpar(science_header, 'GAIN')   ; e-/adu
 
-
-
   ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - -
 
   ; linearity correction: the polynomial coefficients describing the transformation
   linearity_correction = [0.0d, 1.0d, 4.155d-6]
 
   ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - -
+  ; (these are all stored in the flame data directory, fuel.util.flame_data_dir)
   default_badpixel_mask = 'default_badpixel_mask_' + instrument_name + '.fits'
   default_dark = 'none'
-  default_pixelflat = 'default_flat_field_' + instrument_name + '.fits'
+  default_pixelflat = 'default_pixelflat_' + instrument_name + '_allbands.fits'
   default_illumflat = 'none'
   default_arc = 'none'
 
