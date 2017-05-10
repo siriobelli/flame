@@ -268,7 +268,7 @@ PRO flame_wavecal_illum_correction, OHlines=OHlines, filename=filename, rectific
 	w_tofit = where(sorted_illum GT 0.33 and sorted_illum LT 3.0, /null)
 
 	; fit polynomial to the illumination correction as a function of gamma
-	poly_coeff = poly_fit(sorted_gamma[w_tofit], sorted_illum[w_tofit], 10)
+	poly_coeff = poly_fit(sorted_gamma[w_tofit], sorted_illum[w_tofit], 8)
 
 	; set the boundaries for a meaningful correction
 	gamma_min = sorted_gamma[3]
@@ -663,7 +663,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines
+PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines, slit=slit
 
 	; get the dimensions
 	N_lambda_pix = (size(wavelength_solution))[1]
@@ -678,6 +678,30 @@ PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHline
 	cgplot, OHlines.x, OHlines.sigma, psym=16, xtit='x pixel', ytitle='line width (pixel)', $
 	charsize=1, layout=[1,2,2], symsize=0.5, yra = median(OHlines.sigma)*[0.5, 1.5]
 	cgplot, [0, 2*max(OHlines.x)], median(OHlines.sigma) + [0,0], /overplot, thick=3, linestyle=2
+
+
+	; -------------------------------------------------------
+	; plot the residuals of the wavelength solution
+
+	; extract the rectification matrix for lambda
+	Klambda = (*slit.rectification).Klambda
+
+	; order of polynomial
+	Nord = (size(Klambda))[1]
+
+	; calculate the model lambda given x,y where x,y are arrays
+	lambda_modelx = fltarr(n_elements(OHlines))
+	for i=0,Nord-1 do for j=0,Nord-1 do lambda_modelx +=  Klambda[i,j] * (OHlines.x)^j * (OHlines.y)^i
+	lambda_model = slit.outlambda_min + lambda_modelx * slit.outlambda_delta
+
+	; show the residuals
+	cgplot, OHlines.x, 1d4 * (OHlines.lambda-lambda_model), psym=16, $
+		xtit='x pixel', ytitle='delta lambda (angstrom)', $
+		title='Residuals of the wavelength solution (rms: ' + $
+			number_formatter( stddev( 1d4 * (OHlines.lambda-lambda_model), /nan), decimals=3) + $
+			' angstrom)', charsize=1, thick=3
+
+	cgplot, [0, 2*max(OHlines.x)], [0,0], /overplot, thick=3, linestyle=2
 
 	; -------------------------------------------------------
 	; plot the shift in wavelength as a function of spatial position
@@ -697,9 +721,9 @@ PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHline
 	wavelength_shift[0:2] = !values.d_nan
 	wavelength_shift[-3:-1] = !values.d_nan
 
-	; ; get rid of wildly wrong rows
-	; wavelength_shift[where(abs(wavelength_shift - median(wavelength_shift)) $
-	; 	GT 5.0 *stddev(wavelength_shift, /nan), /null)] = !values.d_NaN
+	; get rid of wildly wrong rows
+	wavelength_shift[where(abs(wavelength_shift - median(wavelength_shift)) $
+		GT 5.0 *stddev(wavelength_shift, /nan), /null)] = !values.d_NaN
 
 	; plot the shift as a function of vertical position
 	cgplot, 1d4*wavelength_shift, psym=-16, thick=3, charsize=1, $
@@ -735,16 +759,18 @@ PRO flame_wavecal_onecutout, fuel=fuel, i_slit=i_slit, i_frame=i_frame, $
 	writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), $
 		wavelength_solution, headfits(slit_filename)
 
-	; show plots of the wavelength calibration and OH line identification
-	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_plots.ps'), /nomatch
-	flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines
-
+	; make the 2D grid of the rectified frame
 	flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
 		OHlines=OHlines, slit=this_slit
 
+	; calculate the polynomial transformation between observed and rectified frame
 	flame_wavecal_2D_calibration, filename=slit_filename, $
 		slit=this_slit, OHlines=OHlines, wavecal_accurate=wavecal_accurate, $
 		diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
+
+	; show plots of the wavelength calibration and OH line identification
+	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_plots.ps'), /nomatch
+	flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines, slit=this_slit
 
 	; calculate and apply the illumination correction
 		flame_wavecal_illum_correction, OHlines=OHlines, filename=slit_filename, $
@@ -782,24 +808,19 @@ PRO flame_wavecal_accurate, fuel=fuel
   quiet_state = !QUIET
   !QUIET = 1
 
-	; extract the slits structures
-	slits = fuel.slits
-
 	; loop through all slits
-	for i_slit=0, n_elements(slits)-1 do begin
+	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
-		this_slit = fuel.slits[i_slit]
-
-	  print, 'Accurate wavelength calibration for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
+	  print, 'Accurate wavelength calibration for slit ', strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
 		print, ' '
 
 		; make sure there are no old rectification coefficients left over
-		this_slit.rectification = ptr_new(/allocate_heap)
+		fuel.slits[i_slit].rectification = ptr_new(/allocate_heap)
 
 		; the initial guess for the first frame is from the rough wavelength calibration
-		guess_lambda_axis = *this_slit.rough_wavecal
+		guess_lambda_axis = *(fuel.slits[i_slit]).rough_wavecal
 
-		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
+		for i_frame=0, n_elements(*fuel.slits[i_slit].filenames)-1 do begin
 
 			flame_wavecal_onecutout, fuel=fuel, i_slit=i_slit, i_frame=i_frame, $
 		 	 guess_lambda_axis=guess_lambda_axis
