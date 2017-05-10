@@ -209,7 +209,7 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
 
   print, ''
 
-  ; pixels in the master dark and/or flat field that are outliers
+  ; pixels in the master dark that are outliers
   ; by more than this value are considered bad pixels
   sig_clip = 7.0
 
@@ -290,9 +290,15 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
       ; calculate typical value and dispersion for pixel values in a robust way
       mmm, master_pixelflat, flat_bias, flat_sigma
 
-      ; cut everything outside the central +/- sig_clip sigmas
-      low_cut = flat_bias - sig_clip * flat_sigma
-      high_cut = flat_bias + sig_clip * flat_sigma
+      ; we trust corrections up to 20%. Beyond that, we consider it a bad pixel,
+      max_correction = 0.20
+
+      ; however if the standard deviation is very large, then use that as threshold
+      if sig_clip*flat_sigma GT max_correction then max_correction = sig_clip*flat_sigma
+
+      ; identify bad pixels
+      low_cut = flat_bias - max_correction
+      high_cut = flat_bias + max_correction
       w_badpixels = where(master_pixelflat LT low_cut or master_pixelflat GT high_cut, /null)
 
       ; calculate the fraction of bad pixels
