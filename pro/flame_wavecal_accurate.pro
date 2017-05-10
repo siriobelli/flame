@@ -506,24 +506,38 @@ PRO flame_wavecal_fitskylines, x=x, y=y, $
 	; 	if nosky_regions[-2] ne 0 then poly_wl[ where(nosky_regions eq nosky_regions[-2]) ] = !values.d_NaN	; void the region at the end
 	; endif
 
+	; charsize
+	ch = 0.8
+
 	; panel 1: plot the spectrum
 	erase
-	cgplot, x, y, charsize=1, xsty=1, xtit='', ytit='sky flux', title=plot_title, $
-		position = [0.15, 0.69, 0.95, 0.96], xtickformat="(A1)", xra=[x[0], x[-1]]
+	cgplot, x, y, charsize=ch, xsty=1, xtit='', ytit='sky flux', title=plot_title, $
+		position = [0.15, 0.70, 0.95, 0.96], xtickformat="(A1)", xra=[x[0], x[-1]], /nodata
+
+	; show the OH lines that were identified
 	for i_line=0, n_elements(OHlines)-1 do cgplot, OHlines[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='red'
 
-	; panel 2: show the result of Gaussian fitting
+	; show the spectrum on top, for clarity
+	cgplot, x, y, /overplot
+
+	; panel 2: show the wavelength solution
 	cgplot, OHlines.x, OHlines.lambda, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
-		xtit='', ytit='expected wavelength', charsize=1, $
-		/noerase, position = [0.15, 0.42, 0.95, 0.69], xtickformat="(A1)"
+		xtit='', ytit='expected wavelength', charsize=ch, $
+		/noerase, position = [0.15, 0.50, 0.95, 0.70], xtickformat="(A1)"
 
 	; show the polynomial fit
 	cgplot, x, poly_wl, color='blue', /overplot
 
-	; panel 3: plot the line widths
+	; panel 3: show the residuals
+	cgplot, OHlines.x, 1d4 * (OHlines.lambda-poly(OHlines.x, wavesol_coeff)), /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+		ytit='residuals (angstrom)', charsize=ch, $
+		/noerase, position = [0.15, 0.30, 0.95, 0.50], xtickformat="(A1)"
+	cgplot, [x[0], x[-1]], [0,0], /overplot, thick=3, linestyle=2
+
+	; panel 4: plot the line widths
 	cgplot, OHlines.x, OHlines.sigma, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
-		xtit='pixel coordinate', ytit='line width (pixel)', charsize=1, $
-		/noerase, position = [0.15, 0.15, 0.95, 0.42]
+		xtit='pixel coordinate', ytit='line width (pixel)', charsize=ch, $
+		/noerase, position = [0.15, 0.10, 0.95, 0.30]
 
 	; show median value of line width
 	cgplot, [-1, 2*max(OHlines.x)], [0,0]+median(OHlines.sigma), /overplot, thick=3, linestyle=2
