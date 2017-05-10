@@ -50,13 +50,15 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_correct_master_dark, fuel=fuel
+FUNCTION flame_correct_master_dark, fuel
 
   ;
   ; Make the master dark by combining the dark frames provided by the user
   ; or, if requested, by copying the default master dark file.
-  ; Return the file name of the master dark
+  ; Return the frame or !NULL
   ;
+
+  print, ''
 
   ; read the file list specified by the user
   filelist = strlowcase( strtrim(fuel.input.dark_filelist, 2) )
@@ -67,7 +69,7 @@ FUNCTION flame_correct_master_dark, fuel=fuel
   ; case 1: do not use darks ---------------------------------------------
   if filelist eq '' or filelist eq 'none' then begin
     print, 'dark not used'
-    return, ''
+    return, !NULL
   endif
 
   ; case 2: use the default master file ---------------------------------------------
@@ -82,9 +84,11 @@ FUNCTION flame_correct_master_dark, fuel=fuel
 
     ; copy the default master frame to the local (intermediate) directory
     file_copy, default_master, master_file, /overwrite
+    print, 'using default master dark ', default_master
 
-    ; return the filename
-    return, master_file
+    ; return the master dark
+    master = readfits(master_file, hdr)
+    return, master
 
   endif
 
@@ -95,9 +99,9 @@ FUNCTION flame_correct_master_dark, fuel=fuel
   flame_correct_median_combine, fuel.util.filenames_dark, master_file
   print, 'master dark file created: ', master_file
 
-  ; return the filename
-  return, master_file
-
+  ; return the master dark
+  master = readfits(master_file, hdr)
+  return, master
 
 END
 
@@ -108,8 +112,7 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 
-
-FUNCTION flame_correct_master_pixelflat, fuel=fuel
+FUNCTION flame_correct_master_pixelflat, fuel
 
   ;
   ; Make the master pixel flat by combining the flat frames provided by the user
@@ -118,16 +121,18 @@ FUNCTION flame_correct_master_pixelflat, fuel=fuel
   ; Return the file name of the master pixel flat
   ;
 
+  print, ''
+
   ; read the file list specified by the user
   filelist = strlowcase( strtrim(fuel.input.pixelflat_filelist, 2) )
 
   ; this will be the output file name of the master dark
   master_file = fuel.util.master_pixelflat
 
-  ; case 1: do not use darks ---------------------------------------------
+  ; case 1: do not use pixel flat ---------------------------------------------
   if filelist eq '' or filelist eq 'none' then begin
     print, 'pixel flat field not used'
-    return, ''
+    return, !NULL
   endif
 
   ; case 2: use the default master file ---------------------------------------------
@@ -143,9 +148,11 @@ FUNCTION flame_correct_master_pixelflat, fuel=fuel
 
     ; copy the default master frame to the local (intermediate) directory
     file_copy, default_master, master_file, /overwrite
+    print, 'using default pixel flat field ', default_master
 
-    ; return the filename
-    return, master_file
+    ; return the master pixel flat
+    master = readfits(master_file, hdr)
+    return, master
 
   endif
 
@@ -181,9 +188,9 @@ FUNCTION flame_correct_master_pixelflat, fuel=fuel
   writefits, master_file, pixelflat, hdr
   print, 'master pixel flat field file created: ', master_file
 
-  ; return the filename
-  return, master_file
-
+  ; return the master pixel flat
+  master = readfits(master_file, hdr)
+  return, master
 
 END
 
@@ -253,48 +260,129 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_correct_badpix, fuel=fuel, master_dark_file=master_dark_file, master_pixelflat_file=master_pixelflat_file
+FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
 
-  ; if there is input, then return !NULL
-  if master_dark_file eq '' then return, !NULL
+  ;
+  ; make badpixel mask using the master dark and/or pixel flat field
+  ;
 
-  ; read in the master_dark
-  master_dark = readfits(master_dark_file, hdr)
+  print, ''
 
-  ; calculate typical value and dispersion for pixel values in a robust way
-  mmm, master_dark, dark_bias, dark_sigma
+  ; pixels in the master dark and/or flat field that are outliers
+  ; by more than this value are considered bad pixels
+  sig_clip = 7.0
 
-  ; cut everything outside the central +/- 7 sigmas
-  low_cut = dark_bias - 7.0 * dark_sigma
-  high_cut = dark_bias + 7.0 * dark_sigma
-  w_badpixels = where(master_dark LT low_cut or master_dark GT high_cut, /null)
-
-  ; calculate the fraction of bad pixels
-  badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_dark))
-  print, 'Fraction of bad pixels: ' + number_formatter(badpix_fraction*100.0, decimals=4) + ' %'
-
-  ; plot distribution
-  cgPS_open, fuel.input.intermediate_dir + 'master_dark_histogram.ps', /nomatch
-  cghistoplot, master_dark, /freq, binsize=max([0.1*dark_sigma, 1.0]), $
-    xra=dark_bias+[-10.0, 10.0]*dark_sigma, /fillpoly, $
-    xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
-    title = strtrim(n_elements(w_badpixels),2) + ' bad pixels (' + $
-    number_formatter(badpix_fraction*100.0, decimals=4) + ' % of the total)'
-  cgplot, low_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
-  cgplot, high_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
-  cgplot, dark_bias +[0,0], [0,1.0], /overplot, thick=4
-  cgPS_close
-
-  ; create bad pixel mask
-  badpixel_mask = byte(master_dark*0.0)
-  badpixel_mask[w_badpixels] = 1
-
-  ; save bad pixel mask
+  ; output file name
   badpix_filename = fuel.input.intermediate_dir + 'badpixel_mask.fits'
-  writefits, badpix_filename, badpixel_mask, header
+
+  ; if there are no inputs, then use the default bad pixel mask ----------------
+  if master_dark eq !NULL and master_pixelflat eq !NULL then begin
+
+    if fuel.instrument.default_badpixel_mask eq 'none' then begin
+      print, 'no bad pixel mask found'
+      return, !NULL
+    endif
+
+    ; default badpix mask
+    default_badpix_file = fuel.util.flame_data_dir + fuel.instrument.default_badpixel_mask
+
+    ; check that the default mask is defined
+    if ~file_test(default_badpix_file) then $
+      message, 'default bad pixel mask file not found!'
+
+    ; copy the default mask to the local (intermediate) directory
+    file_copy, default_badpix_file, badpix_filename, /overwrite
+    print, 'using the default badpixel mask ', default_badpix_file
+
+    ; return the default mask
+    badpix = readfits(badpix_filename, hdr)
+    return, badpix
+  endif
+
+
+  ; if it is defined, the use the master dark to identify bad pixels ----------------
+  if master_dark ne !NULL then begin
+
+      print, ''
+      print, 'using master dark frame to identify bad pixels'
+
+      ; calculate typical value and dispersion for pixel values in a robust way
+      mmm, master_dark, dark_bias, dark_sigma
+
+      ; cut everything outside the central +/- sig_clip sigmas
+      low_cut = dark_bias - sig_clip * dark_sigma
+      high_cut = dark_bias + sig_clip * dark_sigma
+      w_badpixels = where(master_dark LT low_cut or master_dark GT high_cut, /null)
+
+      ; calculate the fraction of bad pixels
+      badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_dark))
+      print, 'Fraction of bad pixels: ' + number_formatter(badpix_fraction*100.0, decimals=4) + ' %'
+
+      ; plot distribution
+      cgPS_open, fuel.input.intermediate_dir + 'master_dark_histogram.ps', /nomatch
+      cghistoplot, master_dark, /freq, binsize=max([0.1*dark_sigma, 1.0]), $
+        xra=dark_bias+[-10.0, 10.0]*dark_sigma, /fillpoly, $
+        xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
+        title = strtrim(n_elements(w_badpixels),2) + ' bad pixels (' + $
+        number_formatter(badpix_fraction*100.0, decimals=4) + ' % of the total)'
+      cgplot, low_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
+      cgplot, high_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
+      cgplot, dark_bias +[0,0], [0,1.0], /overplot, thick=4
+      cgPS_close
+
+      ; create bad pixel mask
+      badpix = byte(master_dark*0.0)
+
+      ; add bad pixels found in the master dark
+      badpix[w_badpixels] = 1
+
+  endif $
+  else badpix = !NULL
+
+
+  ; if it is defined, the use the master pixel flat to identify bad pixels ----------------
+  if master_pixelflat ne !NULL then begin
+
+      print, ''
+      print, 'using master pixel flat field to identify bad pixels'
+
+      ; calculate typical value and dispersion for pixel values in a robust way
+      mmm, master_pixelflat, flat_bias, flat_sigma
+
+      ; cut everything outside the central +/- sig_clip sigmas
+      low_cut = flat_bias - sig_clip * flat_sigma
+      high_cut = flat_bias + sig_clip * flat_sigma
+      w_badpixels = where(master_pixelflat LT low_cut or master_pixelflat GT high_cut, /null)
+
+      ; calculate the fraction of bad pixels
+      badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_pixelflat))
+      print, 'Fraction of bad pixels: ' + number_formatter(badpix_fraction*100.0, decimals=4) + ' %'
+
+      ; plot distribution
+      cgPS_open, fuel.input.intermediate_dir + 'master_pixelflat_histogram.ps', /nomatch
+      cghistoplot, master_pixelflat, /freq, binsize=max([flat_sigma, 0.005]), $
+        xra=flat_bias+[-10.0, 10.0]*flat_sigma, /fillpoly, $
+        xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
+        title = strtrim(n_elements(w_badpixels),2) + ' bad pixels (' + $
+        number_formatter(badpix_fraction*100.0, decimals=4) + ' % of the total)'
+      cgplot, low_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
+      cgplot, high_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
+      cgplot, flat_bias +[0,0], [0,1.0], /overplot, thick=4
+      cgPS_close
+
+      ; create bad pixel mask, if needed
+      if badpix EQ !NULL then badpix = byte(master_pixelflat*0.0)
+
+      ; add the bad pixels found in the pixel flat
+      badpix[w_badpixels] = 1
+
+  endif
+
+  ; write bad pixel mask
+  writefits, badpix_filename, badpix
 
   ; return bad pixel mask
-  return, badpixel_mask
+  return, badpix
 
 END
 
@@ -307,19 +395,18 @@ END
 
 PRO flame_correct, fuel=fuel
 
-  ; create the master dark file
-  master_dark_file = flame_correct_master_dark( fuel=fuel )
+  ; create the master dark
+  master_dark = flame_correct_master_dark( fuel )
 
-  ; create the master pixel flat file
-  master_pixelflat_file = flame_correct_master_pixelflat( fuel=fuel )
+  ; create the master pixel flat
+  master_pixelflat = flame_correct_master_pixelflat( fuel )
 
   ; make bad pixel mask using darks and/or flats
-  ; badpix = flame_correct_badpix( fuel=fuel, master_dark_file=master_dark_file, $
-  ;   master_pixelflat_file=master_pixelflat_file)
-  badpix = !NULL
+  badpixel_mask = flame_correct_badpixel( fuel, master_dark, master_pixelflat )
 
   ; apply corrections ----------------------------------------------------------
 
+  print, ''
   for i_frame=0,fuel.util.N_frames-1 do begin
 
     print, 'Correcting frame ', fuel.util.science_filenames[i_frame]
@@ -351,10 +438,10 @@ PRO flame_correct, fuel=fuel
 
     ; CORRECTION 2: bad pixels
     frame_corr2 = frame_corr1
-    if badpix NE !NULL then $
-      frame_corr2[where(badpix, /null)] = !values.d_nan
+    if badpixel_mask NE !NULL then $
+      frame_corr2[where(badpixel_mask, /null)] = !values.d_nan
 
-    ; CORRECTION 3: convert to electrons per second
+    ; CORRECTION 3: convert to electrons
     frame_corr3 = frame_corr2 * fuel.instrument.gain
 
     ; change the flux units in the header
