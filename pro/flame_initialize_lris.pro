@@ -35,7 +35,7 @@ FUNCTION flame_initialize_lris_settings, science_header
   red_filter = strtrim(fxpar(science_header, 'REDFILT'), 2)
 
   ; ; read in read-out noise
-  read_noise = 5.0 ; actually LRIS blue has 4.0
+  readnoise = 5.0 ; actually LRIS blue has 4.0
 
   ; ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - -
 
@@ -68,7 +68,7 @@ FUNCTION flame_initialize_lris_settings, science_header
     blue_filter: blue_filter, $
     red_filter: red_filter, $
     gain: gain, $
-    read_noise: read_noise, $
+    readnoise: readnoise, $
     pixel_scale: pixel_scale, $
     resolution_slit1arcsec: 2000.0, $
     linearity_correction: linearity_correction, $
