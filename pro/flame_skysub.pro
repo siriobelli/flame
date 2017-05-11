@@ -6,7 +6,8 @@ PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectificat
 	print, 'Sky subtraction for ', slit_filename
 
 	; read in the slit image
-	slit_image = mrdfits(slit_filename, 0, /silent)
+	slit_image = mrdfits(slit_filename, 0, header, /silent)
+	slit_image_sigma = mrdfits(slit_filename, 1, /silent)
 
 	; how many pixels on the spatial direction
 	N_spatial_pix = (size(slit_image))[2]
@@ -88,7 +89,8 @@ PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectificat
 	writefits, flame_util_replace_string(slit_filename, '.fits', '_skymodel.fits'), sky_model
 
 	; save sky-subtracted image
-	writefits, flame_util_replace_string(slit_filename, '.fits', '_skysub.fits'), slit_image - sky_model
+	writefits, flame_util_replace_string(slit_filename, '.fits', '_skysub.fits'), slit_image - sky_model, header
+	writefits, flame_util_replace_string(slit_filename, '.fits', '_skysub.fits'), slit_image_sigma, /append
 
 END
 

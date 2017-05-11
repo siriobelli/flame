@@ -7,7 +7,7 @@
 
 
 
-FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, rejected_im=rejected_im
+FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, rejected_im=rejected_im, sigma_im=sigma_im
 ;
 ; read in FITS files and mean-stack them doing a sigma clipping
 ; optionally, outputs an image with the number of masked pixels
@@ -23,7 +23,7 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 	im_cube = dblarr( N_frames, (size(im_0))[1], (size(im_0))[2] )
 
 	; read all frames
-	for i_frame=0,N_frames-1 do im_cube[i_frame,*,*] = readfits(filenames[i_frame])
+	for i_frame=0,N_frames-1 do im_cube[i_frame,*,*] = mrdfits(filenames[i_frame], 0, /silent)
 
 	; calculate median at each pixel of the image
 	median_im = median(im_cube, dimension=1)
@@ -55,6 +55,24 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 
 	; make an image with the number of rejected pixels
 	rejected_im = total(mask_cube, 1)
+
+	; check if there are more than one extensions in the FITS file (i.e. sigma images)
+	fits_info, filenames[0], N_ext=N_ext, /silent
+
+	; if sigma images exist, then calculate the combined sigma image
+	if N_ext GE 2 then begin
+
+			; read in the sigma images
+			im_cube_sigma = dblarr( N_frames, (size(im_0))[1], (size(im_0))[2] )
+			for i_frame=0,N_frames-1 do im_cube_sigma[i_frame,*,*] = mrdfits(filenames[i_frame], 1, /silent)
+
+			; make an image with the number of non-rejected pixels
+			nonrejected_im = N_frames - rejected_im
+
+			; make the final sigma image by adding the uncertainties in quadrature
+			sigma_im = sqrt( total(im_cube_sigma^2, 3)  ) / float(nonrejected_im)
+
+	endif
 
 	; finally stack the frames
 	return,	mean(im_cube, dimension=1, /nan)
@@ -99,10 +117,11 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	header = headfits(sky_filenames[0])
 
 	; stack and get the sky spectrum
-	stack_sky = flame_combine_stack(filenames=sky_filenames, sigma_clip=sigma_clip)
+	stack_sky = flame_combine_stack(filenames=sky_filenames, sigma_clip=sigma_clip, sigma_im=stack_sky_sigma)
 
 	; write out the sky spectrum
 	writefits, filename_prefix + '_stack_sky.fits', stack_sky, header
+	writefits, filename_prefix + '_stack_sky.fits', stack_sky_sigma, /append
 
 
 	; stack all A, B, and X frames
@@ -111,36 +130,42 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	if w_A ne !NULL then begin
 
 		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
-		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A)
+		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, sigma_im=stack_A_sigma)
 		writefits, filename_prefix + '_stack_A.fits', stack_A, header
+		writefits, filename_prefix + '_stack_A.fits', stack_A_sigma, /append
 
 		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
-		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A)
+		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, sigma_im=stack_A_skysub_sigma)
 		writefits, filename_prefix + '_stack_A_skysub.fits', stack_A_skysub, header
+		writefits, filename_prefix + '_stack_A_skysub.fits', stack_A_skysub_sigma, /append
 
 	endif
 
 	if w_B ne !NULL then begin
 
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
-		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B)
+		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, sigma_im=stack_B_sigma)
 		writefits, filename_prefix + '_stack_B.fits', stack_B, header
+		writefits, filename_prefix + '_stack_B.fits', stack_B_sigma, /append
 
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
-		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B)
+		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, sigma_im=stack_B_skysub_sigma)
 		writefits, filename_prefix + '_stack_B_skysub.fits', stack_B_skysub, header
+		writefits, filename_prefix + '_stack_B_skysub.fits', stack_B_skysub_sigma, /append
 
 	endif
 
 	if w_X ne !NULL then begin
 
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
-		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X)
+		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, sigma_im=stack_X_sigma)
 		writefits, filename_prefix + '_stack_X.fits', stack_X, header
+		writefits, filename_prefix + '_stack_X.fits', stack_X_sigma, /append
 
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
-		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X)
+		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, sigma_im=stack_X_skysub_sigma)
 		writefits, filename_prefix + '_stack_X_skysub.fits', stack_X_skysub, header
+		writefits, filename_prefix + '_stack_X_skysub.fits', stack_X_skysub_sigma, /append
 
 	endif
 
@@ -151,24 +176,36 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	if w_A NE !NULL and w_B ne !NULL then begin
 
 		writefits, filename_prefix + '_stack_A-B.fits', stack_A - stack_B, header
+		writefits, filename_prefix + '_stack_A-B.fits', sqrt(stack_A_sigma^2 + stack_B_sigma^2), /append
+
 		writefits, filename_prefix + '_rejectedpixels_A-B.fits', rejected_im_A + rejected_im_B, header
+
 		writefits, filename_prefix + '_stack_A-B_skysub.fits', stack_A_skysub - stack_B_skysub, header
+		writefits, filename_prefix + '_stack_A-B_skysub.fits', sqrt(stack_A_skysub_sigma^2 + stack_B_skysub_sigma^2), /append
 
 	endif
 
 	if w_A NE !NULL and w_X ne !NULL then begin
 
 		writefits, filename_prefix + '_stack_A-X.fits', stack_A - stack_X, header
+		writefits, filename_prefix + '_stack_A-X.fits', sqrt(stack_A_sigma^2 + stack_X_sigma^2), /append
+
 		writefits, filename_prefix + '_rejectedpixels_A-X.fits', rejected_im_A + rejected_im_X, header
+
 		writefits, filename_prefix + '_stack_A-X_skysub.fits', stack_A_skysub - stack_X_skysub, header
+		writefits, filename_prefix + '_stack_A-X_skysub.fits', sqrt(stack_A_skysub_sigma^2 + stack_X_skysub_sigma^2), /append
 
 	endif
 
 	if w_B NE !NULL and w_X ne !NULL then begin
 
 		writefits, filename_prefix + '_stack_B-X.fits', stack_B - stack_X, header
+		writefits, filename_prefix + '_stack_B-X.fits', sqrt(stack_B_sigma^2 + stack_X_sigma^2), /append
+
 		writefits, filename_prefix + '_rejectedpixels_B-X.fits', rejected_im_B + rejected_im_X, header
+
 		writefits, filename_prefix + '_stack_B-X_skysub.fits', stack_B_skysub - stack_X_skysub, header
+		writefits, filename_prefix + '_stack_B-X_skysub.fits', sqrt(stack_B_skysub_sigma^2 + stack_X_skysub_sigma^2), /append
 
 	endif
 
@@ -180,6 +217,7 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
 	; A-B stack
 	stack_AB = stack_A_skysub - stack_B_skysub
+	stack_AB_sigma = sqrt(stack_A_skysub_sigma^2 + stack_B_skysub_sigma^2)
 
 	; NOTE: if A is not the "top" position, then this is actually B-A.
 	; This ensures that the central trace of AB_combined is always positive
@@ -188,6 +226,7 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
 	; invert the A-B stack
 	stack_BA = -stack_AB
+	stack_BA_sigma = stack_AB_sigma
 
 	; find the dithering length
 	; (keep in mind that the rectification step already shifted each frame to the floor() of the reference position)
@@ -197,14 +236,25 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	padding = dblarr( (size(stack_A))[1], dithering_length )
 	padding[*] = 0.0
 	AB_cleansum_padded = [ [stack_AB], [padding] ]
+	AB_cleansum_padded_sigma = [ [stack_AB_sigma], [padding] ]
 	BA_cleansum_padded = [ [stack_BA], [padding] ]
+	BA_cleansum_padded_sigma = [ [stack_BA_sigma], [padding] ]
 
+	; shift by the dithering length
 	BA_cleansum_shifted = shift(BA_cleansum_padded, 0, dithering_length)
+	BA_cleansum_shifted_sigma = shift(BA_cleansum_padded_sigma, 0, dithering_length)
 
+	; combine positive and negative
 	AB_combined = mean( [ [[AB_cleansum_padded]], [[BA_cleansum_shifted]] ], dimension=3, /nan )
+	AB_combined_sigma = 0.5 * sqrt( AB_cleansum_padded_sigma^2 + BA_cleansum_shifted_sigma^2 )
 
 	; output final result
 	writefits, filename_prefix + '_ABcombined.fits', AB_combined, header
+	writefits, filename_prefix + '_ABcombined.fits', AB_combined_sigma, /append
+
+	; also output the SNR map
+	writefits, filename_prefix + '_ABcombined_SNR.fits', AB_combined/AB_combined_sigma, header
+
 
 	endif
 

@@ -10,7 +10,10 @@ PRO flame_cutout_slits_extract, slit_structure, science_filenames, output_filena
   for i_frame=0, n_elements(science_filenames)-1 do begin
 
     ; read in science frame
-    im = readfits(science_filenames[i_frame], header)
+    im = mrdfits(science_filenames[i_frame], 0, header, /silent)
+
+    ; read in error frame
+    im_sigma = mrdfits(science_filenames[i_frame], 1, /silent)
 
     ; construct the coordinates for the pixels in the image
     N_pix_x = (size(im))[1]
@@ -30,6 +33,7 @@ PRO flame_cutout_slits_extract, slit_structure, science_filenames, output_filena
 
     ; Set to NaN all pixels outside the slit
     im[w_outside_slit] = !values.d_nan
+    im_sigma[w_outside_slit] = !values.d_nan
 
     ; convert indices to 2D
     w_slit2d = array_indices(im, w_slit)
@@ -40,9 +44,11 @@ PRO flame_cutout_slits_extract, slit_structure, science_filenames, output_filena
 
     ; extract the slit as a rectangle
     this_slit = im[ * , min_y:max_y]
+    this_slit_sigma = im_sigma[ * , min_y:max_y]
 
     ; write this out
     writefits, output_filenames[i_frame], this_slit, header
+    writefits, output_filenames[i_frame], this_slit_sigma, /append
 
   endfor
 

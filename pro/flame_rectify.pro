@@ -7,6 +7,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 
 	; read in file to rectify
 	im = mrdfits(filename, 0, header, /silent)
+	im_sigma = mrdfits(filename, 1, /silent)
 
 	; read dimensions of the image
 	N_imx = (size(im))[1]
@@ -20,6 +21,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 
 	; resample image onto new grid
 	new_im = poly_2D(im, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
+	new_im_sigma = poly_2D(im_sigma, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
 
 	;************** take care of NaNs
 	; NOTE: what you really want to do is to calculate the inverse transformation
@@ -50,6 +52,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 
 	; write rectified image
 	writefits, output_name, new_im, header
+	writefits, output_name, new_im_sigma, /append
 
 END
 
