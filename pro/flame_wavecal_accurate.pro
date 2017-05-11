@@ -663,7 +663,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines, slit=slit
+PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines, slit=slit, i_frame=i_frame
 
 	; get the dimensions
 	N_lambda_pix = (size(wavelength_solution))[1]
@@ -683,21 +683,27 @@ PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHline
 	; -------------------------------------------------------
 	; plot the residuals of the wavelength solution
 
-	; extract the rectification matrix for lambda
-	Klambda = (*slit.rectification).Klambda
+	; extract the rectification matrix for lambda for this frame
+	Klambda = (*slit.rectification)[i_frame].Klambda
 
 	; order of polynomial
 	Nord = (size(Klambda))[1]
 
 	; calculate the model lambda given x,y where x,y are arrays
-	lambda_modelx = fltarr(n_elements(OHlines))
-	for i=0,Nord-1 do for j=0,Nord-1 do lambda_modelx +=  Klambda[i,j] * (OHlines.x)^j * (OHlines.y)^i
-	lambda_model = slit.outlambda_min + lambda_modelx * slit.outlambda_delta
+	; lambda_modelx = fltarr(n_elements(OHlines))
+	; for i=0,Nord-1 do for j=0,Nord-1 do lambda_modelx +=  Klambda[i,j] * (OHlines.x)^j * (OHlines.y)^i
+	; lambda_model = slit.outlambda_min + lambda_modelx * slit.outlambda_delta
+
+	xexp  = findgen(Nord)
+	yexp  = findgen(Nord)
+	lambda_model = dblarr(n_elements(OHlines))
+	for i_OH=0, n_elements(OHlines)-1 do lambda_model[i_OH] = $
+		slit.outlambda_min + slit.outlambda_delta * total(((OHlines[i_OH].y)^xexp # (OHlines[i_OH].x)^yexp ) * Klambda)
 
 	; show the residuals
 	cgplot, OHlines.x, 1d4 * (OHlines.lambda-lambda_model), psym=16, $
 		xtit='x pixel', ytitle='delta lambda (angstrom)', $
-		title='Residuals of the wavelength solution (rms: ' + $
+		title='Residuals of the wavelength solution (stddev: ' + $
 			number_formatter( stddev( 1d4 * (OHlines.lambda-lambda_model), /nan), decimals=3) + $
 			' angstrom)', charsize=1, thick=3
 
@@ -770,7 +776,7 @@ PRO flame_wavecal_onecutout, fuel=fuel, i_slit=i_slit, i_frame=i_frame, $
 
 	; show plots of the wavelength calibration and OH line identification
 	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_plots.ps'), /nomatch
-	flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines, slit=this_slit
+	flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines, slit=this_slit, i_frame=i_frame
 
 	; calculate and apply the illumination correction
 		flame_wavecal_illum_correction, OHlines=OHlines, filename=slit_filename, $
