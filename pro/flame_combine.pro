@@ -70,7 +70,7 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 			nonrejected_im = N_frames - rejected_im
 
 			; make the final sigma image by adding the uncertainties in quadrature
-			sigma_im = sqrt( total(im_cube_sigma^2, 3)  ) / float(nonrejected_im)
+			sigma_im = sqrt( total(im_cube_sigma^2, 3, /nan)  ) / float(nonrejected_im)
 
 	endif
 
