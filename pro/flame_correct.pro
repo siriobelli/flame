@@ -394,14 +394,40 @@ PRO flame_correct, fuel=fuel
     if badpixel_mask NE !NULL then $
       frame_corr3[where(badpixel_mask, /null)] = !values.d_nan
 
-    ; CORRECTION 4: convert to electrons
-    frame_corr4 = frame_corr3 * fuel.instrument.gain
+    ; CORRECTION 4: convert to electrons per second
+
+    ; first convert from ADU to electrons
+    frame_electrons = frame_corr3 * fuel.instrument.gain
+
+    ; find the exposure time
+    exptime = fxpar(header, 'EXPTIME', missing=-1.0)
+    if exptime EQ -1.0 then begin
+      print, 'EXPTIME not found; setting to 1 second.'
+      exptime = 1.0
+    endif
+
+    ; now convert electrons to electrons per second
+    frame_corr4 = frame_electrons / exptime
 
     ; change the flux units in the header
-    fxaddpar, header, 'BUNIT', 'electrons', ' '
+    fxaddpar, header, 'BUNIT', 'electrons per second', ' '
 
-    ; save corrected frame
-    writefits, filename_corr, frame_corr3, header
+    ; ------------------------------------
+    ; error spectrum
+
+    ; make the error image in units of electrons (Poisson + readnoise )
+    frame_sigma_electrons = fuel.instrument.readnoise + sqrt(frame_electrons)
+
+    ; convert to electrons per second
+    frame_sigma = frame_sigma_electrons / exptime
+
+    ; ------------------------------------
+    ; write output
+
+    ; corrected frame in the first HDU, error frame in the second one
+    writefits, filename_corr, frame_corr4, header
+    writefits, filename_corr, frame_sigma, /append
+
 
   endfor
 
