@@ -2,8 +2,9 @@
 ; reads the raw science frames and writes out the "corrected" science frames, which are:
 ; - cleaned from cosmic rays (if needed)
 ; - corrected for non-linearity of the detector
+; - corrected for variations in the pixel flat field
 ; - corrected for bad pixels (replaced by NaNs)
-;  (generate the bad pixel mask from the dark frames, if needed)
+;  (generate the bad pixel mask from the darks and flats, if needed)
 ; - converted from ADU to electrons
 ;
 ; TO-DO: illumflat (for when OH lines are not enough) and arcs
@@ -383,13 +384,18 @@ PRO flame_correct, fuel=fuel
     ; CORRECTION 1: non-linearity
     frame_corr1 = poly(frame, fuel.instrument.linearity_correction )
 
-    ; CORRECTION 2: bad pixels
-    frame_corr2 = frame_corr1
-    if badpixel_mask NE !NULL then $
-      frame_corr2[where(badpixel_mask, /null)] = !values.d_nan
+    ; CORRECTION 2: pixel flat field
+    if master_pixelflat NE !NULL then $
+      frame_corr2 = frame_corr1 / master_pixelflat $
+      else frame_corr2 = frame_corr1
 
-    ; CORRECTION 3: convert to electrons
-    frame_corr3 = frame_corr2 * fuel.instrument.gain
+    ; CORRECTION 3: bad pixels
+    frame_corr3 = frame_corr2
+    if badpixel_mask NE !NULL then $
+      frame_corr3[where(badpixel_mask, /null)] = !values.d_nan
+
+    ; CORRECTION 4: convert to electrons
+    frame_corr4 = frame_corr3 * fuel.instrument.gain
 
     ; change the flux units in the header
     fxaddpar, header, 'BUNIT', 'electrons', ' '
