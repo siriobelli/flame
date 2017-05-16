@@ -92,7 +92,7 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	filename_prefix = fuel.input.output_dir + 'slit' + string(slit.number, format='(I02)') + '-' + slit.name
 
 	; input filenames for this slit
-	filenames = *slit.filenames
+	filenames = slit.cutouts.filename
 
 	; identify the A and B and X positions
 	diagnostics = fuel.diagnostics

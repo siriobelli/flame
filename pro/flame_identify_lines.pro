@@ -13,13 +13,13 @@
 ;*******************************************************************************
 
 
-PRO flame_wavecal_writeds9, OHlines, filename=filename
+PRO flame_identify_writeds9, speclines, filename=filename
 ;
 ; write a ds9 region file with all the OH line detections
 ;
 
   ; extract the wavelength of all identifications
-  line_lambdas = OHlines.lambda
+  line_lambdas = speclines.lambda
   uniq_lambdas = line_lambdas[UNIQ(line_lambdas, SORT(line_lambdas))]
 
   ; open file
@@ -36,9 +36,9 @@ PRO flame_wavecal_writeds9, OHlines, filename=filename
   	this_lambda = uniq_lambdas[i_line]
 
   	; select the x and y coordinates for this line
-  	w_thisline = where(OHlines.lambda eq this_lambda)
-  	this_x = OHlines[w_thisline].x
- 		this_y = OHlines[w_thisline].y
+  	w_thisline = where(speclines.lambda eq this_lambda)
+  	this_x = speclines[w_thisline].x
+ 		this_y = speclines[w_thisline].y
 
  	; sort points by y coordinate
  	wsort = sort(this_y)
@@ -78,10 +78,10 @@ END
 
 
 
-PRO flame_wavecal_fitskylines, x=x, y=y, $
+PRO flame_identify_fitskylines, x=x, y=y, $
 	approx_wavecal=approx_wavecal, linewidth=linewidth, $
 	line_list=line_list_in, $
-	OHlines=OHlines, wavecal=wavecal, plot_title=plot_title
+	speclines=speclines, wavecal=wavecal, plot_title=plot_title
 
 	;
 	; Given a 1D sky spectrum, it finds an accurate wavelength solution
@@ -95,8 +95,8 @@ PRO flame_wavecal_fitskylines, x=x, y=y, $
 	; approx_wavecal: (input) array with the approximate wavelength for each x
 	; linewidth: (input and output) approximate sigma of unresolved sky lines, which will be updated. NB:in pixels
 	; line_list: (input) array of expected wavelengths of usable OH lines
-	; OHlines: (output) array of structures with parameters for each OH line
-	; wavecal: (output) array with the accurate wavelength solution
+	; speclines: (output) array of structures with parameters for each OH line
+	; wavecal: (output) array with the wavelength solution
 	; plot_title : (input) string to print as title of the plot
 	;
 
@@ -122,7 +122,7 @@ PRO flame_wavecal_fitskylines, x=x, y=y, $
 	line_list = line_list_in[w_lines]
 
 	; make the array that will contain the result of the fitting
-	OHlines = []
+	speclines = []
 
 	; fit a Gaussian to every sky line
 	for i_line=0,n_elements(line_list)-1 do begin
@@ -178,18 +178,18 @@ PRO flame_wavecal_fitskylines, x=x, y=y, $
 			chisq: chisq }
 
 		; add to the stack
-		OHlines = [OHlines, this_OHline]
+		speclines = [speclines, this_OHline]
 
 	endfor
 
 	; if too few lines were found, then no reliable wavelength solution exists
-	if n_elements(OHlines) LT Nmin_lines then begin
-		OHlines = !NULL
+	if n_elements(speclines) LT Nmin_lines then begin
+		speclines = !NULL
 		return
 	endif
 
 	; fit a polynomial to the skyline positions
-	wavesol_coeff = poly_fit( OHlines.x, OHlines.lambda, poly_degree )
+	wavesol_coeff = poly_fit( speclines.x, speclines.lambda, poly_degree )
 
 	; calculate polynomial solution
 	poly_wl = poly(x, wavesol_coeff)
@@ -212,13 +212,13 @@ PRO flame_wavecal_fitskylines, x=x, y=y, $
 		position = [0.15, 0.70, 0.95, 0.96], xtickformat="(A1)", xra=[x[0], x[-1]], /nodata
 
 	; show the OH lines that were identified
-	for i_line=0, n_elements(OHlines)-1 do cgplot, OHlines[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='red'
+	for i_line=0, n_elements(speclines)-1 do cgplot, speclines[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='red'
 
 	; show the spectrum on top, for clarity
 	cgplot, x, y, /overplot
 
 	; panel 2: show the wavelength solution
-	cgplot, OHlines.x, OHlines.lambda, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+	cgplot, speclines.x, speclines.lambda, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
 		xtit='', ytit='expected wavelength', charsize=ch, $
 		/noerase, position = [0.15, 0.50, 0.95, 0.70], xtickformat="(A1)"
 
@@ -226,21 +226,21 @@ PRO flame_wavecal_fitskylines, x=x, y=y, $
 	cgplot, x, poly_wl, color='blue', /overplot
 
 	; panel 3: show the residuals
-	cgplot, OHlines.x, 1d4 * (OHlines.lambda-poly(OHlines.x, wavesol_coeff)), /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+	cgplot, speclines.x, 1d4 * (speclines.lambda-poly(speclines.x, wavesol_coeff)), /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
 		ytit='residuals (angstrom)', charsize=ch, $
 		/noerase, position = [0.15, 0.30, 0.95, 0.50], xtickformat="(A1)"
 	cgplot, [x[0], x[-1]], [0,0], /overplot, thick=3, linestyle=2
 
 	; panel 4: plot the line widths
-	cgplot, OHlines.x, OHlines.sigma, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+	cgplot, speclines.x, speclines.sigma, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
 		xtit='pixel coordinate', ytit='line width (pixel)', charsize=ch, $
 		/noerase, position = [0.15, 0.10, 0.95, 0.30]
 
 	; show median value of line width
-	cgplot, [-1, 2*max(OHlines.x)], [0,0]+median(OHlines.sigma), /overplot, thick=3, linestyle=2
+	cgplot, [-1, 2*max(speclines.x)], [0,0]+median(speclines.sigma), /overplot, thick=3, linestyle=2
 
 	; update value of linewidth
-	linewidth = median(OHlines.sigma)
+	linewidth = median(speclines.sigma)
 
 	; output wavelength solution
 	wavecal = poly_wl
@@ -252,16 +252,16 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_find_OHlines, fuel=fuel, slit_filename=slit_filename, $
+PRO flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
 	 approx_lambda_axis=approx_lambda_axis, $
-	 OHlines=OHlines, wavelength_solution=wavelength_solution
+	 speclines=speclines, wavelength_solution=wavelength_solution
 
 	print, ' '
 	print, 'Wavelength solution for ', slit_filename
 	print, '*************************************************************************************************'
 	print, ' '
 
-	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_wavecal.ps'), /nomatch
+	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_speclines.ps'), /nomatch
 
 
 	; load the slit image
@@ -303,8 +303,8 @@ PRO flame_wavecal_find_OHlines, fuel=fuel, slit_filename=slit_filename, $
 	; as initial guess for the wavelength axis, use what found during the rough wavecal
 	wavelength_axis_guess = approx_lambda_axis
 
-	; create the empty array of OHlines structures
-	OHlines = []
+	; create the empty array of speclines structures
+	speclines = []
 
 	print, 'Fitting individual sky lines for every pixel row...'
 
@@ -324,19 +324,19 @@ PRO flame_wavecal_find_OHlines, fuel=fuel, slit_filename=slit_filename, $
 		if i_row eq i0_bottom then wavelength_axis_guess = approx_lambda_axis
 
 		; fit the emission lines and find the wavelength solution
-		flame_wavecal_fitskylines, x=pix_axis, y=this_row, $
+		flame_identify_fitskylines, x=pix_axis, y=this_row, $
 			approx_wavecal=wavelength_axis_guess, linewidth=linewidth, $
 			line_list=line_list, $
-			OHlines=OHlines_thisrow, wavecal=wavelength_axis_for_this_row, plot_title='row '+strtrim(i_row,2)
+			speclines=speclines_thisrow, wavecal=wavelength_axis_for_this_row, plot_title='row '+strtrim(i_row,2)
 
 		; if sky lines were not found, then skip to next row
-		if n_elements(OHlines_thisrow) EQ 0 then continue
+		if n_elements(speclines_thisrow) EQ 0 then continue
 
 		; set the y coordinate for the OH lines
-		OHlines_thisrow.y = i_row
+		speclines_thisrow.y = i_row
 
 		; save the OH lines from this row
-		OHlines = [ OHlines, OHlines_thisrow ]
+		speclines = [ speclines, speclines_thisrow ]
 
 		; save the wavelength solution
 		wavelength_solution[*, i_row] = wavelength_axis_for_this_row
@@ -354,6 +354,49 @@ PRO flame_wavecal_find_OHlines, fuel=fuel, slit_filename=slit_filename, $
 END
 
 
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+PRO flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=slit
+
+;
+; Set the wavelength grid that will be used for the rectified frame,
+; in such a way that it is a good fit to the observed wavelength range
+;
+
+	; trim the edge rows that are usually less robust
+	if (size(wavelength_solution))[2] GT 4 then $
+		wavelength_solution_trimmed = wavelength_solution[*,2:-3] else $
+		wavelength_solution_trimmed = wavelength_solution
+
+	; sort the wavelength values
+	wavelength_values = wavelength_solution_trimmed[sort(wavelength_solution_trimmed)]
+
+	; clean up from nonsense values
+	wavelength_values = wavelength_values[ where( finite(wavelength_values) and wavelength_values NE 0.0, /null) ]
+
+	; find the min and max values, excluding potential outliers
+	lambda_min = wavelength_values[5]
+	lambda_max = wavelength_values[-6]
+
+	; find the median delta lambda
+ 	diff_lambda = abs( wavelength_solution_trimmed - shift(wavelength_solution_trimmed, 1, 0) )
+ 	diff_lambda = diff_lambda[5:-5,*]	; avoid edge effects
+ 	lambda_delta = double(median(diff_lambda))
+
+ 	; find the rounded values, on a logarithmic scale
+ 	; (the idea here is to try to have the same value for slightly different datasets)
+	lambda_min_out = 10.0^( floor(alog10(lambda_min)*100.0)/100.0 )
+	lambda_delta_out = 10.0^( round(alog10(lambda_delta)*20.0d)/20.0d )
+
+ 	; save output grid to the slit structure
+ 	slit.outlambda_min = lambda_min_out
+	slit.outlambda_delta = lambda_delta_out
+ 	slit.outlambda_Npix = round( (lambda_max - lambda_min) / lambda_delta_out + 0.5 )
+
+END
 
 
 ;*******************************************************************************
@@ -367,7 +410,7 @@ PRO flame_identify_lines, fuel=fuel
 	start_time = systime(/seconds)
 
   print, ' '
-  print, 'flame_wavecal_accurate'
+  print, 'flame_identify_lines'
   print, '**********************'
   print, ' '
 
@@ -384,30 +427,40 @@ PRO flame_identify_lines, fuel=fuel
 		; the initial guess for the first frame is from the rough wavelength calibration
 		guess_lambda_axis = *(fuel.slits[i_slit]).rough_wavecal
 
-		for i_frame=0, n_elements(*fuel.slits[i_slit].filenames)-1 do begin
+		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
 
 				; filename of the cutout
-				slit_filename = (*fuel.slits[i_slit].filenames)[i_frame]
+				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename
 
 				; this slit
 				this_slit = fuel.slits[i_slit]
 
-				; identify and measure the OH lines
-				flame_wavecal_find_OHlines, fuel=fuel, slit_filename=slit_filename, $
+				; identify and measure the speclines
+				flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
 					approx_lambda_axis=guess_lambda_axis, $
-					OHlines=OHlines, wavelength_solution=wavelength_solution
+					speclines=speclines, wavelength_solution=wavelength_solution
 
-				; write a ds9 region file with the identified OH lines
-				flame_wavecal_writeds9, OHlines, filename=flame_util_replace_string(slit_filename, '.fits', '_OHlines.reg')
+				; save the speclines in the slit structure
+				*this_slit.cutouts[i_frame].speclines = speclines
+
+				; write a ds9 region file with the identified speclines
+				flame_identify_writeds9, speclines, filename=flame_util_replace_string(slit_filename, '.fits', '_speclines.reg')
 
 				; ; write a FITS file with the pixel-by-pixel wavelength solution
 				; writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), $
 				; 	wavelength_solution, headfits(slit_filename)
 
+				; use the pixel-by-pixel wavelength solution OF THE FIRST FRAME to set the output grid in wavelength
+				if i_frame eq 0 then begin
+					flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
+					fuel.slits[i_slit] = this_slit
+				endif
+
 				; use the median wavecal of the central five pixel rows as guess for the next frame
 				central_row = (size(wavelength_solution))[2]/2
 				guess_lambda_axis = median( wavelength_solution[ * , central_row-2:central_row+2 ], dimension=2 )
+
 
 		endfor
 

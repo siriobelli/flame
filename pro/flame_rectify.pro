@@ -70,16 +70,18 @@ PRO flame_rectify, fuel=fuel
 
 		print, 'Rectifying slit ', this_slit.number, ' - ', this_slit.name
 
-		for i_frame=0, n_elements(*this_slit.filenames)-1 do begin
+		for i_frame=0, n_elements(this_slit.cutouts)-1 do begin
 
-			filename = (*this_slit.filenames)[i_frame]
+			this_cutout = this_slit.cutouts[i_frame]
+
+			filename = this_cutout.filename
 
 			; rectify observed frame
-			flame_rectify_one, filename=filename, rectification=(*this_slit.rectification)[i_frame], $
+			flame_rectify_one, filename=filename, rectification=(*this_cutout.rectification), $
 				output_name = flame_util_replace_string(filename, '.fits', '_rectified.fits'), slit=this_slit
 
 			; rectify sky-subtracted frame
-			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skysub.fits'), rectification=(*this_slit.rectification)[i_frame], $
+			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skysub.fits'), rectification=(*this_cutout.rectification), $
 				output_name = flame_util_replace_string(filename, '.fits', '_skysub_rectified.fits'), slit=this_slit
 
 		endfor

@@ -113,17 +113,24 @@ PRO flame_skysub, fuel=fuel
 	slits = fuel.slits
 
  	; loop through all the slits
-	for i_slit=0, n_elements(slits)-1 do $
-		for i_frame=0, n_elements(*slits[i_slit].filenames)-1 do begin
+	for i_slit=0, n_elements(slits)-1 do begin
 
-			slit_filename=(*slits[i_slit].filenames)[i_frame]
-			rectification = (*slits[i_slit].rectification)[i_frame]
-			lambda_0 = slits[i_slit].outlambda_min
-			delta_lambda = slits[i_slit].outlambda_delta
+		this_slit = fuel.slits[i_slit]
+
+		for i_frame=0, n_elements(this_slit.cutouts)-1 do begin
+
+			this_cutout = this_slit.cutouts[i_frame]
+
+			slit_filename = this_cutout.filename
+			rectification = *(this_cutout.rectification)
+			lambda_0 = this_slit.outlambda_min
+			delta_lambda = this_slit.outlambda_delta
 
 			flame_skysub_oneframe, slit_filename=slit_filename, $
 				rectification=rectification, lambda_0=lambda_0, delta_lambda=delta_lambda
 
 		endfor
+
+	endfor
 
 END
