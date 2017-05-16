@@ -1,10 +1,9 @@
 ;
-; Wavelength calibration using OH sky lines.
-; For each slit, extract the spectrum of one pixel row, starting
-; at the center and assuming the rough calibration. Identify and fit
-; the sky emission lines for each row, and then find a polynomial
+; Wavelength calibration.
+; For each slit & frame, find a polynomial
 ; warping that describes the 2D transformation from observed frame
-; to lambda-calibrated and vertically-rectified frame.
+; to lambda-calibrated and vertically-rectified frame, using
+; the emission line measurements from flame_identify_lines
 ;
 
 
@@ -739,61 +738,6 @@ PRO flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHline
 
 END
 
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
-
-
-PRO flame_wavecal_onecutout, fuel=fuel, i_slit=i_slit, i_frame=i_frame, $
-	guess_lambda_axis=guess_lambda_axis
-
-	; filename of the cutout
-	slit_filename = (*fuel.slits[i_slit].filenames)[i_frame]
-
-	; this slit
-	this_slit = fuel.slits[i_slit]
-
-	; identify and measure the OH lines
-	flame_wavecal_find_OHlines, fuel=fuel, slit_filename=slit_filename, $
-		approx_lambda_axis=guess_lambda_axis, $
-		OHlines=OHlines, wavelength_solution=wavelength_solution
-
-	; write a ds9 region file with the identified OH lines
-	flame_wavecal_writeds9, OHlines, filename=flame_util_replace_string(slit_filename, '.fits', '_OHlines.reg')
-
-	; write a FITS file with the pixel-by-pixel wavelength solution
-	writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), $
-		wavelength_solution, headfits(slit_filename)
-
-	; make the 2D grid of the rectified frame
-	flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
-		OHlines=OHlines, slit=this_slit
-
-	; calculate the polynomial transformation between observed and rectified frame
-	flame_wavecal_2D_calibration, filename=slit_filename, $
-		slit=this_slit, OHlines=OHlines, wavecal_accurate=wavecal_accurate, $
-		diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
-
-	; show plots of the wavelength calibration and OH line identification
-	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_plots.ps'), /nomatch
-	flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines, slit=this_slit, i_frame=i_frame
-
-	; calculate and apply the illumination correction
-		flame_wavecal_illum_correction, OHlines=OHlines, filename=slit_filename, $
-		rectification = (*this_slit.rectification)[i_frame], slit=this_slit
-
-	cgPS_close
-
-	; update the slit structure with the output wavelength grid of the last frame
-	fuel.slits[i_slit] = this_slit
-
-	; use the accurate wavecal of the central pixel row as guess for the next frame
-	guess_lambda_axis = wavecal_accurate[ * , (size(wavecal_accurate))[2]/2 ]
-
-
-END
-
-
 
 ;*******************************************************************************
 ;*******************************************************************************
@@ -823,13 +767,38 @@ PRO flame_wavecal_accurate, fuel=fuel
 		; make sure there are no old rectification coefficients left over
 		fuel.slits[i_slit].rectification = ptr_new(/allocate_heap)
 
-		; the initial guess for the first frame is from the rough wavelength calibration
-		guess_lambda_axis = *(fuel.slits[i_slit]).rough_wavecal
-
 		for i_frame=0, n_elements(*fuel.slits[i_slit].filenames)-1 do begin
 
-			flame_wavecal_onecutout, fuel=fuel, i_slit=i_slit, i_frame=i_frame, $
-		 	 guess_lambda_axis=guess_lambda_axis
+
+				; filename of the cutout
+				slit_filename = (*fuel.slits[i_slit].filenames)[i_frame]
+
+				; this slit
+				this_slit = fuel.slits[i_slit]
+
+
+				; make the 2D grid of the rectified frame
+				flame_wavecal_output_grid, wavelength_solution=wavelength_solution, $
+					OHlines=OHlines, slit=this_slit
+
+				; calculate the polynomial transformation between observed and rectified frame
+				flame_wavecal_2D_calibration, filename=slit_filename, $
+					slit=this_slit, OHlines=OHlines, wavecal_accurate=wavecal_accurate, $
+					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
+
+				; show plots of the wavelength calibration and OH line identification
+				cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_plots.ps'), /nomatch
+				flame_wavecal_plots, wavelength_solution=wavelength_solution, OHlines=OHlines, slit=this_slit, i_frame=i_frame
+
+				; calculate and apply the illumination correction
+					flame_wavecal_illum_correction, OHlines=OHlines, filename=slit_filename, $
+					rectification = (*this_slit.rectification)[i_frame], slit=this_slit
+
+				cgPS_close
+
+				; update the slit structure with the output wavelength grid of the last frame
+				fuel.slits[i_slit] = this_slit
+
 
 		endfor
 
