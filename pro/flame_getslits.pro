@@ -466,6 +466,48 @@ PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=po
 END
 
 
+;******************************************************************
+
+FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slit_height, poly_coeff
+
+    ; make the cutout structure
+    cutout = { $
+      filename: '', $
+      rectification: ptr_new(), $
+      speclines: ptr_new() }
+
+    ; replicate for each of the frames
+    cutouts = replicate(cutout, fuel.util.N_frames)
+
+    ; initialize the pointers
+    cutouts.rectification = ptrarr(fuel.util.N_frames, /allocate_heap)
+    cutouts.speclines = ptrarr(fuel.util.N_frames, /allocate_heap)
+
+    ; add new fields to slit structure
+    new_slit = create_struct( $
+      'yshift', yshift, $
+      'height', slit_height, $
+      'bottom_poly', poly_coeff, $
+      'cutouts', cutouts, $
+      'outlambda_min', 0d, $
+      'outlambda_delta', 0d, $
+      'outlambda_Npix', 0L )
+
+    ; now we need to merge old and new slit structures
+
+    ; check if new fields are already present in the slits structure
+    if tag_exist(old_slit, 'yshift') then begin
+
+      ; in that case, assign new values
+      struct_assign, new_slit, old_slit, /nozero
+
+      ; otherwise, append new fields
+    endif else $
+      new_slit = create_struct( old_slit, new_slit )
+
+    return, new_slit
+
+END
 
 ;******************************************************************
 
@@ -497,30 +539,8 @@ PRO flame_getslits_multislit, fuel=fuel
     flame_getslits_trace, image=im, slits=old_slits_struc, yshift=yshift, $
     poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
 
-    ; add new fields to slit structure
-    new_slits_struc = create_struct( $
-    'yshift', yshift, $
-    'height', slit_height, $
-    'bottom_poly', poly_coeff, $
-    'filenames', ptr_new(/allocate_heap), $
-    'rough_wavecal', ptr_new(/allocate_heap), $
-    'rectification', ptr_new(/allocate_heap), $
-    'outlambda_min', 0d, $
-    'outlambda_delta', 0d, $
-    'outlambda_Npix', 0L )
-
-    ; merge old and new slits structures
-
-    ; check if new fields are already present in the slits structure
-    if tag_exist(old_slits_struc, 'yshift') then begin
-
-      ; in that case, assign new values
-      struct_assign, new_slits_struc, old_slits_struc, /nozero
-      this_slit = old_slits_struc
-
-      ; otherwise, append new fields
-    endif else $
-    this_slit = create_struct( old_slits_struc, new_slits_struc )
+    ; expand the slit structure with new fields and update them
+    this_slit = flame_getslits_update_slit( fuel, old_slits_struc, yshift, slit_height, poly_coeff)
 
     ; add to array with the other slits
     slits = [slits, this_slit]
@@ -548,28 +568,11 @@ PRO flame_getslits_longslit, fuel=fuel
   ; read the old slits structure - containing the info from the header
   old_slits_struc = fuel.slits[0]
 
-  ; make new fields for slit structure
-  new_slits_struc = create_struct( $
-    'yshift', !values.d_nan, $
-    'height', old_slits_struc.approx_top - old_slits_struc.approx_bottom, $
-    'bottom_poly', old_slits_struc.approx_bottom, $
-    'filenames', ptr_new(/allocate_heap), $
-    'rough_wavecal', ptr_new(/allocate_heap), $
-    'rectification', ptr_new(/allocate_heap), $
-    'outlambda_min', 0d, $
-    'outlambda_delta', 0d, $
-    'outlambda_Npix', 0L )
+  ; calculate slit heigh
+  slit_height = old_slits_struc.approx_top - old_slits_struc.approx_bottom
 
-  ; check if new fields are already present in the slits structure
-  if tag_exist(old_slits_struc, 'yshift') then begin
-
-    ; in that case, assign new values
-    struct_assign, new_slits_struc, old_slits_struc, /nozero
-    this_slit = old_slits_struc
-
-  ; otherwise, append new fields
-  endif else $
-    this_slit = create_struct( old_slits_struc, new_slits_struc )
+  ; expand the slit structure with new fields and update them
+  this_slit = flame_getslits_update_slit( fuel, old_slits_struc, !values.d_nan, slit_height, old_slits_struc.approx_bottom)
 
   ; save the slit structures in fuel
   new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:this_slit }
