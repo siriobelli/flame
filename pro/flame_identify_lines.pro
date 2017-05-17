@@ -288,7 +288,7 @@ PRO flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
 
 	; create the 2D array that will contain the wavelength value for each pixel
 	wavelength_solution = im
-	wavelength_solution[*] = 0.
+	wavelength_solution[*] = !values.d_nan
 
 	; load line list
 	readcol, fuel.util.linelist_filename, line_list, format='D', /silent
@@ -370,35 +370,30 @@ PRO flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=sl
 ; in such a way that it is a good fit to the observed wavelength range
 ;
 
-	; trim the edge rows that are usually less robust
-	if (size(wavelength_solution))[2] GT 4 then $
-		wavelength_solution_trimmed = wavelength_solution[*,2:-3] else $
-		wavelength_solution_trimmed = wavelength_solution
+  ; smoothing length, in pixels
+  beta = 5
+	if (size(wavelength_solution))[2] LE 5 then beta = 3
 
-	; sort the wavelength values
-	wavelength_values = wavelength_solution_trimmed[sort(wavelength_solution_trimmed)]
+  ; apply median filtering to the 2D wavelength solution
+  wavelength_solution_smooth = median(wavelength_solution, beta)
 
-	; clean up from nonsense values
-	wavelength_values = wavelength_values[ where( finite(wavelength_values) and wavelength_values NE 0.0, /null) ]
+  ; get rid of the edge values that cannot be properly smoothed
+  wavelength_solution_smooth = wavelength_solution_smooth[beta:-1-beta, beta:-1-beta]
 
-	; find the min and max values, excluding potential outliers
-	lambda_min = wavelength_values[5]
-	lambda_max = wavelength_values[-6]
+	; find the min and max values
+	lambda_min = min(wavelength_solution_smooth, /nan)
+	lambda_max = max(wavelength_solution_smooth, /nan)
 
 	; find the median delta lambda
- 	diff_lambda = abs( wavelength_solution_trimmed - shift(wavelength_solution_trimmed, 1, 0) )
- 	diff_lambda = diff_lambda[5:-5,*]	; avoid edge effects
+ 	diff_lambda = abs( wavelength_solution_smooth - shift(wavelength_solution_smooth, 1, 0) )
  	lambda_delta = double(median(diff_lambda))
 
  	; find the rounded values, on a logarithmic scale
  	; (the idea here is to try to have the same value for slightly different datasets)
-	lambda_min_out = 10.0^( floor(alog10(lambda_min)*100.0)/100.0 )
-	lambda_delta_out = 10.0^( round(alog10(lambda_delta)*20.0d)/20.0d )
-
- 	; save output grid to the slit structure
- 	slit.outlambda_min = lambda_min_out
-	slit.outlambda_delta = lambda_delta_out
- 	slit.outlambda_Npix = round( (lambda_max - lambda_min) / lambda_delta_out + 0.5 )
+  ; and save output grid to the slit structure
+	slit.outlambda_min = 10.0^( floor(alog10(lambda_min)*100.0)/100.0 )
+	slit.outlambda_delta = 10.0^( round(alog10(lambda_delta)*20.0d)/20.0d )
+  slit.outlambda_Npix = round( (lambda_max - slit.outlambda_min) / slit.outlambda_delta )
 
 END
 
