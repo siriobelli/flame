@@ -258,7 +258,7 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
 
       ; calculate the fraction of bad pixels
       badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_dark))
-      print, 'Fraction of bad pixels: ' + number_formatter(badpix_fraction*100.0, decimals=4) + ' %'
+      print, 'Fraction of bad pixels: ' + cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
       ; plot distribution
       cgPS_open, fuel.input.intermediate_dir + 'master_dark_histogram.ps', /nomatch
@@ -266,7 +266,7 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
         xra=dark_bias+[-10.0, 10.0]*dark_sigma, /fillpoly, $
         xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
         title = strtrim(n_elements(w_badpixels),2) + ' bad pixels (' + $
-        number_formatter(badpix_fraction*100.0, decimals=4) + ' % of the total)'
+        cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' % of the total)'
       cgplot, low_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
       cgplot, high_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
       cgplot, dark_bias +[0,0], [0,1.0], /overplot, thick=4
@@ -304,7 +304,7 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
 
       ; calculate the fraction of bad pixels
       badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_pixelflat))
-      print, 'Fraction of bad pixels: ' + number_formatter(badpix_fraction*100.0, decimals=4) + ' %'
+      print, 'Fraction of bad pixels: ' + cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
       ; plot distribution
       cgPS_open, fuel.input.intermediate_dir + 'master_pixelflat_histogram.ps', /nomatch
@@ -312,7 +312,7 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
         xra=flat_bias+[-10.0, 10.0]*flat_sigma, /fillpoly, $
         xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
         title = strtrim(n_elements(w_badpixels),2) + ' bad pixels (' + $
-        number_formatter(badpix_fraction*100.0, decimals=4) + ' % of the total)'
+        cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' % of the total)'
       cgplot, low_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
       cgplot, high_cut +[0,0], [0,1.0], /overplot, thick=3, linestyle=2
       cgplot, flat_bias +[0,0], [0,1.0], /overplot, thick=4

@@ -312,7 +312,7 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	cgplot, speclines.x, 1d4 * (speclines.lambda-lambda_model), psym=16, $
 		xtit='x pixel', ytitle='delta lambda (angstrom)', $
 		title='Residuals of the wavelength solution (stddev: ' + $
-			number_formatter( stddev( 1d4 * (speclines.lambda-lambda_model), /nan), decimals=3) + $
+			cgnumber_formatter( stddev( 1d4 * (speclines.lambda-lambda_model), /nan), decimals=3) + $
 			' angstrom)', charsize=1, thick=3
 
 	cgplot, speclines[w_line1].x, 1d4 * (speclines[w_line1].lambda-lambda_model[w_line1]), $

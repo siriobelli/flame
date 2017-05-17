@@ -295,7 +295,7 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
     if input.max_slitwidth_arcsec NE 0.0 then begin
 
       print, n_elements(where(slit_hdr.width_arcsec GT input.max_slitwidth_arcsec, /null)), $
-        ' alignment boxes ( wider than ', number_formatter(input.max_slitwidth_arcsec, decimals=2), ' arcsec) found.'
+        ' alignment boxes ( wider than ', cgnumber_formatter(input.max_slitwidth_arcsec, decimals=2), ' arcsec) found.'
 
       ; exclude alignment boxes
       slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LE input.max_slitwidth_arcsec, /null) ]
@@ -306,7 +306,7 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
       maxwidth = sorted_widths[0]
 
       print, n_elements(where(sorted_widths eq maxwidth, /null)), $
-        ' alignment boxes (', number_formatter(maxwidth, decimals=2), ' arcsec) found.'
+        ' alignment boxes (', cgnumber_formatter(maxwidth, decimals=2), ' arcsec) found.'
 
       ; exclude alignment boxes
       slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LT maxwidth, /null) ]

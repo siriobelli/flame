@@ -180,7 +180,7 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
       y -= median(y)
       y /= max(y, /nan)
 
-      ; cgplot, sky_linear, title=number_formatter(this_coeff[1], decimals=4)
+      ; cgplot, sky_linear, title=cgnumber_formatter(this_coeff[1], decimals=4)
       ; cgplot, y, /overplot, color='red'
       ; wait, 0.000001
 
