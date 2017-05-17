@@ -100,7 +100,6 @@ PRO flame_identify_fitskylines, x=x, y=y, $
 	; plot_title : (input) string to print as title of the plot
 	;
 
-
   ; settings:
 	; the degree of the polynomial used to describe the wavelength solution
 	poly_degree = 5
@@ -116,7 +115,12 @@ PRO flame_identify_fitskylines, x=x, y=y, $
 		AND line_list_in LT max(approx_wavecal, /nan), /null )
 
 	; make sure there are OH lines here
-	if w_lines EQ !NULL then message, 'Wavelength range does not contain OH lines?!'
+	if w_lines EQ !NULL then begin
+    print, 'Warning: wavelength range does not contain OH lines'
+    speclines = !NULL
+    wavecal = !NULL
+    return
+  endif
 
 	; keep only the OH lines of interest
 	line_list = line_list_in[w_lines]
