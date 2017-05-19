@@ -1,5 +1,4 @@
 
-
 FUNCTION flame_monitor_fit_trace, frame, xrange=xrange, yrange=yrange, est_width=est_width, $
     plot_extra=plot_extra
 ;
@@ -417,6 +416,15 @@ END
 
 PRO flame_diagnostics, fuel=fuel
 
+	start_time = systime(/seconds)
+
+  print, ''
+  print, '-------------------------------------'
+  print, '---      flame_diagnostics        ---'
+  print, '-------------------------------------'
+  print, ''
+
+
   ; 1 - create the diagnostics structure
   ;----------------------------------------
 
@@ -455,5 +463,11 @@ PRO flame_diagnostics, fuel=fuel
 
   new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:diagnostics, slits:fuel.slits }
   fuel=new_fuel
+
+
+  print, ''
+  print, 'flame_diagnostics took ', $
+    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
+  print, ''
 
 END

@@ -408,10 +408,12 @@ PRO flame_identify_lines, fuel=fuel
 
 	start_time = systime(/seconds)
 
-  print, ' '
-  print, 'flame_identify_lines'
-  print, '**********************'
-  print, ' '
+  print, ''
+  print, '-------------------------------------'
+  print, '---     flame_identify_lines      ---'
+  print, '-------------------------------------'
+  print, ''
+
 
   ; avoid printing too much stuff (especially from GAUSSFIT)
   quiet_state = !QUIET
@@ -467,6 +469,11 @@ PRO flame_identify_lines, fuel=fuel
 
 	; revert to original !QUIET state
 	!QUIET = quiet_state
-	print, 'It took ', systime(/seconds) - start_time, ' seconds'
+
+
+	print, ''
+  print, 'flame_identify_lines took ', $
+    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
+  print, ''
 
 END

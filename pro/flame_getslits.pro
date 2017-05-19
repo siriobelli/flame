@@ -297,8 +297,8 @@ FUNCTION flame_getslits_trace_skylines, image, approx_edge, top=top, bottom=bott
   endif else begin
 
     print, strtrim(Nlines,2) + ' OH lines found. Tracing edge...'
-
-    print, approx_edge, keyword_set(top), keyword_set(bottom)
+    if keyword_set(top) then print, 'top edge at about ' + strtrim(approx_edge, 2)
+    if keyword_set(bottom) then print, 'bottom edge at about ' + strtrim(approx_edge, 2)
 
     ; select the good edge measurements
     w_ok = cgsetintersection( w_OH, where( y_edge ne 0.0, /null ) )
@@ -681,6 +681,15 @@ END
 
 PRO flame_getslits, fuel=fuel
 
+	start_time = systime(/seconds)
+
+  print, ''
+  print, '-------------------------------------'
+  print, '---        flame_getslits         ---'
+  print, '-------------------------------------'
+  print, ''
+
+
   ; identify all slits from the data, and write the fuel.slits structures
   if fuel.input.longslit then $
   flame_getslits_longslit, fuel=fuel $
@@ -700,5 +709,10 @@ PRO flame_getslits, fuel=fuel
     fuel=new_fuel
   endif
 
+
+	print, ''
+  print, 'flame_getslits took ', $
+    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
+  print, ''
 
 END

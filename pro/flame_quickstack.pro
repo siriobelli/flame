@@ -5,8 +5,17 @@ PRO flame_quickstack, fuel=fuel
 ; stacks all the frames in each position, and outputs the difference A-B.
 ; If AB subtraction is not set, then simply stack all the frames
 ; Useful for a quick look at the data.
-; If some frames are missing the star trace, also the X position is considered
+; If some frames are missing the star trace, then the X position is also considered
 ;
+
+	start_time = systime(/seconds)
+
+  print, ''
+  print, '-------------------------------------'
+  print, '---       flame_quickstack        ---'
+  print, '-------------------------------------'
+  print, ''
+
 
 
 	; identify the A and B and X positions
@@ -94,5 +103,9 @@ PRO flame_quickstack, fuel=fuel
 	endelse
 
 
+	print, ''
+  print, 'flame_quickstack took ', $
+    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
+  print, ''
 
 END

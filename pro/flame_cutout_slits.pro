@@ -60,6 +60,15 @@ END
 
 PRO flame_cutout_slits, fuel=fuel
 
+	start_time = systime(/seconds)
+
+  print, ''
+  print, '-------------------------------------'
+  print, '---      flame_cutout_slits       ---'
+  print, '-------------------------------------'
+  print, ''
+
+
   ; extract slits structure
   slits = fuel.slits
 
@@ -89,5 +98,11 @@ PRO flame_cutout_slits, fuel=fuel
     fuel.slits[i_slit].cutouts.filename = output_filenames
 
   endfor
+
+
+	print, ''
+  print, 'flame_cutout_slits took ', $
+    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
+  print, ''
 
 END
