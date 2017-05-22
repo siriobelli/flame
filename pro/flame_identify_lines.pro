@@ -78,7 +78,7 @@ END
 
 
 
-PRO flame_identify_fitskylines, x=x, y=y, $
+PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	approx_wavecal=approx_wavecal, linewidth=linewidth, $
 	line_list=line_list_in, $
 	speclines=speclines, wavecal=wavecal, plot_title=plot_title
@@ -102,10 +102,10 @@ PRO flame_identify_fitskylines, x=x, y=y, $
 
   ; settings:
 	; the degree of the polynomial used to describe the wavelength solution
-	poly_degree = 5
+	poly_degree = fuel.util.identify_lines_poly_degree
 
 	; minimum number of OH lines for a reliable wavelength solution
-	Nmin_lines = 4
+	Nmin_lines = fuel.util.identify_lines_Nmin_lines
 
 	; convert linewidth to micron (assuming linear wavelength solution)
 	linewidth_um = linewidth * (approx_wavecal[3]-approx_wavecal[2])
@@ -326,7 +326,7 @@ PRO flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
 		if i_row eq i0_bottom then wavelength_axis_guess = approx_lambda_axis
 
 		; fit the emission lines and find the wavelength solution
-		flame_identify_fitskylines, x=pix_axis, y=this_row, $
+		flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=this_row, $
 			approx_wavecal=wavelength_axis_guess, linewidth=linewidth, $
 			line_list=line_list, $
 			speclines=speclines_thisrow, wavecal=wavelength_axis_for_this_row, plot_title='row '+strtrim(i_row,2)

@@ -14,7 +14,7 @@
 ;*******************************************************************************
 
 
-PRO flame_wavecal_2D_calibration, slit=slit, cutout=cutout, $
+PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		diagnostics=diagnostics, this_diagnostics=this_diagnostics
 
 ; This routine calculates the 2D wavelength solution and y-rectification.
@@ -29,7 +29,7 @@ PRO flame_wavecal_2D_calibration, slit=slit, cutout=cutout, $
 	print, 'Accurate 2D wavelength solution for ', cutout.filename
 
 	; polynomial degree for image warping
-	degree=3
+	degree = fuel.util.wavesolution_degree
 
 	; read in file to calibrate
 	im = mrdfits(cutout.filename, 0, header, /silent)
@@ -432,7 +432,7 @@ PRO flame_wavecal_accurate, fuel
 				speclines = *this_slit.cutouts[i_frame].speclines
 
 				; calculate the polynomial transformation between observed and rectified frame
-				flame_wavecal_2D_calibration, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
+				flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
 					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
 
 				; show plots of the wavelength calibration and specline identification
