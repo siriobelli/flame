@@ -406,10 +406,14 @@ END
 
 
 
-PRO flame_initialize_luci, fuel=fuel
+PRO flame_initialize_luci, fuel
   ;
   ; LUCI-specific routine that initializes the fuel.instrument structure
   ;
+
+  print, ''
+  print, 'Initializing LUCI data reduction'
+  print, ''
 
   ; read FITS header of first science frame
   science_header = headfits(fuel.util.science_filenames[0])

@@ -58,7 +58,7 @@ END
 ;******************************************************************
 
 
-PRO flame_cutout_slits, fuel=fuel
+PRO flame_cutout_slits, fuel
 
 	start_time = systime(/seconds)
 

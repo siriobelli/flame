@@ -1,4 +1,4 @@
-PRO flame_quickstack, fuel=fuel
+PRO flame_quickstack, fuel
 
 ;
 ; Takes the A and B positions from the fuel.diagnostics structure,

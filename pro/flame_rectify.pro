@@ -60,8 +60,7 @@ END
 ; ---------------------------------------------------------------------------------------------------------------------------
 
 
-
-PRO flame_rectify, fuel=fuel
+PRO flame_rectify, fuel
 
 		start_time = systime(/seconds)
 

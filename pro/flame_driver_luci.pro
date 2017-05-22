@@ -72,14 +72,14 @@
   fuel = flame_create_fuel(input)
 
   ; initialize
-  flame_initialize_luci, fuel=fuel
+  flame_initialize_luci, fuel
 
 
-  ; check that everything is good
-  help, fuel.input
-  help, fuel.util
-  help, fuel.instrument
-  help, fuel.slits
+  ; ; check that everything is good
+  ; help, fuel.input
+  ; help, fuel.util
+  ; help, fuel.instrument
+  ; help, fuel.slits
 
 
 
@@ -90,79 +90,27 @@
   ;****************************************************
 
 
-  ;****************************************************
-  ;                 MONITOR STAR
-  ;****************************************************
+  flame_diagnostics, fuel
 
+  flame_quickstack, fuel
 
-  flame_diagnostics, fuel=fuel
+  flame_correct, fuel
 
+  flame_getslits, fuel
 
-  ;****************************************************
-  ;                 QUICK LOOK
-  ;****************************************************
+  flame_cutout_slits, fuel
 
+  flame_wavecal_rough, fuel
 
-  flame_quickstack, fuel=fuel
+  flame_identify_lines, fuel
 
+  flame_wavecal_accurate, fuel
 
-  ;****************************************************
-  ;                 DATA CORRECTION
-  ;****************************************************
+  flame_skysub, fuel
 
+  flame_rectify, fuel
 
-  flame_correct, fuel=fuel
-
-
-  ;****************************************************
-  ;               IDENTIFY AND CUTOUT SLITS
-  ;****************************************************
-
-
-  flame_getslits, fuel=fuel
-
-  flame_cutout_slits, fuel=fuel
-
-
-  ;****************************************************
-  ;                 WAVELENGTH CALIBRATION
-  ;****************************************************
-
-
-  flame_wavecal_rough, fuel=fuel
-
-  flame_identify_lines, fuel=fuel
-
-  flame_wavecal_accurate, fuel=fuel
-
-
-  ;****************************************************
-  ;                 SKY SUBTRACTION
-  ;****************************************************
-
-
-  flame_skysub, fuel=fuel
-
-
-  ;****************************************************
-  ;                 RECTIFICATION
-  ;****************************************************
-
-
-  flame_rectify, fuel=fuel
-
-
-  ;****************************************************
-  ;                 COMBINE FRAMES
-  ;****************************************************
-
-
-  flame_combine, fuel=fuel
-
-
-  ;****************************************************
-  ;                 END: save fuel structure
-  ;****************************************************
+  flame_combine, fuel
 
 
   save, fuel, filename='fuel.sav'

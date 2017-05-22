@@ -679,7 +679,7 @@ END
 ;******************************************************************
 
 
-PRO flame_getslits, fuel=fuel
+PRO flame_getslits, fuel
 
 	start_time = systime(/seconds)
 

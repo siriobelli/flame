@@ -190,10 +190,14 @@ END
 
 
 
-PRO flame_initialize_lris, fuel=fuel
+PRO flame_initialize_lris, fuel
   ;
   ; LRIS-specific routine that initializes the fuel.instrument structure
   ;
+
+    print, ''
+    print, 'Initializing LRIS data reduction'
+    print, ''
 
   ; -----------------------------------------------------------------
   ; need to use the optical sky spectrum

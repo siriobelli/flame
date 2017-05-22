@@ -402,7 +402,7 @@ END
 
 
 
-PRO flame_identify_lines, fuel=fuel
+PRO flame_identify_lines, fuel
 
 	start_time = systime(/seconds)
 

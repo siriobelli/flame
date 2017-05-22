@@ -27,7 +27,7 @@ PRO flame_wavecal_2D_calibration, slit=slit, cutout=cutout, $
 
 	print, ''
 	print, 'Accurate 2D wavelength solution for ', cutout.filename
-	
+
 	; polynomial degree for image warping
 	degree=3
 
@@ -402,7 +402,7 @@ END
 
 
 
-PRO flame_wavecal_accurate, fuel=fuel
+PRO flame_wavecal_accurate, fuel
 
 		start_time = systime(/seconds)
 

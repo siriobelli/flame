@@ -265,7 +265,7 @@ END
 
 
 
-PRO flame_combine, fuel=fuel
+PRO flame_combine, fuel
 
 		start_time = systime(/seconds)
 

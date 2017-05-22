@@ -341,7 +341,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_correct, fuel=fuel
+PRO flame_correct, fuel
 
 	start_time = systime(/seconds)
 

@@ -102,7 +102,7 @@ END
 
 
 
-PRO flame_skysub, fuel=fuel
+PRO flame_skysub, fuel
 
 		start_time = systime(/seconds)
 

@@ -306,7 +306,7 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 		print, 'lambda0: ', lambda0_range
 		print, 'a1: ', pix_scale_grid[0], pix_scale_grid[-1]
 		print, 'a2: ', a2_grid[0], a2_grid[-1]
-	
+
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
 	   R_smooth = rough_wavecal_R[1], plot_title='second: use second-order polynomial', $
@@ -562,7 +562,7 @@ END
 
 
 
-PRO flame_wavecal_rough, fuel=fuel
+PRO flame_wavecal_rough, fuel
 
 	start_time = systime(/seconds)
 

@@ -414,7 +414,7 @@ END
 ;****************************************************************
 
 
-PRO flame_diagnostics, fuel=fuel
+PRO flame_diagnostics, fuel
 
 	start_time = systime(/seconds)
 
