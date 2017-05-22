@@ -105,7 +105,7 @@ PRO flame_identify_fitskylines, x=x, y=y, $
 	poly_degree = 5
 
 	; minimum number of OH lines for a reliable wavelength solution
-	Nmin_lines = 6
+	Nmin_lines = 4
 
 	; convert linewidth to micron (assuming linear wavelength solution)
 	linewidth_um = linewidth * (approx_wavecal[3]-approx_wavecal[2])
@@ -350,6 +350,9 @@ PRO flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
 	endfor
 
 	print, ''
+
+  ; check that at least some lines were found
+  if n_elements(speclines) eq 0 then message, 'no lines were identified in this cutout!'
 
 	cgPS_close
 
