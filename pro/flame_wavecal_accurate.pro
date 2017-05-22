@@ -413,9 +413,6 @@ PRO flame_wavecal_accurate, fuel
 	  print, ''
 
 
-  ; avoid printing too much stuff (especially from GAUSSFIT)
-  quiet_state = !QUIET
-  !QUIET = 1
 
 	; loop through all slits
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
@@ -453,9 +450,6 @@ PRO flame_wavecal_accurate, fuel
 		; make summary plots, including all frames for one slit
 
 	endfor
-
-	; revert to original !QUIET state
-	!QUIET = quiet_state
 
 
 	print, ''
