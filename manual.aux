@@ -31,25 +31,25 @@
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.4}Detection of slit edges with sky background}{4}{subsubsection.3.2.4}}
 \newlabel{sec:use_sky_edge}{{3.2.4}{4}{Detection of slit edges with sky background}{subsubsection.3.2.4}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.5}Longslit observations}{4}{subsubsection.3.2.5}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}The \texttt  {fuel}\ structure}{4}{subsection.3.3}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Initialization}{5}{subsection.3.4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Initialization}{4}{subsection.3.3}}
 \@writefile{toc}{\contentsline {section}{\numberline {4}Running the Data Reduction}{5}{section.4}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}\texttt  {flame\_diagnostics}}{5}{subsection.4.1}}
 \newlabel{sec:diagnostics}{{4.1}{5}{\texttt {flame\_diagnostics}}{subsection.4.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Example of diagnostic plots.}}{6}{figure.1}}
-\newlabel{fig:diagnostics}{{1}{6}{Example of diagnostic plots}{figure.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Example of diagnostic plots. From the top: Flux of the star trace, normalized by the median value; FWHM in arcsec; vertical position of the trace in A frames; vertical position of the trace in the B frames; airmass value read from the FITS header.}}{6}{figure.1}}
+\newlabel{fig:diagnostics}{{1}{6}{Example of diagnostic plots. From the top: Flux of the star trace, normalized by the median value; FWHM in arcsec; vertical position of the trace in A frames; vertical position of the trace in the B frames; airmass value read from the FITS header}{figure.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}\texttt  {flame\_quickstack}}{6}{subsection.4.2}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}\texttt  {flame\_correct}}{7}{subsection.4.3}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.4}\texttt  {flame\_getslits}}{7}{subsection.4.4}}
 \newlabel{sec:getslits}{{4.4}{7}{\texttt {flame\_getslits}}{subsection.4.4}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces An example of LUCI raw frame, with the regions marking the slits identified by \texttt  {flame}\ shown in green. The slits that are not marked are the boxes for the alignment stars, which are ignored by the pipeline.}}{8}{figure.2}}
 \newlabel{fig:slits}{{2}{8}{An example of LUCI raw frame, with the regions marking the slits identified by \flame \ shown in green. The slits that are not marked are the boxes for the alignment stars, which are ignored by the pipeline}{figure.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}\texttt  {flame\_wavecal\_rough}}{8}{subsection.4.5}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Approximate wavelength calibration. Left: the sky spectrum (in black) is extracted from the central region of the slit, and is compared to a template spectrum (in red). A very rough alignment is obtained by shifting the spectra and cross-correlating them. Right: A better level of approximation is then obtained by allowing a non linear transformation between pixel position and wavelength, and cross-correlating the spectra without smoothing.}}{9}{figure.3}}
-\newlabel{fig:wavecal_approx}{{3}{9}{Approximate wavelength calibration. Left: the sky spectrum (in black) is extracted from the central region of the slit, and is compared to a template spectrum (in red). A very rough alignment is obtained by shifting the spectra and cross-correlating them. Right: A better level of approximation is then obtained by allowing a non linear transformation between pixel position and wavelength, and cross-correlating the spectra without smoothing}{figure.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}\texttt  {flame\_wavecal\_accurate}}{9}{subsection.4.6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}\texttt  {flame\_cutout\_slits}}{8}{subsection.4.5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}\texttt  {flame\_wavecal\_rough}}{8}{subsection.4.6}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Approximate wavelength calibration. The sky spectrum (in black) is extracted from the central region of the slit, and is compared to a template spectrum (in red). The top panels show the initial guess, and the bottom panels show the results of the cross-correlation. The cross-correlation is repeated three times using successively higher spectral resolution.}}{9}{figure.3}}
+\newlabel{fig:wavecal_approx}{{3}{9}{Approximate wavelength calibration. The sky spectrum (in black) is extracted from the central region of the slit, and is compared to a template spectrum (in red). The top panels show the initial guess, and the bottom panels show the results of the cross-correlation. The cross-correlation is repeated three times using successively higher spectral resolution}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}\texttt  {flame\_wavecal\_accurate}}{9}{subsection.4.7}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Accurate wavelength calibration. Top panel: The sky spectrum is extracted from a single pixel row, and using the approximate wavelength calibration the OH lines are identified and fit with a Gaussian profile. Bottom panel: the measured position of each OH line, together with their known wavelength, allow an accurate wavelength solution, shown in blue.}}{10}{figure.4}}
 \newlabel{fig:wavecal_accurate}{{4}{10}{Accurate wavelength calibration. Top panel: The sky spectrum is extracted from a single pixel row, and using the approximate wavelength calibration the OH lines are identified and fit with a Gaussian profile. Bottom panel: the measured position of each OH line, together with their known wavelength, allow an accurate wavelength solution, shown in blue}{figure.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}\texttt  {flame\_skysub}}{10}{subsection.4.7}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}\texttt  {flame\_rectify}}{10}{subsection.4.8}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}\texttt  {flame\_combine}}{10}{subsection.4.9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.8}\texttt  {flame\_skysub}}{10}{subsection.4.8}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}\texttt  {flame\_rectify}}{10}{subsection.4.9}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.10}\texttt  {flame\_combine}}{11}{subsection.4.10}}
