@@ -90,8 +90,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		lambda_model = lambda_0 + lambda_modelx*delta_lambda
 
 		discrepancy = OH_lambda - lambda_model
-		;w_outliers = where( abs(discrepancy/delta_lambda) GT 1.5, complement=w_goodpix, /null)
-		w_outliers = where( abs(discrepancy) GT 2.0*stddev(discrepancy), complement=w_goodpix, /null)
+		w_outliers = where( abs(discrepancy) GT 3.0*stddev(discrepancy), complement=w_goodpix, /null)
 		print, 'Outliers found: ', n_elements(w_outliers)
 
 	ENDWHILE
