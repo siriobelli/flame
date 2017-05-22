@@ -517,6 +517,9 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, $
 	; extract the spectrum from the sky region
 	sky = median(sky_region, dimension=2)
 
+	; subtract the continuum
+	!NULL = poly_fit( indgen(n_elements(sky)), median(sky,25), 5, yfit=sky_continuum )
+	sky -= sky_continuum
 
   ; load the model sky spectrum
 	;---------------------
