@@ -68,11 +68,8 @@
   ;**********************************
 
 
-  ; create the fuel structure
-  fuel = flame_create_fuel(input)
-
-  ; initialize
-  flame_initialize_luci, fuel
+  ; initialize and create the fuel structure
+  fuel = flame_initialize_luci(input)
 
 
   ; ; check that everything is good

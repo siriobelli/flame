@@ -190,14 +190,18 @@ END
 
 
 
-PRO flame_initialize_lris, fuel
+FUNCTION flame_initialize_lris, input
   ;
-  ; LRIS-specific routine that initializes the fuel.instrument structure
+  ; LRIS-specific routine that initializes the fuel structure
   ;
 
     print, ''
     print, 'Initializing LRIS data reduction'
     print, ''
+
+
+  ; first, create the fuel structure
+  fuel = flame_util_create_fuel(input)
 
   ; -----------------------------------------------------------------
   ; need to use the optical sky spectrum
@@ -266,6 +270,9 @@ PRO flame_initialize_lris, fuel
   ; save both instrument and slits in the fuel structure
   new_fuel = { input:fuel.input, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
   fuel=new_fuel
+
+  ; return the fuel structure
+  return, new_fuel
 
 
 END

@@ -36,14 +36,14 @@ END
 
 
 
-FUNCTION flame_create_fuel, input
+FUNCTION flame_util_create_fuel, input
 ;
 ; initialize flame and output the fuel structure. The only input is the input structure.
 ;
 
   ; find the Flame data directory and check that it exists
-  path_to_thisfile = file_which('flame_create_fuel.pro', /include_current_dir)
-  data_dir = flame_util_replace_string(path_to_thisfile, 'pro/flame_create_fuel.pro', 'data/')
+  path_to_thisfile = file_which('flame_util_create_fuel.pro', /include_current_dir)
+  data_dir = flame_util_replace_string(path_to_thisfile, 'pro/flame_util_create_fuel.pro', 'data/')
   if ~file_test(data_dir, /directory) then message, 'data directory not found! Check the flame directory structure.'
 
   ; setup directory structure

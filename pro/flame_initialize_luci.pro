@@ -406,14 +406,18 @@ END
 
 
 
-PRO flame_initialize_luci, fuel
+FUNCTION flame_initialize_luci, input
   ;
-  ; LUCI-specific routine that initializes the fuel.instrument structure
+  ; LUCI-specific routine that initializes the fuel structure
   ;
 
   print, ''
   print, 'Initializing LUCI data reduction'
   print, ''
+
+
+  ; first, create the fuel structure
+  fuel = flame_util_create_fuel(input)
 
   ; read FITS header of first science frame
   science_header = headfits(fuel.util.science_filenames[0])
@@ -440,7 +444,8 @@ PRO flame_initialize_luci, fuel
 
   ; save both instrument and slits in the fuel structure
   new_fuel = { input:fuel.input, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
-  fuel=new_fuel
 
+  ; return the fuel structure
+  return, new_fuel
 
 END
