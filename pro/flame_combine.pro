@@ -209,11 +209,12 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
 	endif
 
+	; if only one among the A and B positions is available, then we are done
+	if w_A eq !NULL or w_B eq !NULL then return
+
 
 	; combine A and B into negative-positive-negative
 	;*************************************
-
-	if w_A ne !NULL and w_B ne !NULL then begin
 
 	; A-B stack
 	stack_AB = stack_A_skysub - stack_B_skysub
@@ -231,6 +232,9 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	; find the dithering length
 	; (keep in mind that the rectification step already shifted each frame to the floor() of the reference position)
 	dithering_length = abs( floor(diagnostics[w_A[0]].position) - floor(diagnostics[w_B[0]].position) )
+
+	; if the dithering was not along the slit, then we are done
+	if dithering_length GE (size(stack_A))[2] then return
 
 	; zero padding on top
 	padding = dblarr( (size(stack_A))[1], dithering_length )
@@ -255,8 +259,6 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 	; also output the SNR map
 	writefits, filename_prefix + '_ABcombined_SNR.fits', AB_combined/AB_combined_sigma, header
 
-
-	endif
 
 END
 
