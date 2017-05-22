@@ -261,9 +261,7 @@ PRO flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
 	 speclines=speclines, wavelength_solution=wavelength_solution
 
 	print, ' '
-	print, 'Wavelength solution for ', slit_filename
-	print, '*************************************************************************************************'
-	print, ' '
+	print, 'Identifying lines in ', slit_filename
 
 	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_speclines.ps'), /nomatch
 

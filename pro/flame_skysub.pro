@@ -104,10 +104,14 @@ END
 
 PRO flame_skysub, fuel=fuel
 
-	print, ' '
-	print, 'Sky subtraction'
-	print, '****************'
-	print, ' '
+		start_time = systime(/seconds)
+
+	  print, ''
+	  print, '-------------------------------------'
+	  print, '---         flame_skysub          ---'
+	  print, '-------------------------------------'
+	  print, ''
+
 
 	; extract the slits structures
 	slits = fuel.slits
@@ -132,5 +136,11 @@ PRO flame_skysub, fuel=fuel
 		endfor
 
 	endfor
+
+
+	print, ''
+  print, 'flame_skysub took ', $
+    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
+  print, ''
 
 END

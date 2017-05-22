@@ -25,11 +25,14 @@ PRO flame_wavecal_2D_calibration, slit=slit, cutout=cutout, $
 ; that can be used to rectify the image via poly_2D()
 ;
 
+	print, ''
+	print, 'Accurate 2D wavelength solution for ', cutout.filename
+	
 	; polynomial degree for image warping
 	degree=3
 
 	; read in file to calibrate
-	im = mrdfits(cutout.filename, 0, header)
+	im = mrdfits(cutout.filename, 0, header, /silent)
 
 	; read dimensions of the image
 	N_imx = (size(im))[1]
@@ -401,12 +404,14 @@ END
 
 PRO flame_wavecal_accurate, fuel=fuel
 
-	start_time = systime(/seconds)
+		start_time = systime(/seconds)
 
-  print, ' '
-  print, 'flame_wavecal_accurate'
-  print, '**********************'
-  print, ' '
+	  print, ''
+	  print, '-------------------------------------'
+	  print, '---    flame_wavecal_accurate     ---'
+	  print, '-------------------------------------'
+	  print, ''
+
 
   ; avoid printing too much stuff (especially from GAUSSFIT)
   quiet_state = !QUIET
@@ -451,6 +456,11 @@ PRO flame_wavecal_accurate, fuel=fuel
 
 	; revert to original !QUIET state
 	!QUIET = quiet_state
-	print, 'It took ', systime(/seconds) - start_time, ' seconds'
+
+
+	print, ''
+  print, 'flame_wavecal_accurate took ', $
+    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
+  print, ''
 
 END

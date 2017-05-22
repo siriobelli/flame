@@ -267,10 +267,14 @@ END
 
 PRO flame_combine, fuel=fuel
 
+		start_time = systime(/seconds)
 
-	print, ' '
-	print, 'Combine frames'
-	print, '****************'
+	  print, ''
+	  print, '-------------------------------------'
+	  print, '---         flame_combine         ---'
+	  print, '-------------------------------------'
+	  print, ''
+
 
  	; loop through all slits
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
@@ -282,10 +286,22 @@ PRO flame_combine, fuel=fuel
 
 	endfor
 
+
+	print, ''
+  print, 'flame_combine took ', $
+    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
+  print, ''
+
+
+  print, '-------------------------------------'
+	print, '-------------------------------------'
+	print, '-------------------------------------'
+
 	; print total execution time
 	print, ' '
 	print, 'The data reduction took a total of ', $
 		cgnumber_formatter((systime(/seconds) - fuel.util.start_time)/60.0, decimals=2), ' minutes.'
+		print, ' '
 
 
 END
