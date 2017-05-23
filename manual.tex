@@ -228,7 +228,7 @@ The \fuel\ structure consists of five substructures:
 	\item fuel.slits: information relative to each slit, such as position on the detector and expected wavelength range.
 \end{itemize}
 
-The fields fuel.diagnostics and fuel.slits are initially set to null pointers and will be created by successive steps.
+Some of the fields in the \fuel\ structure are initially set to null pointers and will be created by successive steps.
 
 During the initialization, relevant fields from the FITS header of the science files, such as band, central wavelength, and slit positions are read and saved. This is the only step during the data reduction where instrument-specific operations are performed. Since the remaining steps are common to all near-infrared MOS data, it is in principle easy to adapt \flame\ to a different instrument by simply writing the appropriate initialization module.
 
@@ -397,6 +397,32 @@ This simple step produces a rectified FITS file for each slit and each frame. Th
 \subsection{\texttt{flame\_combine}}
 
 The last step consists in the stacking (after sigma-clipping) of all the A and B frames. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved. Also, an ABcombined FITS file is produced by summing A-B to the shifted B-A images, so that one positive central trace, corresponding to the total observing time, can be extracted for the science analysis.
+
+
+
+
+% ***********************************************************************************************
+% ***********************************************************************************************
+%									5. TROUBLESHOOTING
+% ***********************************************************************************************
+% ***********************************************************************************************
+
+
+
+\section{Troubleshooting}
+
+\subsection{Bad fit to sky lines}
+
+Sometime the sky lines are not bright or numerous enough for a reliable wavelength calibration. This can happen especially in the K band, where the OH lines are less numerous and the spectrum is typically dominated by thermal emission. Another situation where this issue can arise is when the OH lines are faint due to very short exposure times. In this cases it is always advisable to obtain arcs. There are however a few settings that can be optimized to obtain a satisfactory wavelength solution.
+
+During the \texttt{flame\_identify\_lines} step, at each pixel row a polynomial is fit to the position of the sky lines (see Figure \ref{fig:wavecal_accurate}). This part is critical and is often the first to fail in sub-optimal conditions. If the number of sky lines identified in one row is too low, the fit will not be considered valid. It is possible to change this threshold number by changing the variable \texttt{flame.util.identify\_lines\_Nmin\_lines}. However, with a low number of lines it is also necessary to lwer the degree of the polynomial, to avoid over-fitting and obtaining meaningless wavelength solutions. This can be done by changing the variable \texttt{flame.util.identify\_lines\_poly\_degree}.
+
+Another possibility is to manually exclude those sky lines that are clearly problematic. This can be done easily by commenting out one or more entries in the line list, which is stored as a text file in the flame/data/ directory.
+
+
+\subsection{Slit identification}
+
+If the slit identification fails or is not accurate, one alternative is to use the longslit option to manually select the region within one slit to reduce. By default the longslit option assumes that the slit is spatially centered on the mask. If this assumption causes a wildly wrong initial guess for the wavelength range, it is possible to override this value by changing the \texttt{fuel.slits.range\_lambda0} variable, which is a 2-element array containing the minimum and maximum values to be considered for the wavelength of the first pixel.
 
 
 
