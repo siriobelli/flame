@@ -246,7 +246,7 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 
-FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
+FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 		 model_lambda=model_lambda, model_flux=model_flux, wavecal_coefficients=wavecal_coefficients
 
 	range_pixel_scale = this_slit.range_pixel_scale
@@ -262,7 +262,6 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 		print, ''
 		print, 'FIRST STEP: rough estimate of lambda and delta_lambda'
-		print, '-----------------------------------------------------'
 
 		; first, we assume a constant pixel scale, in micron per pixels:
 	  pix_scale_grid = range_pixel_scale[0] + $
@@ -279,7 +278,6 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 		print, ''
 		print, 'SECOND STEP: rough estimate of second-order variation'
-		print, '-----------------------------------------------------'
 
 		; set the size of the grid
 		N1 = 20
@@ -315,7 +313,6 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 
 		print, ''
 		print, 'THIRD STEP: refine wavelength solution by using non-uniform wavelength axis'
-		print, '-----------------------------------------------------------------------------'
 
 		; set the size of the grid
 		N1 = 21
@@ -338,126 +335,6 @@ FUNCTION flame_wavecal_rough_slow, fuel=fuel, this_slit=this_slit, sky=sky, $
 	   R_smooth = rough_wavecal_R[2], plot_title='third: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
 
-		; print, ''
-		; print, 'THIRD STEP: further refine wavelength solution using 3rd order polynomial'
-		; print, '-----------------------------------------------------------------------------'
-	  ;
-	  ; 	; set the size of the grid
-	  ; 	N1 = 3
-	  ; 	N2 = 61
-	  ;   N3 = 61
-	  ;
-	  ; 	; make the grid
-	  ; 	; for the pixel scale, bracket the value found in the previous fit, +/- 5% of its value
-	  ; 	pix_scale_grid = wavecal_coefficients[1] * ( 0.95 + 0.10 * dindgen(N1)/double(N1-1) )
-	  ;   pix_scale_grid = [ wavecal_coefficients[1] ]
-	  ;
-	  ; 	; same thing for the second order coefficient (+/- 50%)
-	  ; 	a2_grid = wavecal_coefficients[2] * ( 0.5 + 1.0* dindgen(N2)/double(N2-1) )
-	  ;
-	  ;   ; make the grid for the third-order coefficient
-	  ;   a3_grid = wavecal_coefficients[2] * 10.0^(-7.0 + 6.0 * dindgen(N3/2)/double(N3/2-1) )
-	  ;   a3_grid = [reverse(-a3_grid), a3_grid]
-	  ;
-	  ;   flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
-	  ; 	 approx_lambda_0=wavecal_coefficients[0], pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, a3_grid=a3_grid, $
-	  ;    plot_title='third: use third-order polynomial', $
-	  ; 	 wavecal_coefficients=wavecal_coefficients
-
-
-		return, wavecal_coefficients
-
-END
-
-
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
-
-FUNCTION flame_wavecal_rough_fast, fuel=fuel, this_slit=this_slit, sky=sky, $
-		 model_lambda=model_lambda, model_flux=model_flux, estimated_coefficients=estimated_coefficients
-
-  range_start_lambda = this_slit.range_lambda0
-
-	rough_wavecal_R = [ 0.05*this_slit.approx_R > 500.0 , $
-		0.15*this_slit.approx_R > 1000.0 , $
-		this_slit.approx_R ]
-
-	  ; first step: smoothed spectrum, find zero-point and pixel scale
-		;---------------------
-
-		print, ''
-		print, 'FIRST STEP: rough estimate of lambda and delta_lambda'
-		print, '-----------------------------------------------------'
-
-		N1 = 30
-
-		; for the pixel scale, bracket the estimated value, +/- 20% of its value
-		pix_scale_grid = estimated_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
-
-	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
-		 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
-	   R_smooth = rough_wavecal_R[0], plot_title='first: find pixel scale and zero-point', $
-		 wavecal_coefficients=wavecal_coefficients
-
-
-	  ; second step: smoothed spectrum, add second-order variations
-		;---------------------
-
-		print, ''
-		print, 'SECOND STEP: rough estimate of second-order variation'
-		print, '-----------------------------------------------------'
-
-		; set the size of the grid
-		N1 = 10
-		N2 = 20
-
-		; make the grid
-		; for the pixel scale, bracket the estimated value, +/- 20% of its value
-		pix_scale_grid = estimated_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
-
-		; for the a2 grid, bracket the estimated value, +/- 50%
-	  a2_grid =  estimated_coefficients[2] *( 0.5 + 1.0*dindgen(N2)/double(N2-1) )
-
-	  ; there should not be a large shift in wavelength now - allow up to 20% of the full lambda range
-		fullrange = wavecal_coefficients[1]*n_elements(sky)
-	  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.2,0.2]
-
-		print, 'lambda0: ', lambda0_range
-		print, 'a1: ', pix_scale_grid[0], pix_scale_grid[-1]
-		print, 'a2: ', a2_grid[0], a2_grid[-1]
-		print, a2_grid
-
-	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
-		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = rough_wavecal_R[1], plot_title='second: use second-order polynomial', $
-		 wavecal_coefficients=wavecal_coefficients
-
-
-		print, ''
-		print, 'THIRD STEP: refine wavelength solution by using non-uniform wavelength axis'
-		print, '-----------------------------------------------------------------------------'
-
-		; set the size of the grid
-		N1 = 11
-		N2 = 21
-
-		; make the grid
-	  ; for the pixel scale, bracket the value found in the previous fit, +/- 10% of its value
-		pix_scale_grid = wavecal_coefficients[1] *( 0.90 + 0.20*dindgen(N1)/double(N1-1) )
-
-		; for the a2 grid, bracket the value found in the previous fit, +/- a factor of 3
-	  a2_grid =  wavecal_coefficients[2] *( 0.3 + 2.7*dindgen(N1)/double(N1-1) )
-
-	  ; there should not be a large shift in wavelength now
-		fullrange = wavecal_coefficients[1]*n_elements(sky)
-	  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.05,0.05]
-
-	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
-		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = rough_wavecal_R[2], plot_title='third: use second-order polynomial', $
-		 wavecal_coefficients=wavecal_coefficients
-
 
 		return, wavecal_coefficients
 
@@ -469,13 +346,11 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, $
-		estimated_coefficients=estimated_coefficients, wavecal_coefficients=wavecal_coefficients
-
+FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
 	;
-	; Two steps:
+	; Three steps:
 	; First, use a coarse, logarithmic grid with constant pixel scale (uniform wavelength solution)
-	; Second, use a fine grid centered on the coarse value of pixel scale, and explore also the
+	; Second and third, use a fine grid centered on the coarse value of pixel scale, and explore also the
 	; pix_scale_variation parameter for non-uniform wavelength solution
 	;
 
@@ -543,15 +418,9 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, $
   ps_filename = file_dirname(slit_filename, /mark_directory) + 'wavelength_solution_estimate.ps'
 	cgPS_open, ps_filename, /nomatch
 
-
-	if keyword_set(estimated_coefficients) then $
-		; if we already have an estimate of the coefficients it's going to be faster
-		wavecal_coefficients = flame_wavecal_rough_fast(fuel=fuel, this_slit=this_slit, sky=sky, $
-			model_lambda=model_lambda, model_flux=model_flux, estimated_coefficients=estimated_coefficients) $
-	else $
-		; if we don't have an estimate for the coefficients, then consider the full range
-		wavecal_coefficients = flame_wavecal_rough_slow(fuel=fuel, this_slit=this_slit, sky=sky, $
-			model_lambda=model_lambda, model_flux=model_flux)
+	; find the wavelength solution
+	wavecal_coefficients = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=sky, $
+		model_lambda=model_lambda, model_flux=model_flux)
 
 
   cgPS_close
@@ -584,25 +453,18 @@ PRO flame_wavecal_rough, fuel
 	; extract the slits structures
 	slits = fuel.slits
 
-	; get the rough calibration for the first slit (slower)
-	print, ''
-	print, 'Slow rough wavelength calibration for slit ', strtrim(fuel.slits[0].number,2), ' - ', fuel.slits[0].name
-	print, ' '
-
-	rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[0], wavecal_coefficients=wavecal_coefficients_first)
-  *(fuel.slits[0].rough_wavecal) = rough_wavecal
-
-	; loop through all remaining slits
-	if n_elements(slits) GT 1 then for i_slit=1, n_elements(slits)-1 do begin
+	; loop through all slits
+	for i_slit=0, n_elements(slits)-1 do begin
 
 		this_slit = fuel.slits[i_slit]
 
 		print, ''
-	  print, 'Fast rough wavelength calibration for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
-		print, ' '
+		print, ''
+	  print, 'Rough wavelength calibration for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
+		print, '--------------------------------------------------------------------'
+		print, ''
 
-		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=this_slit, $
-			estimated_coefficients=wavecal_coefficients_first)
+		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=this_slit)
     *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
 
   endfor
