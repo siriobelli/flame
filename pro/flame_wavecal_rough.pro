@@ -518,8 +518,13 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, $
 	sky = median(sky_region, dimension=2)
 
 	; subtract the continuum
-	!NULL = poly_fit( indgen(n_elements(sky)), median(sky,25), 5, yfit=sky_continuum )
-	sky -= sky_continuum
+	if fuel.util.wavecal_rough_continuum_degree GT 0 then begin
+		win = n_elements(sky)/20	; smoothing window: 5% of the full range
+		smooth_x = indgen(n_elements(sky))
+		smooth_y = median(sky, win)
+		poly_coeff = poly_fit( smooth_x[win:-1-win], smooth_y[win:-1-win], fuel.util.wavecal_rough_continuum_degree)
+		sky -= poly(smooth_x, poly_coeff)
+	endif
 
   ; load the model sky spectrum
 	;---------------------

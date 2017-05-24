@@ -106,6 +106,7 @@ FUNCTION flame_util_create_fuel, input
     flame_data_dir: data_dir, $
     sky_emission_filename: data_dir + 'sky_emission_model_nir.dat', $
     linelist_filename: data_dir + 'line_list.dat', $
+    wavecal_rough_continuum_degree: 0, $
     identify_lines_poly_degree: 5, $
     identify_lines_Nmin_lines: 6, $
     wavesolution_degree: 3, $
