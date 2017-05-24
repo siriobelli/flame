@@ -348,6 +348,8 @@ In \flame, the wavelength calibration is split into three steps. The first step 
 
 For each slit, plots illustrating the successive comparisons of observed and model sky spectra are saved as ps files (wavelength\_solution\_estimate.ps). An example is shown in Figure \ref{fig:wavecal_approx}.
 
+If the sky spectrum includes a strong contribution from continuum emission, as is often the case for the thermal emission in the K band, it may be necessary to fit and subtract a low-order polynomial to the observed spectrum before comparing it to the model. This can be done be setting \texttt{util.wavecal\_rough\_continuum\_degree} to a number different from zero, which will be taken as the degree of the polynomial representing the continuum (typically about five or less).
+
 
 \begin{figure*}[tbp]
 \begin{minipage}{\textwidth}
@@ -364,20 +366,28 @@ For each slit, plots illustrating the successive comparisons of observed and mod
 
 
 % ---------------------------------------------------
-\subsection{\texttt{flame\_wavecal\_accurate}}
+\subsection{\texttt{flame\_identify\_lines}}
+
 
 The previous procedure gives only a rough wavelength calibration that is valid for the pixel rows at the center of the slits. Since the wavelength solution typically varies with spatial coordinate within the slit (particularly for tilted slits), the calibration needs to be calculated for each individual pixel row, which is done in this step.
 
-Initially, the spectrum of the central pixel row is extracted, and the individual OH emission lines are identified using the rough wavelength solution. A Gaussian fit is performed on each line, and the $x$ pixel coordinate corresponding to the center is stored. It is therefore necessary that the calibration found in the previous step is accurate to within the window used in the Gaussian fit, otherwise the identification of the OH lines will not be possible. The relation between the $x$ coordinate and the expected wavelength of each OH line is then fit with a low order polynomial (see example in Figure \ref{fig:wavecal_accurate}). This procedure is then repeated for the next pixel row, using the wavelength solution from the previous pixel row as first guess. This is always a good assumption as long as the wavelength solution varies smoothly with position, without abrupt changes from one pixel position to the next.
+Initially, the spectrum of the central pixel row is extracted, and the individual OH emission lines are identified using the rough wavelength solution. A Gaussian fit is performed on each line, and the $x$ pixel coordinate corresponding to the center is stored. It is therefore necessary that the calibration found in the previous step is accurate to within the window used in the Gaussian fit, otherwise the identification of the OH lines will not be possible. The relation between the $x$ coordinate and the expected wavelength of each OH line is then fit with a low order polynomial (see example in Figure \ref{fig:speclines}). This procedure is then repeated for the next pixel row, using the wavelength solution from the previous pixel row as first guess. This is always a good assumption as long as the wavelength solution varies smoothly with position, without abrupt changes from one pixel position to the next.
 
-After all the pixel rows have been processed, the final result is a number of $x,y$ coordinates of detected OH lines, and the corresponding theoretical wavelength. A ds9 region file (OHlines.reg) showing the detected location of the OH lines is produced. These coordinates are used to construct the transformation between the observed $(x,y)$ pixel position and the wavelength value. The IDL procedure POLYWARP is used to calculate the polynomial coefficients that describe the transformation.
+After all the pixel rows have been processed, the final result is a number of $x,y$ coordinates of detected OH lines, and the corresponding theoretical wavelength. A ds9 region file (OHlines.reg) showing the detected location of the OH lines is produced.
+
 
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.7\textwidth]{wavecal_accurate}
-\caption{Accurate wavelength calibration. Top panel: The sky spectrum is extracted from a single pixel row, and using the approximate wavelength calibration the OH lines are identified and fit with a Gaussian profile. Bottom panel: the measured position of each OH line, together with their known wavelength, allow an accurate wavelength solution, shown in blue.}
-\label{fig:wavecal_accurate}
+\caption{Identification of sky lines. Top panel: The sky spectrum is extracted from a single pixel row, and using the approximate wavelength calibration the OH lines are identified and fit with a Gaussian profile. Bottom panel: the measured position of each OH line, together with their known wavelength, allow an accurate wavelength solution, shown in blue.}
+\label{fig:speclines}
 \end{figure}
+
+
+% ---------------------------------------------------
+\subsection{\texttt{flame\_wavecal\_accurate}}
+
+For each sky line identification, we have a matching set of \emph{observed} pixel coordinates $(x,y)$ and \emph{rectified} coordinates $(\lambda,\gamma)$, where $\lambda$ is the theoretical wavelength of the OH line and $\gamma$ is simply the vertical distance (in pixels) from the bottom edge of the slit, calculated using the polynomial fits obtained by \texttt{flame\_getslits}. The wavelength solution and the
 
 
 % ---------------------------------------------------
@@ -389,8 +399,7 @@ Because the OH emission lines vary on short timescales, the A-B subtraction typi
 % ---------------------------------------------------
 \subsection{\texttt{flame\_rectify}}
 
-This simple step produces a rectified FITS file for each slit and each frame. The polynomial warping is performed using the IDL procedure POLY\_2D, where the polynomial coefficients are those saved in the \fuel\ structure by \texttt{flame\_wavecal}.
-
+Using the 2D rectification coefficients calculated in \texttt{flame\_wavecal\_accurate}, this step performs both the wavelength calibration and the spatial rectification simultaneously, using only one interpolation. In practice, for each slit and each frame a polynomial warping is applied to the observed 2D spectrum, and a rectified FITS file is produced.
 
 
 % ---------------------------------------------------
@@ -398,7 +407,7 @@ This simple step produces a rectified FITS file for each slit and each frame. Th
 
 The last step consists in the stacking (after sigma-clipping) of all the A and B frames. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved. Also, an ABcombined FITS file is produced by summing A-B to the shifted B-A images, so that one positive central trace, corresponding to the total observing time, can be extracted for the science analysis.
 
-
+Sometimes the dithering is such that one object spends half of the time in one slit and half of the time in another slit. This is particularly useful when the slits need to be tilted in directions that are different from the dithering direction (as is the case when different objects in the mask require different position angles). If the dithering length, as calculated from the star traces, matches the distance between any two slits, then these are assumed to be matching slits and their A-B stacks are combined together. It is worth pointing out that this assumption breaks down if the star traces for the A and B positions actually belong to different stars.
 
 
 % ***********************************************************************************************
@@ -415,7 +424,7 @@ The last step consists in the stacking (after sigma-clipping) of all the A and B
 
 Sometime the sky lines are not bright or numerous enough for a reliable wavelength calibration. This can happen especially in the K band, where the OH lines are less numerous and the spectrum is typically dominated by thermal emission. Another situation where this issue can arise is when the OH lines are faint due to very short exposure times. In this cases it is always advisable to obtain arcs. There are however a few settings that can be optimized to obtain a satisfactory wavelength solution.
 
-During the \texttt{flame\_identify\_lines} step, at each pixel row a polynomial is fit to the position of the sky lines (see Figure \ref{fig:wavecal_accurate}). This part is critical and is often the first to fail in sub-optimal conditions. If the number of sky lines identified in one row is too low, the fit will not be considered valid. It is possible to change this threshold number by changing the variable \texttt{flame.util.identify\_lines\_Nmin\_lines}. However, with a low number of lines it is also necessary to lwer the degree of the polynomial, to avoid over-fitting and obtaining meaningless wavelength solutions. This can be done by changing the variable \texttt{flame.util.identify\_lines\_poly\_degree}.
+During the \texttt{flame\_identify\_lines} step, at each pixel row a polynomial is fit to the position of the sky lines (see Figure \ref{fig:speclines}). This part is critical and is often the first to fail in sub-optimal conditions. If the number of sky lines identified in one row is too low, the fit will not be considered valid. It is possible to change this threshold number by changing the variable \texttt{flame.util.identify\_lines\_Nmin\_lines}. However, with a low number of lines it is also necessary to lwer the degree of the polynomial, to avoid over-fitting and obtaining meaningless wavelength solutions. This can be done by changing the variable \texttt{flame.util.identify\_lines\_poly\_degree}.
 
 Another possibility is to manually exclude those sky lines that are clearly problematic. This can be done easily by commenting out one or more entries in the line list, which is stored as a text file in the flame/data/ directory.
 
