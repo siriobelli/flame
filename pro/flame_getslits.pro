@@ -611,7 +611,7 @@ PRO flame_getslits_writeds9, fuel=fuel
   for i_slit=0, n_elements(slits)-1 do begin
 
     ; generate points from the polynomial fit
-    top_x = 8*indgen(N_pix_x/8) ; one point every 8 pixels
+    top_x = [ 8*indgen(N_pix_x/8), N_pix_x-1] ; one point every 8 pixels plus the last pixel
     top_y = poly(top_x, slits[i_slit].bottom_poly) + slits[i_slit].height
     bottom_x = top_x
     bottom_y = poly(bottom_x, slits[i_slit].bottom_poly)
