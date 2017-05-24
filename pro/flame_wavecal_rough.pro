@@ -263,9 +263,12 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		print, ''
 		print, 'FIRST STEP: rough estimate of lambda and delta_lambda'
 
+		; set the size of the grid
+		N1 = 51
+
 		; first, we assume a constant pixel scale, in micron per pixels:
 	  pix_scale_grid = range_pixel_scale[0] + $
-	    (range_pixel_scale[1]-range_pixel_scale[0])*dindgen(51)/50.0
+	    (range_pixel_scale[1]-range_pixel_scale[0])*dindgen(N1)/double(N1-1)
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
