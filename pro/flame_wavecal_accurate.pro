@@ -273,8 +273,8 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 		w_line1 = where(speclines.lambda eq lambda1, /null)
 		w_line2 = where(speclines.lambda eq lambda2, /null)
 
-		color1 = 'blue'
-		color2 = 'red'
+		color1 = 'blu4'
+		color2 = 'red4'
 
 	; -------------------------------------------------------
 	; plot the individual detections on a 2D view of the slit
@@ -346,14 +346,14 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	; plots
 	cgplot, [x1-x1_ref, x2-x2_ref+offset], [y1, y2], /nodata, charsize=1, $
 		xtit = 'horizontal shift from central row (pixels)', ytit='vertical pixel coordinate'
-	cgplot, x1-x1_ref, y1, psym=16, /overplot, color=color1
-	cgplot, x2-x2_ref+offset, y2, psym=16, /overplot, color=color2
+	cgplot, x1-x1_ref, y1, psym=9, /overplot, color=color1
+	cgplot, x2-x2_ref+offset, y2, psym=9, /overplot, color=color2
 	;cgplot, [-1d4, 1d4], y_ref+[0,0], /overplot, thick=2
 
 	; legend
 	cgtext, 0.85, 0.25, 'line at ' + strtrim(lambda1, 2) + ' um', /normal, alignment=1.0, color=color1, charsize=1
 	cgtext, 0.85, 0.20, 'line at ' + strtrim(lambda2, 2) + ' um', /normal, alignment=1.0, color=color2, charsize=1
-	cgtext, 0.85, 0.15, '(offset by ' + strtrim(offset, 2) + ')', /normal, alignment=1.0, color=color2, charsize=1
+	cgtext, 0.85, 0.15, '(offset by ' + cgnumber_formatter(offset, decimals=2) + ' pixels)', /normal, alignment=1.0, color=color2, charsize=1
 
 	; -------------------------------------------------------
 	; show the predicted position from the accurate 2D wavelength solution
@@ -377,7 +377,7 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	for i=0, n_elements(y1_model)-1 do y1_model[i] = $
 		total(((gamma_array[i])^xexp # ( (lambda1-slit.outlambda_min)/slit.outlambda_delta )^yexp ) * Ky)
 
-	cgplot, x1_model-x1_model[ (sort(abs(y1_model-y_ref)))[0] ], y1_model, /overplot, color=color1, thick=3
+	cgplot, x1_model-x1_model[ (sort(abs(y1_model-y_ref)))[0] ], y1_model, /overplot, color='blu7', thick=5
 
 
 	; line2
@@ -389,7 +389,7 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	for i=0, n_elements(y2_model)-1 do y2_model[i] = $
 		total(((gamma_array[i])^xexp # ( (lambda2-slit.outlambda_min)/slit.outlambda_delta )^yexp ) * Ky)
 
-	cgplot, x2_model-x2_model[ (sort(abs(y2_model-y_ref)))[0] ] + offset, y2_model, /overplot, color=color2, thick=3
+	cgplot, x2_model-x2_model[ (sort(abs(y2_model-y_ref)))[0] ] + offset, y2_model, /overplot, color='red7', thick=5
 
 
 END
