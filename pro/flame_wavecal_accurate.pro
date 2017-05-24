@@ -258,8 +258,8 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 		w_left = where(lambdas_x LT x_center, complement=w_right, /null)
 
 		; select lines that have a good number of detections
-		w_left_num = intersect(w_left, where(lambdas_det GE median(lambdas_det[w_left]), /null) )
-		w_right_num = intersect(w_right, where(lambdas_det GE median(lambdas_det[w_right]), /null) )
+		w_left_num = cgsetintersection(w_left, where(lambdas_det GE median(lambdas_det[w_left]), /null) )
+		w_right_num = cgsetintersection(w_right, where(lambdas_det GE median(lambdas_det[w_right]), /null) )
 
 		; pick the brightest ones
 		!NULL = max(lambdas_peak[w_left_num], w_chosen, /nan )
