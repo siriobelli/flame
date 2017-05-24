@@ -80,7 +80,9 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 END
 
 
-; -------------------------------------------------------------------------------------------
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 PRO flame_combine_oneslit, slit=slit, fuel=fuel
@@ -262,8 +264,94 @@ PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
 END
 
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
-; ---------------------------------------------------------------------------------------------------------------------------
+
+PRO flame_combine_multislit, fuel=fuel
+;
+; if the dithering length matches the distance between two slits, then it mean-stack
+; that these are the A and B positions for the same object, and we need to combine them
+;
+
+	; identify the A and B positions
+	diagnostics = fuel.diagnostics
+	w_A = where(diagnostics.offset_pos eq 'A', /null)
+	w_B = where(diagnostics.offset_pos eq 'B', /null)
+
+	; if either the A or B positions do not exist, then we are done
+	if w_A eq !NULL or w_B eq !NULL then return
+
+	; dithering length (by definition; see flame_combine_oneslit)
+	dithering_length = abs( floor(diagnostics[w_A[0]].position) - floor(diagnostics[w_B[0]].position) )
+
+	; number of pixel along the spatial position
+	Nx = n_elements(*fuel.slits[0].rough_wavecal)
+
+	; calculate the vertical coordinate of the geometric center of each slit
+	slit_center = fltarr(n_elements(fuel.slits))
+	for i_slit=0, n_elements(fuel.slits)-1 do slit_center[i_slit] = $
+		poly( 0.5*Nx, fuel.slits[i_slit].bottom_poly) + 0.5*fuel.slits[i_slit].height
+
+	; loop through the slits
+	for i_slit=0, n_elements(fuel.slits)-1 do begin
+
+		; if the dithering length is smaller than the slit height, then it is an on-slit dithering
+		if dithering_length LE fuel.slits[i_slit].height then continue
+		; otherwise, check whether we have a good match among the slits
+
+		; this is the distance of this slit to every other slit
+		distance = slit_center-slit_center[i_slit]
+
+		; this is the difference between the distance and the dithering length. in units of the slit height
+		; (only match with slits that are above this one, to avoid double counting)
+		delta = (distance - dithering_length) / fuel.slits.height
+
+		; select the slit with delta closest to zero
+		mindelta = min(abs(delta), j_slit)
+
+		; if the dithering length falls within the central 50% of the slit, then we have a match
+		if abs(mindelta) LT 0.5 then begin
+
+			print, ''
+			print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name + $
+				' with slit ' + strtrim(fuel.slits[j_slit].number, 2) + ' - ' + fuel.slits[j_slit].name
+
+			; prefix for file names
+			filename_prefix_i = fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+			 	'-' + fuel.slits[i_slit].name
+			filename_prefix_j = fuel.input.output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
+			 	'-' + fuel.slits[j_slit].name
+
+			; calculate the signs so that the stacked A-B has positive signal
+			if floor(diagnostics[w_A[0]].position) GT floor(diagnostics[w_B[0]].position) then $
+				signs = [-1, 1] else $
+				signs = [1, -1]
+
+			; combine tha A-B stacks
+			flame_util_combine_slits, [filename_prefix_i + '_stack_A-B.fits', filename_prefix_j + '_stack_A-B.fits'], $
+			 	output = fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
+				 string(fuel.slits[j_slit].number, format='(I02)') + '_stack_A-B.fits', signs = signs, $
+				 sky_filenames=[filename_prefix_i + '_stack_sky.fits', filename_prefix_j + '_stack_sky.fits']
+
+			; combine tha skysubtracted A-B stacks
+ 			flame_util_combine_slits, [filename_prefix_i + '_stack_A-B_skysub.fits', filename_prefix_j + '_stack_A-B_skysub.fits'], $
+ 			 	output = fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
+ 				 string(fuel.slits[j_slit].number, format='(I02)') + '_stack_A-B_skysub.fits', signs = signs
+
+		endif
+
+	endfor
+
+
+END
+
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 
@@ -282,11 +370,14 @@ PRO flame_combine, fuel
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
 		this_slit = fuel.slits[i_slit]
-		print, 'Combining slit ', this_slit.number, ' - ', this_slit.name
+		print, 'Combining slit ' + strtrim(this_slit.number, 2) + ' - ' + this_slit.name
 
 		flame_combine_oneslit, slit=this_slit, fuel=fuel
 
 	endfor
+
+	; if there is more than one slit, it may be necessary to combine two different slits together
+	if n_elements(fuel.slits) GT 1 and fuel.input.AB_subtraction then flame_combine_multislit, fuel=fuel
 
 
 	print, ''
