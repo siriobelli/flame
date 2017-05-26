@@ -381,13 +381,21 @@ PRO flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=sl
   ; get rid of the edge values that cannot be properly smoothed
   wavelength_solution_smooth = wavelength_solution_smooth[beta:-1-beta, beta:-1-beta]
 
-	; find the min and max values
-	lambda_min = min(wavelength_solution_smooth, /nan)
-	lambda_max = max(wavelength_solution_smooth, /nan)
-
-	; find the median delta lambda
+	; find the median lambda step
  	diff_lambda = abs( wavelength_solution_smooth - shift(wavelength_solution_smooth, 1, 0) )
  	lambda_delta = double(median(diff_lambda))
+
+  ; find the median wavelength of the first and last pixel
+  lambda_first_pixel = median(wavelength_solution_smooth[0,*])
+  lambda_last_pixel = median(wavelength_solution_smooth[-1,*])
+
+  ; number of pixels along the vertical direction
+  N_pix_y = (size(wavelength_solution))[2]
+
+	; determine the min and max values
+  ; (go a few pixel beyond the values found above, to account for tilted slits)
+	lambda_min = lambda_first_pixel - 0.5*N_pix_y*lambda_delta
+	lambda_max = lambda_last_pixel + 0.5*N_pix_y*lambda_delta
 
  	; find the rounded values, on a logarithmic scale
  	; (the idea here is to try to have the same value for slightly different datasets)
