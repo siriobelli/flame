@@ -422,7 +422,7 @@ END
 
 
 
-PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
+PRO flame_getslits_trace, fuel=fuel, image=image, slits=slits, yshift=yshift, poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
 
 ;
 ; traces the top and bottom edges of a slit in the image and return the slit height and the
@@ -431,8 +431,10 @@ PRO flame_getslits_trace, image=image, slits=slits, yshift=yshift, poly_coeff=po
 
 
   ; cross-correlation: find approximate edges of the slit and make rectified image
-
   approx_edges = flame_getslits_crosscorr( image, slits.approx_bottom - yshift, slits.approx_top - yshift, rectified_image=rectified_image )
+
+  ; if the slit position were specified manually, then do not use the edges detected automatically
+  if fuel.input.slit_position_file ne 'none' then approx_edges = [slits.approx_bottom, slits.approx_top]
 
   ; split slit into three chunks and use cross-correlation to find slit edges
   N_pixel_x = (size(image))[1]
@@ -537,7 +539,7 @@ PRO flame_getslits_multislit, fuel=fuel
     old_slits_struc = fuel.slits[i_slit]
 
     ; trace slit
-    flame_getslits_trace, image=im, slits=old_slits_struc, yshift=yshift, $
+    flame_getslits_trace, fuel=fuel, image=im, slits=old_slits_struc, yshift=yshift, $
     poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
 
     ; expand the slit structure with new fields and update them
