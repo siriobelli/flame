@@ -492,6 +492,8 @@ PRO flame_getslits_multislit, fuel=fuel
     ; read the old slits structure - containing the info from the header
     old_slits_struc = fuel.slits[i_slit]
 
+    print, 'Finding the edges of slit ' + strtrim(old_slits_struc.number,2) + ' - ' + old_slits_struc.name
+
     ; cross-correlation: find approximate edges of the slit and make rectified image
     approx_edges = flame_getslits_crosscorr( image, old_slits_struc.approx_bottom - yshift, old_slits_struc.approx_top - yshift, rectified_image=rectified_image )
 
@@ -571,13 +573,15 @@ END
 ;******************************************************************
 
 
-PRO flame_getslits_writeds9, fuel=fuel
+PRO flame_getslits_writeds9, fuel=fuel, raw=raw
   ;
   ; write a ds9 region files that shows the slit edges
-  ;
+  ; if /raw is set then the individual "raw" measurements of the slit identifications
+  ; are shown, as opposed to the polynomial fit
 
   ; name of the region file
-  region_filename = 'slits.reg'
+  if keyword_set(raw) then region_filename = 'slits_raw.reg' else $
+    region_filename = 'slits.reg'
 
   ; read the slits structures
   slits = fuel.slits
@@ -595,27 +599,57 @@ PRO flame_getslits_writeds9, fuel=fuel
 
   for i_slit=0, n_elements(slits)-1 do begin
 
-    ; generate points from the polynomial fit
-    top_x = [ 8*indgen(N_pix_x/8), N_pix_x-1] ; one point every 8 pixels plus the last pixel
-    top_y = poly(top_x, slits[i_slit].bottom_poly) + slits[i_slit].height
-    bottom_x = top_x
-    bottom_y = poly(bottom_x, slits[i_slit].bottom_poly)
 
-    ; concatenate top and bottom points
-    all_x = [top_x, reverse(bottom_x)]
-    all_y = [top_y, reverse(bottom_y)]
+    if keyword_set(raw) then begin    ; show the actual measured points along the slit edges -------------
 
-    ; make the string with all the points
-    all_points = ''
-    for i=0,n_elements(all_x)-2 do all_points += strtrim(all_x[i],2) + ',' + cgnumber_formatter(all_y[i], decimals=1) + ','
-    ; add the last two points without the final comma
-    all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
+      ; find the points among the many NaNs
+      top_x = where( finite(slits[i_slit].slitid_top), /null )
+      top_y = slits[i_slit].slitid_top[top_x]
+      bottom_x = where( finite(slits[i_slit].slitid_bottom), /null )
+      bottom_y = slits[i_slit].slitid_bottom[bottom_x]
 
-    ; alternate colors for clarity
-    color_string = (['green', 'red'])[i_slit mod 2]
+      ; alternate colors for clarity
+      color_string = (['green', 'red'])[i_slit mod 2]
 
-    ; write the line corresponding to this slit
-    printf, lun, 'polygon(' + all_points + ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + ' - ' + slits[i_slit].name + '}'
+      ; radius of each point, in pixels
+      radius = '2'
+
+      ; write the line corresponding to each point for the top edge
+      if top_x ne !NULL then for i=0, n_elements(top_x)-1 do $
+        printf, lun, 'circle(' + strtrim(top_x[i],2) + ',' + strtrim(top_y[i],2) + ',' + radius + $
+        ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + '}'
+
+      ; write the line corresponding to each point for the bottom edge
+      if bottom_x ne !NULL then for i=0, n_elements(bottom_x)-1 do $
+        printf, lun, 'circle(' + strtrim(bottom_x[i],2) + ',' + strtrim(bottom_y[i],2) + ',' + radius + $
+        ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + '}'
+
+
+    endif else begin    ; show the polynomial fit to the slit edges --------------------------------
+
+      ; generate points from the polynomial fit
+      top_x = [ 8*indgen(N_pix_x/8), N_pix_x-1] ; one point every 8 pixels plus the last pixel
+      top_y = poly(top_x, slits[i_slit].bottom_poly) + slits[i_slit].height
+      bottom_x = top_x
+      bottom_y = poly(bottom_x, slits[i_slit].bottom_poly)
+
+      ; concatenate top and bottom points
+      all_x = [top_x, reverse(bottom_x)]
+      all_y = [top_y, reverse(bottom_y)]
+
+      ; make the string with all the points
+      all_points = ''
+      for i=0,n_elements(all_x)-2 do all_points += strtrim(all_x[i],2) + ',' + cgnumber_formatter(all_y[i], decimals=1) + ','
+      ; add the last two points without the final comma
+      all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
+
+      ; alternate colors for clarity
+      color_string = (['green', 'red'])[i_slit mod 2]
+
+      ; write the line corresponding to this slit
+      printf, lun, 'polygon(' + all_points + ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + ' - ' + slits[i_slit].name + '}'
+
+    endelse
 
   endfor
 
@@ -683,6 +717,7 @@ PRO flame_getslits, fuel
 
   ; write ds9 region file with the slit traces
   flame_getslits_writeds9, fuel=fuel
+  flame_getslits_writeds9, fuel=fuel, /raw
 
   ; write slitim (FITS file with slit image - just for diagnostics purpose)
   flame_getslits_write_slitim, fuel=fuel
