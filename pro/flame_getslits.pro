@@ -422,55 +422,7 @@ END
 
 
 
-PRO flame_getslits_trace, fuel=fuel, image=image, slits=slits, yshift=yshift, poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=use_sky_edge
-
-;
-; traces the top and bottom edges of a slit in the image and return the slit height and the
-; coefficients of a polynomial fit describing the *bottom* edge
-;
-
-
-  ; cross-correlation: find approximate edges of the slit and make rectified image
-  approx_edges = flame_getslits_crosscorr( image, slits.approx_bottom - yshift, slits.approx_top - yshift, rectified_image=rectified_image )
-
-  ; if the slit position were specified manually, then do not use the edges detected automatically
-  if fuel.input.slit_position_file ne 'none' then approx_edges = [slits.approx_bottom, slits.approx_top]
-
-  ; split slit into three chunks and use cross-correlation to find slit edges
-  N_pixel_x = (size(image))[1]
-  edges_left = flame_getslits_crosscorr( image[0:N_pixel_x/3-1, *], approx_edges[0], approx_edges[1])
-  edges_center = flame_getslits_crosscorr( image[N_pixel_x/3 : N_pixel_x*2/3-1, *], approx_edges[0], approx_edges[1])
-  edges_right = flame_getslits_crosscorr( image[N_pixel_x*2/3 : -1, *], approx_edges[0], approx_edges[1])
-
-
-  if keyword_set(use_sky_edge) then begin
-    ; identify top and bottom edge using sky background or flat lamp
-    top_edge = flame_getslits_trace_continuum(image, approx_edges[1], /top )
-    bottom_edge = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
-  endif else begin
-    ; identify top and bottom edge using OH lines (and in this case use the rectified image)
-    top_edge = flame_getslits_trace_skylines(rectified_image, approx_edges[1], /top )
-    bottom_edge = flame_getslits_trace_skylines(rectified_image, approx_edges[0], /bottom )
-  endelse
-
-  ; calculate the slit height
-  slit_height = median( top_edge - bottom_edge )
-  if ~finite(slit_height) then slit_height = median(top_edge) - median(bottom_edge)
-
-  ; combine the top and bottom edge measurements together (i.e. subtract slit_height from the top edge)
-  x_to_fit = [ where(finite(top_edge), /null ), where(finite(bottom_edge), /null) ]
-  y_to_fit = [ top_edge[ where(finite(top_edge), /null) ] - slit_height, bottom_edge[where(finite(bottom_edge), /null)] ]
-
-  ; fit a 3-rd order polynomial to the combined edges
-  poly_coeff = robust_poly_fit( x_to_fit, y_to_fit, 3 )
-
-
-END
-
-
-;******************************************************************
-
-FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slit_height, poly_coeff
+FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_bottom, slit_height, poly_coeff
 
     ; make the cutout structure
     cutout = { $
@@ -488,6 +440,8 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slit_height, poly_c
     ; add new fields to slit structure
     new_slit = create_struct( $
       'yshift', yshift, $
+      'slitid_top', slitid_top, $
+      'slitid_bottom', slitid_bottom, $
       'height', slit_height, $
       'bottom_poly', poly_coeff, $
       'rough_wavecal', ptr_new(/allocate_heap), $
@@ -521,13 +475,13 @@ PRO flame_getslits_multislit, fuel=fuel
   frame_filename = fuel.util.master_getslit
 
   ; read in the frame
-  im=readfits(frame_filename, hdr)
+  image=readfits(frame_filename, hdr)
 
   ; if the user specified the slit positions manually, then do not apply a shift
   if fuel.input.slit_position_file ne 'none' then $
     yshift = 0.0 else $
     ; get the overall vertical shift between the expected and the actual slit positions
-    yshift = flame_getslits_findshift( im, fuel.slits.approx_top, fuel.slits.approx_bottom )
+    yshift = flame_getslits_findshift( image, fuel.slits.approx_top, fuel.slits.approx_bottom )
 
   ; create array of new slit structures
   slits = []
@@ -538,12 +492,41 @@ PRO flame_getslits_multislit, fuel=fuel
     ; read the old slits structure - containing the info from the header
     old_slits_struc = fuel.slits[i_slit]
 
-    ; trace slit
-    flame_getslits_trace, fuel=fuel, image=im, slits=old_slits_struc, yshift=yshift, $
-    poly_coeff=poly_coeff, slit_height=slit_height, use_sky_edge=fuel.input.use_sky_edge
+    ; cross-correlation: find approximate edges of the slit and make rectified image
+    approx_edges = flame_getslits_crosscorr( image, old_slits_struc.approx_bottom - yshift, old_slits_struc.approx_top - yshift, rectified_image=rectified_image )
+
+    ; if the slit position were specified manually, then do not use the edges detected automatically
+    if fuel.input.slit_position_file ne 'none' then approx_edges = [old_slits_struc.approx_bottom, old_slits_struc.approx_top]
+
+    ; split slit into three chunks and use cross-correlation to find slit edges
+    N_pixel_x = (size(image))[1]
+    edges_left = flame_getslits_crosscorr( image[0:N_pixel_x/3-1, *], approx_edges[0], approx_edges[1])
+    edges_center = flame_getslits_crosscorr( image[N_pixel_x/3 : N_pixel_x*2/3-1, *], approx_edges[0], approx_edges[1])
+    edges_right = flame_getslits_crosscorr( image[N_pixel_x*2/3 : -1, *], approx_edges[0], approx_edges[1])
+
+    if keyword_set(fuel.input.use_sky_edge) then begin
+      ; identify top and bottom edge using sky background or flat lamp
+      slitid_top = flame_getslits_trace_continuum(image, approx_edges[1], /top )
+      slitid_bottom = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
+    endif else begin
+      ; identify top and bottom edge using OH lines (and in this case use the rectified image)
+      slitid_top = flame_getslits_trace_skylines(rectified_image, approx_edges[1], /top )
+      slitid_bottom = flame_getslits_trace_skylines(rectified_image, approx_edges[0], /bottom )
+    endelse
+
+    ; calculate the slit height
+    slit_height = median( slitid_top - slitid_bottom )
+    if ~finite(slit_height) then slit_height = median(slitid_top) - median(slitid_bottom)
+
+    ; combine the top and bottom edge measurements together (i.e. subtract slit_height from the top edge)
+    x_to_fit = [ where(finite(slitid_top), /null ), where(finite(slitid_bottom), /null) ]
+    y_to_fit = [ slitid_top[ where(finite(slitid_top), /null) ] - slit_height, slitid_bottom[where(finite(slitid_bottom), /null)] ]
+
+    ; fit a 3-rd order polynomial to the combined edges
+    poly_coeff = robust_poly_fit( x_to_fit, y_to_fit, 3 )
 
     ; expand the slit structure with new fields and update them
-    this_slit = flame_getslits_update_slit( fuel, old_slits_struc, yshift, slit_height, poly_coeff)
+    this_slit = flame_getslits_update_slit( fuel, old_slits_struc, yshift, slitid_top, slitid_bottom, slit_height, poly_coeff)
 
     ; add to array with the other slits
     slits = [slits, this_slit]
@@ -575,7 +558,7 @@ PRO flame_getslits_longslit, fuel=fuel
   slit_height = old_slits_struc.approx_top - old_slits_struc.approx_bottom
 
   ; expand the slit structure with new fields and update them
-  this_slit = flame_getslits_update_slit( fuel, old_slits_struc, !values.d_nan, slit_height, old_slits_struc.approx_bottom)
+  this_slit = flame_getslits_update_slit( fuel, old_slits_struc, !values.d_nan, !values.d_nan, !values.d_nan, slit_height, old_slits_struc.approx_bottom)
 
   ; save the slit structures in fuel
   new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:this_slit }
