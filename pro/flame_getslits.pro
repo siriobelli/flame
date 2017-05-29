@@ -524,7 +524,7 @@ PRO flame_getslits_multislit, fuel=fuel
 
     ; fit a 3-rd order polynomial to the combined edges
     ; NB: apply offset from the slit flat (should be zero if not using slit flat)
-    poly_coeff = robust_poly_fit( x_to_fit, y_to_fit + fuel.input.slit_flat_offset, 3 )
+    poly_coeff = robust_poly_fit( x_to_fit, y_to_fit + fuel.input.slitflat_offset, 3 )
 
     ; expand the slit structure with new fields and update them
     this_slit = flame_getslits_update_slit( fuel, old_slits_struc, yshift, slitid_top, slitid_bottom, slit_height, poly_coeff)

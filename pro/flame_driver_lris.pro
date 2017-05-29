@@ -60,7 +60,7 @@
 
   ; frames to be used for slit identification
   ;input.slitflat_filelist = 'slitflat.txt'
-  ;input.slit_flat_offset = 4
+  ;input.slitflat_offset = 4
 
   ; manual slit positions
   input.slit_position_file = 'slit_edges.reg'
