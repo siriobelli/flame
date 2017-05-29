@@ -58,6 +58,10 @@
   ;input.longslit = 1
   ;input.longslit_edge = [1133, 1179]
 
+  ; frames to be used for slit identification
+  ;input.slitflat_filelist = 'slitflat.txt'
+  ;input.slit_flat_offset = 4
+
   ; manual slit positions
   input.slit_position_file = 'slit_edges.reg'
 
