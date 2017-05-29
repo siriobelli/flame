@@ -68,9 +68,7 @@ FUNCTION flame_getslits_trace_continuum, image_in, approx_edge, top=top, bottom=
   if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
   if keyword_set(top) AND keyword_set(bottom) then message, 'Please select either /top or /bottom'
 
-  ; first, mask out bright sources and sky lines
   image = image_in
-  image[where(image GT median(image) + 0.5*stddev(image, /nan), /null)] = !values.d_nan
 
   mwrfits, image, 'test.fits', /create
 
@@ -106,7 +104,7 @@ FUNCTION flame_getslits_trace_continuum, image_in, approx_edge, top=top, bottom=
     profile = median(cutout_bin, dimension=1)
 
     ; detect the edge
-    derivative = abs(profile - shift(profile,1))
+    derivative = shift(profile,1) - profile
     derivative[0] = 0
     derivative[-1] = 0
     peak = max(derivative, peak_location)
@@ -140,7 +138,7 @@ FUNCTION flame_getslits_trace_continuum, image_in, approx_edge, top=top, bottom=
     profile = median(cutout_bin, dimension=1)
 
     ; detect the edge
-    derivative = abs(profile - shift(profile,1))
+    derivative = shift(profile,1) - profile
     derivative[0] = 0
     derivative[-1] = 0
     peak = max(derivative, peak_location)
