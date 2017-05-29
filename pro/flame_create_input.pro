@@ -22,7 +22,7 @@ FUNCTION flame_create_input
     reduce_only_oneslit : 0, $
     longslit: 0, $
     longslit_edge: [0,0], $
-    use_sky_edge : 0, $
+    trace_slit_with_skylines : 1, $
     rough_wavecal_R : [500, 1000, 3000], $
     clean_individual_frames : 0, $
     sigma_clip : 2.0, $

@@ -50,9 +50,9 @@
   ; if we don't have a star on the slit then we have to specify the dithering
   ;input.dither_filelist = 'input/dither.txt'
 
-  ; if you want to use the sky background to trace the slit edges
-  ; use if OH lines are not enough (e.g. in the K band or in the optical)
-  input.use_sky_edge = 1
+  ; set to zero if you want to use the sky background to trace the slit edges
+  ; for when OH lines are not enough (e.g. in the K band or in the optical)
+  input.trace_slit_with_skylines = 0
 
   ; for longslit
   ;input.longslit = 1

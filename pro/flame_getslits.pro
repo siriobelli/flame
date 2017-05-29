@@ -504,7 +504,7 @@ PRO flame_getslits_multislit, fuel=fuel
     edges_center = flame_getslits_crosscorr( image[N_pixel_x/3 : N_pixel_x*2/3-1, *], approx_edges[0], approx_edges[1])
     edges_right = flame_getslits_crosscorr( image[N_pixel_x*2/3 : -1, *], approx_edges[0], approx_edges[1])
 
-    if keyword_set(fuel.input.use_sky_edge) then begin
+    if fuel.input.trace_slit_with_skylines eq 0 then begin
       ; identify top and bottom edge using sky background or flat lamp
       slitid_top = flame_getslits_trace_continuum(image, approx_edges[1], /top )
       slitid_bottom = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
