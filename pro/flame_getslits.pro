@@ -518,7 +518,7 @@ END
 PRO flame_getslits_multislit, fuel=fuel
 
   ; frame to use to find the edges
-  frame_filename = (fuel.util.corrscience_filenames)[0]
+  frame_filename = fuel.util.master_getslit
 
   ; read in the frame
   im=readfits(frame_filename, hdr)

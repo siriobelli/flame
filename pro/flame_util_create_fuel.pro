@@ -80,6 +80,16 @@ FUNCTION flame_util_create_fuel, input
   filenames_arc = flame_create_fuel_loadfiles(input.arc_filelist)
   if keyword_set(filenames_arc) then print, 'Reading arc frames: ', filenames_arc
 
+  ; read slit-flat filenames
+  filenames_slitflat = flame_create_fuel_loadfiles(input.slitflat_filelist)
+  if keyword_set(filenames_slitflat) then print, 'Reading slit flat frames: ', filenames_slitflat
+
+  ; if specified, use the slit-flat for slit identification
+  if keyword_set(filenames_slitflat) then $
+    master_getslit = input.intermediate_dir + 'master_slitflat.fits' else $
+  ; otherwise use the observed frame in the middle of the set
+    master_getslit = corrscience_filenames[N_frames/2]
+
   ; check that the dither file exists and read it
   dither_filelist_norm = strlowcase( strtrim( input.dither_filelist, 2 ))
   if dither_filelist_norm EQ 'none' or dither_filelist_norm EQ '' then $
@@ -97,10 +107,12 @@ FUNCTION flame_util_create_fuel, input
     filenames_pixelflat: filenames_pixelflat, $
     filenames_illumflat: filenames_illumflat, $
     filenames_arc: filenames_arc, $
+    filenames_slitflat: filenames_slitflat, $
     master_dark: input.intermediate_dir + 'master_dark.fits', $
     master_pixelflat: input.intermediate_dir + 'master_pixelflat.fits', $
     master_illumflat: input.intermediate_dir + 'master_illumflat.fits', $
     master_arc: input.intermediate_dir + 'master_arc.fits', $
+    master_getslit: master_getslit, $
     dither_blind_positions: dither_blind_positions, $
     slitim_filename: 'slitim.fits', $
     flame_data_dir: data_dir, $

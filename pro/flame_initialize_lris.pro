@@ -211,11 +211,11 @@ FUNCTION flame_initialize_lris, input
 
   ; -----------------------------------------------------------------
 
-    ; read FITS header of first science frame
-    science_header = headfits(fuel.util.science_filenames[0])
+  ; read FITS header of first science frame
+  science_header = headfits(fuel.util.science_filenames[0])
 
-    ; read the instrument settings from the header
-    instrument = flame_initialize_lris_settings(science_header)
+  ; read the instrument settings from the header
+  instrument = flame_initialize_lris_settings(science_header)
 
   ; -----------------------------------------------------------------
   ; we need to convert the LRIS frames into the "normal" format
@@ -240,6 +240,16 @@ FUNCTION flame_initialize_lris, input
 
   ; update the file names in the fuel structure
   fuel.util.science_filenames = new_filenames
+
+  ; if provided, do the same to the slit flats
+  if fuel.util.filenames_slitflat ne !NULL then $
+    for i=0, n_elements(fuel.util.filenames_slitflat)-1 do begin
+      image = readmhdufits(fuel.util.filenames_slitflat[i], header=header, gaindata=gaindata)
+      image = transpose(image)
+      new_filename = lris_dir + file_basename(fuel.util.filenames_slitflat[i])
+      mwrfits, image, new_filename, header
+      fuel.util.filenames_slitflat[i] = new_filename
+    endfor
 
   ; -----------------------------------------------------------------
 

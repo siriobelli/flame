@@ -361,6 +361,11 @@ PRO flame_correct, fuel
   ; make bad pixel mask using darks and/or flats
   badpixel_mask = flame_correct_badpixel( fuel, master_dark, master_pixelflat )
 
+  ; create the master slit flat
+  if fuel.util.filenames_slitflat NE !NULL then $
+    flame_correct_median_combine, fuel.util.filenames_slitflat, fuel.util.master_getslit
+
+
   ; apply corrections ----------------------------------------------------------
 
   print, ''

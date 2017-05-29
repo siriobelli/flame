@@ -13,6 +13,7 @@ FUNCTION flame_create_input
     illumflat_filelist: 'none', $
     arc_filelist: 'none', $
     dither_filelist: 'none', $
+    slitflat_filelist: 'none', $
     slit_position_file: 'none', $
     AB_subtraction: 1, $
     star_y_A: 0, $
