@@ -9,20 +9,21 @@
 \BOOKMARK [3][-]{subsubsection.3.2.2}{Specify the x coordinates for the reference star}{subsection.3.2}% 9
 \BOOKMARK [3][-]{subsubsection.3.2.3}{Reduce only one slit}{subsection.3.2}% 10
 \BOOKMARK [3][-]{subsubsection.3.2.4}{Detection of slit edges with sky background}{subsection.3.2}% 11
-\BOOKMARK [3][-]{subsubsection.3.2.5}{Longslit observations}{subsection.3.2}% 12
-\BOOKMARK [2][-]{subsection.3.3}{Initialization}{section.3}% 13
-\BOOKMARK [1][-]{section.4}{Running the Data Reduction}{}% 14
-\BOOKMARK [2][-]{subsection.4.1}{flame\137diagnostics}{section.4}% 15
-\BOOKMARK [2][-]{subsection.4.2}{flame\137quickstack}{section.4}% 16
-\BOOKMARK [2][-]{subsection.4.3}{flame\137correct}{section.4}% 17
-\BOOKMARK [2][-]{subsection.4.4}{flame\137getslits}{section.4}% 18
-\BOOKMARK [2][-]{subsection.4.5}{flame\137cutout\137slits}{section.4}% 19
-\BOOKMARK [2][-]{subsection.4.6}{flame\137wavecal\137rough}{section.4}% 20
-\BOOKMARK [2][-]{subsection.4.7}{flame\137identify\137lines}{section.4}% 21
-\BOOKMARK [2][-]{subsection.4.8}{flame\137wavecal\137accurate}{section.4}% 22
-\BOOKMARK [2][-]{subsection.4.9}{flame\137skysub}{section.4}% 23
-\BOOKMARK [2][-]{subsection.4.10}{flame\137rectify}{section.4}% 24
-\BOOKMARK [2][-]{subsection.4.11}{flame\137combine}{section.4}% 25
-\BOOKMARK [1][-]{section.5}{Troubleshooting}{}% 26
-\BOOKMARK [2][-]{subsection.5.1}{Bad fit to sky lines}{section.5}% 27
-\BOOKMARK [2][-]{subsection.5.2}{Slit identification}{section.5}% 28
+\BOOKMARK [3][-]{subsubsection.3.2.5}{Detection of slit edges with slit flat field}{subsection.3.2}% 12
+\BOOKMARK [3][-]{subsubsection.3.2.6}{Longslit observations}{subsection.3.2}% 13
+\BOOKMARK [2][-]{subsection.3.3}{Initialization}{section.3}% 14
+\BOOKMARK [1][-]{section.4}{Running the Data Reduction}{}% 15
+\BOOKMARK [2][-]{subsection.4.1}{flame\137diagnostics}{section.4}% 16
+\BOOKMARK [2][-]{subsection.4.2}{flame\137quickstack}{section.4}% 17
+\BOOKMARK [2][-]{subsection.4.3}{flame\137correct}{section.4}% 18
+\BOOKMARK [2][-]{subsection.4.4}{flame\137getslits}{section.4}% 19
+\BOOKMARK [2][-]{subsection.4.5}{flame\137cutout\137slits}{section.4}% 20
+\BOOKMARK [2][-]{subsection.4.6}{flame\137wavecal\137rough}{section.4}% 21
+\BOOKMARK [2][-]{subsection.4.7}{flame\137identify\137lines}{section.4}% 22
+\BOOKMARK [2][-]{subsection.4.8}{flame\137wavecal\137accurate}{section.4}% 23
+\BOOKMARK [2][-]{subsection.4.9}{flame\137skysub}{section.4}% 24
+\BOOKMARK [2][-]{subsection.4.10}{flame\137rectify}{section.4}% 25
+\BOOKMARK [2][-]{subsection.4.11}{flame\137combine}{section.4}% 26
+\BOOKMARK [1][-]{section.5}{Troubleshooting}{}% 27
+\BOOKMARK [2][-]{subsection.5.1}{Bad fit to sky lines}{section.5}% 28
+\BOOKMARK [2][-]{subsection.5.2}{Slit identification}{section.5}% 29
