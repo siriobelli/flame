@@ -122,7 +122,9 @@ FUNCTION flame_util_create_fuel, input
     identify_lines_poly_degree: 5, $
     identify_lines_Nmin_lines: 6, $
     wavesolution_degree: 3, $
-    start_time : systime(/seconds) $
+    start_time: systime(/seconds), $
+    last_routine_time: systime(/seconds), $
+    last_routine_name: 'flame_util_create_fuel' $
    }
 
   ; create the fuel structure

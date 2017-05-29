@@ -699,13 +699,7 @@ END
 
 PRO flame_getslits, fuel
 
-	start_time = systime(/seconds)
-
-  print, ''
-  print, '-------------------------------------'
-  print, '---        flame_getslits         ---'
-  print, '-------------------------------------'
-  print, ''
+	flame_util_module_start, fuel, 'flame_getslit'
 
 
   ; identify all slits from the data, and write the fuel.slits structures
@@ -729,9 +723,6 @@ PRO flame_getslits, fuel
   endif
 
 
-	print, ''
-  print, 'flame_getslits took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

@@ -357,13 +357,7 @@ END
 
 PRO flame_combine, fuel
 
-		start_time = systime(/seconds)
-
-	  print, ''
-	  print, '-------------------------------------'
-	  print, '---         flame_combine         ---'
-	  print, '-------------------------------------'
-	  print, ''
+		flame_util_module_start, fuel, 'flame_combine'
 
 
  	; loop through all slits
@@ -380,10 +374,7 @@ PRO flame_combine, fuel
 	if n_elements(fuel.slits) GT 1 and fuel.input.AB_subtraction then flame_combine_multislit, fuel=fuel
 
 
-	print, ''
-  print, 'flame_combine took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+	flame_util_module_end, fuel
 
 
   print, '-------------------------------------'

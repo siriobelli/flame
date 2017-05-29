@@ -8,14 +8,7 @@ PRO flame_quickstack, fuel
 ; If some frames are missing the star trace, then the X position is also considered
 ;
 
-	start_time = systime(/seconds)
-
-  print, ''
-  print, '-------------------------------------'
-  print, '---       flame_quickstack        ---'
-  print, '-------------------------------------'
-  print, ''
-
+	flame_util_module_start, fuel, 'flame_quickstack'
 
 
 	; identify the A and B and X positions
@@ -103,9 +96,6 @@ PRO flame_quickstack, fuel
 	endelse
 
 
-	print, ''
-  print, 'flame_quickstack took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

@@ -104,13 +104,7 @@ END
 
 PRO flame_skysub, fuel
 
-		start_time = systime(/seconds)
-
-	  print, ''
-	  print, '-------------------------------------'
-	  print, '---         flame_skysub          ---'
-	  print, '-------------------------------------'
-	  print, ''
+	flame_util_module_start, fuel, 'flame_skysub'
 
 
 	; extract the slits structures
@@ -138,9 +132,6 @@ PRO flame_skysub, fuel
 	endfor
 
 
-	print, ''
-  print, 'flame_skysub took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

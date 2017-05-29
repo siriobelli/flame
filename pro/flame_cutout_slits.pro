@@ -60,13 +60,7 @@ END
 
 PRO flame_cutout_slits, fuel
 
-	start_time = systime(/seconds)
-
-  print, ''
-  print, '-------------------------------------'
-  print, '---      flame_cutout_slits       ---'
-  print, '-------------------------------------'
-  print, ''
+	flame_util_module_start, fuel, 'flame_cutout_slits'
 
 
   ; extract slits structure
@@ -100,9 +94,6 @@ PRO flame_cutout_slits, fuel
   endfor
 
 
-	print, ''
-  print, 'flame_cutout_slits took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

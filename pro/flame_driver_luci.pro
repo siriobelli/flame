@@ -109,8 +109,4 @@
 
   flame_combine, fuel
 
-
-  save, fuel, filename='fuel.sav'
-
-
 ;END

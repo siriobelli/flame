@@ -403,14 +403,7 @@ END
 
 PRO flame_wavecal_accurate, fuel
 
-		start_time = systime(/seconds)
-
-	  print, ''
-	  print, '-------------------------------------'
-	  print, '---    flame_wavecal_accurate     ---'
-	  print, '-------------------------------------'
-	  print, ''
-
+	flame_util_module_start, fuel, 'flame_wavecal_accurate'
 
 
 	; loop through all slits
@@ -451,9 +444,6 @@ PRO flame_wavecal_accurate, fuel
 	endfor
 
 
-	print, ''
-  print, 'flame_wavecal_accurate took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

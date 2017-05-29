@@ -444,13 +444,7 @@ END
 
 PRO flame_wavecal_rough, fuel
 
-	start_time = systime(/seconds)
-
-  print, ''
-  print, '-------------------------------------'
-  print, '---     flame_wavecal_rough       ---'
-  print, '-------------------------------------'
-  print, ''
+	flame_util_module_start, fuel, 'flame_wavecal_rough'
 
 
 	; extract the slits structures
@@ -473,9 +467,6 @@ PRO flame_wavecal_rough, fuel
   endfor
 
 
-	print, ''
-  print, 'flame_wavecal_rough took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

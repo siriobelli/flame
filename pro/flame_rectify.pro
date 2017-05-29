@@ -62,13 +62,7 @@ END
 
 PRO flame_rectify, fuel
 
-		start_time = systime(/seconds)
-
-	  print, ''
-	  print, '-------------------------------------'
-	  print, '---         flame_rectify         ---'
-	  print, '-------------------------------------'
-	  print, ''
+	flame_util_module_start, fuel, 'flame_rectify'
 
 
 	; loop through all slits
@@ -97,9 +91,6 @@ PRO flame_rectify, fuel
 	endfor
 
 
-	print, ''
-  print, 'flame_rectify took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

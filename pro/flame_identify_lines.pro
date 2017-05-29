@@ -415,13 +415,7 @@ END
 
 PRO flame_identify_lines, fuel
 
-	start_time = systime(/seconds)
-
-  print, ''
-  print, '-------------------------------------'
-  print, '---     flame_identify_lines      ---'
-  print, '-------------------------------------'
-  print, ''
+	flame_util_module_start, fuel, 'flame_identify_lines'
 
 
   ; avoid printing too much stuff (especially from GAUSSFIT)
@@ -480,9 +474,6 @@ PRO flame_identify_lines, fuel
 	!QUIET = quiet_state
 
 
-	print, ''
-  print, 'flame_identify_lines took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

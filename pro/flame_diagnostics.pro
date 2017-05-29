@@ -416,13 +416,7 @@ END
 
 PRO flame_diagnostics, fuel
 
-	start_time = systime(/seconds)
-
-  print, ''
-  print, '-------------------------------------'
-  print, '---      flame_diagnostics        ---'
-  print, '-------------------------------------'
-  print, ''
+  flame_util_module_start, fuel, 'flame_diagnostics'
 
 
   ; 1 - create the diagnostics structure
@@ -465,9 +459,6 @@ PRO flame_diagnostics, fuel
   fuel=new_fuel
 
 
-  print, ''
-  print, 'flame_diagnostics took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END

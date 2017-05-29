@@ -343,13 +343,7 @@ END
 
 PRO flame_correct, fuel
 
-	start_time = systime(/seconds)
-
-  print, ''
-  print, '-------------------------------------'
-  print, '---         flame_correct         ---'
-  print, '-------------------------------------'
-  print, ''
+	flame_util_module_start, fuel, 'flame_correct'
 
 
   ; create the master dark
@@ -446,9 +440,6 @@ PRO flame_correct, fuel
   endfor
 
 
-	print, ''
-  print, 'flame_correct took ', $
-    cgnumber_formatter( systime(/seconds) - start_time, decimals=2), ' seconds'
-  print, ''
+  flame_util_module_end, fuel
 
 END
