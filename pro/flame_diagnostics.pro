@@ -78,7 +78,9 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
   est_width = (est_seeing / 2.355) / fuel.instrument.pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
-  half_range = 6.0 * est_width
+  if fuel.input.star_y_window eq 0 then $
+    half_range = 6.0 * est_width else $
+    half_range = fuel.input.star_y_window / 2
 
   ; let's see if there is a star in the A position
   if fuel.input.star_y_A ne 0 then begin

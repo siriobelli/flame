@@ -20,6 +20,7 @@ FUNCTION flame_create_input
     star_y_A: 0, $
     star_y_B: 0, $
     star_x_range: [1000, 1200], $
+    star_y_window: 0, $
     reduce_only_oneslit : 0, $
     longslit: 0, $
     longslit_edge: [0,0], $
