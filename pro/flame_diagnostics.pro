@@ -152,7 +152,9 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   ;
 
   ; read frame number from file name
-  frame_num = (strsplit(frame_filename, '._-', /extract))[-2]
+  if strmatch(frame_filename, '*.gz') then $
+    frame_num = (strsplit(frame_filename, '._-', /extract))[-3] else $
+    frame_num = (strsplit(frame_filename, '._-', /extract))[-2]
 
   ; read in the frame
   frame_star = readfits(frame_filename, header, /silent)
