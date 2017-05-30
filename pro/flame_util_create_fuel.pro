@@ -122,7 +122,7 @@ FUNCTION flame_util_create_fuel, input
     linelist_filename: data_dir + 'line_list.dat', $
     wavecal_rough_continuum_degree: 0, $
     identify_lines_poly_degree: 5, $
-    identify_lines_Nmin_lines: 6, $
+    identify_lines_Nmin_lines: 8, $
     wavesolution_degree: 3, $
     start_time: systime(/seconds), $
     last_routine_time: systime(/seconds), $
