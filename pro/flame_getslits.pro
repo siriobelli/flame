@@ -186,6 +186,10 @@ FUNCTION flame_getslits_trace_skylines, image, approx_edge, top=top, bottom=bott
   if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
   if keyword_set(top) AND keyword_set(bottom) then message, 'Please select either /top or /bottom'
 
+
+  ; extract cutout
+  ; ---------------------------------------------------
+
   ; read in the x-size of the image
   sz = size(image)
   N_pixel_x = sz[1]
@@ -201,31 +205,49 @@ FUNCTION flame_getslits_trace_skylines, image, approx_edge, top=top, bottom=bott
   ; if instead we want the bottom edge, simply flip vertically the cutout
   if keyword_set(bottom) then cutout = reverse(cutout, 2)
 
-  ; get rid of negative values and NaNs
-  cutout[ where(cutout LT 0.0 or ~finite(cutout), /null) ] = 0.0
 
-  ; extract a spectrum from the fiducial slit regions
+  ; identify the OH lines
+  ; ---------------------------------------------------
+
+  ; extract a spectrum from the fiducial slit region
   sky_spectrum = median(cutout[*,0:cutout_size/4], dimension=2)
 
   ; subtract the continuum from the sky spectrum (particularly important in the K band)
   sky_spectrum_padded = [replicate(0d,200), sky_spectrum, replicate(0d,200)]
   sky_spectrum_continuum = (median(sky_spectrum_padded, 200))[200:-201]
-  sky_spectrum -= sky_spectrum_continuum
+  sky_spectrum_zeroed = sky_spectrum - sky_spectrum_continuum
 
   ; measure the sky flux in between the OH lines
-  mmm, sky_spectrum, level_betweenlines, sigma_betweenlines
+  mmm, sky_spectrum_zeroed, level_betweenlines, sigma_betweenlines
 
-  ; consider as a sky line all those pixels that are more than 3 sigma above the normal level of between-lines sky
-  w_OH = where(sky_spectrum GT level_betweenlines + 3.0*sigma_betweenlines, /null)
+  ; consider as a sky line all those pixels that are more than 2 sigma above the normal level of between-lines sky
+  w_OH = where(sky_spectrum_zeroed GT level_betweenlines + 2.0*sigma_betweenlines, /null)
   if w_OH eq !NULL then w_OH = -1 ; it won't be used anyway
+
+  ; make a 2D mask of the OH lines
+  mask_OH = bytarr(N_pixel_x)
+  mask_OH[w_OH] = 1
+  mask2D_OH = mask_OH # replicate(1, cutout_size)
+
+  ; get rid of all pixels that are not along a OH line
+  cutout[where(mask2D_OH eq 0, /null)] = 0.0
+
+
+  ; make a binary map of the emission lines
+  ; ---------------------------------------------------
+
+  ; extract a spectrum from the fiducial "outside-slit" region
+  outside_spectrum = median(cutout[*,-cutout_size/4:-1], dimension=2)
+
+  ; this represent the zero-level. Subtract it from each column
+  cutout -= outside_spectrum # replicate(1, cutout_size)
 
   ; for each pixel column, take the ratio of each pixel to the fiducial sky value in the slit
   sky_spectrum_2d = sky_spectrum # replicate(1, cutout_size)
   flux_ratio = cutout / sky_spectrum_2d
-  flux_ratio[where(sky_spectrum_2d eq 0.0, /null)] = 1.0
 
-  ; now delete all pixel with flux less than 50% of what is found in the OH line of the corresponding pixel column
-  flux_ratio[ where(flux_ratio LT 0.50, /null) ] = 0.0
+  ; now delete all pixel with flux less than 25% of what is found in the OH line of the corresponding pixel column
+  flux_ratio[ where(flux_ratio LT 0.25, /null) ] = 0.0
 
   ; because of bad pixels, there might be some zeroes on the OH lines. Let's median smooth everything along the x axis
   flux_ratio_sm = median(flux_ratio, 3, dimension=2)
@@ -234,7 +256,10 @@ FUNCTION flame_getslits_trace_skylines, image, approx_edge, top=top, bottom=bott
   binary_mask = flux_ratio_sm
   binary_mask[ where(binary_mask GT 0.0, /null) ] = 1.0
 
-  ; FIND EDGES
+
+  ; find the slit edges
+  ; ---------------------------------------------------
+
   ; here is my definition of an edge: you need at least X consecutive "bright" pixels just below the edge,
   ; and at least X consecutive "dark" pixels above the edge.
   ; set X:
