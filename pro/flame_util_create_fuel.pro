@@ -61,7 +61,9 @@ FUNCTION flame_util_create_fuel, input
   print, strtrim(N_frames, 2) + ' science frames found'
 
   ; make filenames for the corrected science frames
-  corrscience_basenames = file_basename(science_filenames, '.fits') + '_corr.fits'
+  if strmatch(science_filenames[0], '*.fits.gz') then $
+    corrscience_basenames = file_basename(science_filenames, '.fits.gz') + '_corr.fits' else $
+    corrscience_basenames = file_basename(science_filenames, '.fits') + '_corr.fits'
   corrscience_filenames = file_expand_path(input.intermediate_dir + '/frames/' + corrscience_basenames)
 
   ; read dark filenames
