@@ -374,7 +374,7 @@ PRO flame_correct, fuel
     frame = readfits(fuel.util.science_filenames[i_frame], header)
 
     ; CORRECTION 0: cosmic rays
-    if fuel.input.clean_individual_frames then begin
+    if fuel.util.clean_individual_frames then begin
 
       ; identify cosmic rays using L.A. Cosmic
       la_cosmic, fuel.util.science_filenames[i_frame], gain=fuel.instrument.gain, readn=fuel.instrument.readnoise, $

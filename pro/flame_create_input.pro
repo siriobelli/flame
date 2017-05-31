@@ -22,8 +22,6 @@ FUNCTION flame_create_input
     reduce_only_oneslit : 0, $
     longslit: 0, $
     longslit_edge: [0,0], $
-    clean_individual_frames : 0, $
-    sigma_clip : 2.0, $
     max_slitwidth_arcsec : 0.0, $
     intermediate_dir : 'intermediate/', $
     output_dir: 'output/' $

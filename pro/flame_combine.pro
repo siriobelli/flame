@@ -88,7 +88,7 @@ END
 PRO flame_combine_oneslit, slit=slit, fuel=fuel
 
 	; parameter for sigma-clipping when combining the frames
-	sigma_clip = fuel.input.sigma_clip
+	sigma_clip = fuel.util.combine_sigma_clip
 
 	; prefix for output file names
 	filename_prefix = fuel.input.output_dir + 'slit' + string(slit.number, format='(I02)') + '-' + slit.name
