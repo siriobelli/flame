@@ -447,6 +447,11 @@ FUNCTION flame_initialize_luci, input
 
   endelse
 
+  ; scale the wavecal_rough_R to the spectral resolution - useful for argos
+  fuel.util.wavecal_rough_R = [ 0.05*slits[0].approx_R > 500.0 , $
+		0.15*slits[0].approx_R > 1000.0 , slits[0].approx_R < 5000.0 ]
+
+
   ; save both instrument and slits in the fuel structure
   new_fuel = { input:fuel.input, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
 

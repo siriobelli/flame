@@ -251,13 +251,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 
 	range_pixel_scale = this_slit.range_pixel_scale
   range_start_lambda = this_slit.range_lambda0
-
-	; we should use fuel.util.wavecal_rough_R for more flexibility
-
-	rough_wavecal_R = [ 0.05*this_slit.approx_R > 500.0 , $
-		0.15*this_slit.approx_R > 1000.0 , $
-		this_slit.approx_R ]
-
+	rough_wavecal_R = fuel.util.wavecal_rough_R
 
 	  ; first step: smoothed spectrum, find zero-point and pixel scale
 		;---------------------
