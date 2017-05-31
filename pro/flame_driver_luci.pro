@@ -30,41 +30,6 @@
   ; and specify the y-range in pixel that you want to reduce
   input.longslit_edge = [0, 0]
 
-  ; text file containing the list of FITS files with dark frames
-  input.dark_filelist = 'none'
-
-  ; text file containing the list of FITS files for pixel-flat field
-  input.pixelflat_filelist = 'none'
-
-  ; text file containing the list of FITS files for illumination-flat field
-  input.illumflat_filelist = 'none'
-
-  ; text file containing the list of FITS files with arcs for wavelength calibration
-  input.arc_filelist = 'none'
-
-  ; if we don't have a star on the slit then we have to specify the dithering
-  ; in this case, you must set input.star_y_A and input.star_y_B to 0
-  input.dither_filelist = 'none'
-
-  ; manual slit positions
-  input.slit_position_file = 'none'
-
-  ; text file containing the list of FITS files for slit-flat field
-  input.slitflat_filelist = 'none'
-
-  ; vertical offset, in pixel, between the slit-flat field and the science frames
-  input.slitflat_offset = 0
-
-  ; specify the directory for the intermediate products
-  input.intermediate_dir = 'intermediate/'
-
-  ; specify the directory for the final output
-  input.output_dir = 'output/'
-
-  ; for when the alignment boxes have varying width (otherwise leave to 0)
-  input.max_slitwidth_arcsec = 0.0
-
-
 
   ;****************************************************
   ;****************************************************
@@ -75,51 +40,6 @@
 
   ; initialize and create the fuel structure
   fuel = flame_initialize_luci(input)
-
-  ; Here are further options for special cases or troubleshooting.
-  ; Usually the settings in fuel.util should be left to their default values
-
-  ; change the range in x-coordinates used to extract the star traces:
-  ; util.star_x_range = [100, 500]
-
-  ; change the extension of the range in y-coordinates used to fit the star traces:
-  ; util.star_y_window = 40
-
-  ; set this to zero if you want to use the sky background to trace the slit edges
-  ; instead of the OH lines (e.g. in the K band or in the optical or with slit flats)
-  ; fuel.util.trace_slit_with_skylines = 0
-
-  ; change the spectral resolution used in the successive steps during wavecal_rough
-  ; fuel.util.wavecal_rough_R = [500, 1000, 3000]
-
-  ; identify cosmic rays using L.A.Cosmic in each science frame
-  ; fuel.util.clean_individual_frames = 1
-
-  ; subtract sky continuum before wavecal_rough. This specifies the polynomial degree
-  ; fuel.util.wavecal_rough_continuum_degree = 5
-
-  ; change the minimum number of emission lines required for a valid wavelength
-  ; solution in one pixel row during identify_lines
-  ; fuel.util.identify_lines_Nmin_lines = 4
-
-  ; change the polynomial degree of the wavelength solution for one pixel row
-  ; during identify_lines
-  ; fuel.util.identify_lines_poly_degree = 2
-
-  ; change the degree of the 2D wavelength solution describing one entire cutout
-  ; fuel.util.wavesolution_degree = 3
-
-  ; change the threshold for sigma-clipping of each pixel when combining all the frames
-  ; fuel.util.combine_sigma_clip = 2.0
-
-
-
-  ; check that everything is good
-  ;help, fuel.input
-  ;help, fuel.util
-  ;help, fuel.instrument
-  ;help, fuel.slits
-
 
 
   ;****************************************************
