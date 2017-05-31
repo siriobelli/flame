@@ -52,7 +52,7 @@
 
   ; set to zero if you want to use the sky background to trace the slit edges
   ; for when OH lines are not enough (e.g. in the K band or in the optical)
-  ; input.trace_slit_with_skylines = 0
+  ; fuel.util.trace_slit_with_skylines = 0
 
   ; for longslit
   ;input.longslit = 1
