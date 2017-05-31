@@ -384,6 +384,11 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
     ; sort slit_y
     slit_y = slit_y[ sort(slit_y) ]
 
+    ; check that the number of slit edges is correct
+    if n_elements(slit_y) NE 2*n_elements(slits) then $
+      message, input.slit_position_file + ' must contain exactly ' + $
+      strtrim(2*n_elements(slits), 2) + ' slit edges'
+
     ; now sort the slits from the header by target position
     s = sort(slits.approx_target)
 
