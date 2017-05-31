@@ -45,10 +45,10 @@
   ;input.reduce_only_oneslit = 5
 
   ; if you want to change the range in x-coordinates used to extract the star traces:
-  ;input.star_x_range = [100, 500]
+  ;util.star_x_range = [100, 500]
 
   ; if you want to change the window in y-coordinates used to extract the star traces:
-  ;input.star_y_window = 40
+  ;util.star_y_window = 40
 
   ; if we don't have a star on the slit then we have to specify the dithering
   ;input.dither_filelist = 'input/dither.txt'
