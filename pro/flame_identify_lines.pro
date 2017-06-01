@@ -256,21 +256,21 @@ END
 ;*******************************************************************************
 
 
-PRO flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
-	 approx_lambda_axis=approx_lambda_axis, $
+PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
+	 slit=slit, $
 	 speclines=speclines, wavelength_solution=wavelength_solution
 
 	print, ' '
-	print, 'Identifying lines in ', slit_filename
+	print, 'Identifying lines in ', filename
 
-	cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_speclines.ps'), /nomatch
+	cgPS_open, flame_util_replace_string(filename, '.fits', '_speclines.ps'), /nomatch
 
 
 	; load the slit image
 	;-----------------------------------------------------------------------------------------------------------
 
 	; read in slit
-	im = readfits(slit_filename, hdr)
+	im = readfits(filename, hdr)
 
 	; how many pixels on the spatial direction
 	N_spatial_pix = (size(im))[2]
@@ -281,26 +281,47 @@ PRO flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
 	; create the x-axis in pixel coordinates
 	pix_axis = dindgen( N_lambda_pix )
 
-	; fit all the pixel rows
+
+  ; find a zeroth-order solution starting with the rough_wavecal
+	;--------------------------------------------------------------------------------------------------------------
+
+  ; setup the order to use for the pixel rows:
+	; start from the central row and go up until the top, then start from center and go down
+	row_number = indgen(N_spatial_pix)
+	sorted_rows = [ row_number[N_spatial_pix/2: N_spatial_pix-1] , reverse(row_number[0:N_spatial_pix/2-1]) ]
+
+	; identify first row of bottom half
+	i0_bottom = row_number[N_spatial_pix/2-1]
+
+  ; extract the sky spectrum from a bunch of central pixel rows
+  central_skyspec = median( im[*, sorted_rows[0]:sorted_rows[5]], dimension=2 )
+
+  ; measure the overall shift since the rough_wavecal may have
+  ; been obtained on different spatial positions or different frames
+  lag = indgen(100)-50 ; up to 50 pixels each direction
+  crosscorr = c_correlate( median(central_skyspec, 3), median(*slit.rough_skyspec, 3), lag)
+  max_crosscorr = max( crosscorr, max_ind, /nan)
+  delta = -lag[max_ind]
+  print, delta, max_crosscorr
+
+  approx_lambda_axis = shift(*slit.rough_wavecal, delta)
+  if delta GT 0 then approx_lambda_axis[0:delta] = !values.d_nan
+  if delta LT 0 then approx_lambda_axis[-1-abs(delta):-1] = !values.d_nan
+
+
+  ; fit all the pixel rows
 	;--------------------------------------------------------------------------------------------------------------
 
 	; create the 2D array that will contain the wavelength value for each pixel
 	wavelength_solution = im
 	wavelength_solution[*] = !values.d_nan
 
-	; load line list
+  ; load line list
 	readcol, fuel.util.linelist_filename, line_list, format='D', /silent
 
-	; approximate sky line width (assuming one arcsec slit width)
+  ; approximate sky line width (assuming one arcsec slit width)
 	approximate_linewidth_um = median(approx_lambda_axis) / (2.36 * fuel.instrument.resolution_slit1arcsec)
 	linewidth = approximate_linewidth_um / ( approx_lambda_axis[3] - approx_lambda_axis[2] )
-
-	; start from the central row and go up until the top row, then start from center and go down
-	row_number = indgen(N_spatial_pix)
-	sorted_rows = [ row_number[N_spatial_pix/2: N_spatial_pix-1] , reverse(row_number[0:N_spatial_pix/2-1]) ]
-
-	; identify first row of bottom half
-	i0_bottom = row_number[N_spatial_pix/2-1]
 
 	; as initial guess for the wavelength axis, use what found during the rough wavecal
 	wavelength_axis_guess = approx_lambda_axis
@@ -428,9 +449,6 @@ PRO flame_identify_lines, fuel
 	  print, 'Finding emission lines for calibration for slit ', strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
 		print, ' '
 
-		; the initial guess for the first frame is from the rough wavelength calibration
-		guess_lambda_axis = *(fuel.slits[i_slit]).rough_wavecal
-
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
 
@@ -441,8 +459,8 @@ PRO flame_identify_lines, fuel
 				this_slit = fuel.slits[i_slit]
 
 				; identify and measure the speclines
-				flame_identify_find_speclines, fuel=fuel, slit_filename=slit_filename, $
-					approx_lambda_axis=guess_lambda_axis, $
+				flame_identify_find_speclines, fuel=fuel, filename=slit_filename, $
+					slit=this_slit, $
 					speclines=speclines, wavelength_solution=wavelength_solution
 
 				; save the speclines in the slit structure
@@ -460,11 +478,6 @@ PRO flame_identify_lines, fuel
 					flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
 					fuel.slits[i_slit] = this_slit
 				endif
-
-				; use the median wavecal of the central five pixel rows as guess for the next frame
-				central_row = (size(wavelength_solution))[2]/2
-				guess_lambda_axis = median( wavelength_solution[ * , central_row-2:central_row+2 ], dimension=2 )
-
 
 		endfor
 
