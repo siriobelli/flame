@@ -49,12 +49,12 @@ PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_
   ; *************************** check headers ***************************
 
   ; check that the units are the same
-  if n_elements(uniq(cunit1)) NE 1 then message, 'Wavelength units are different: ', cunit1
+  if n_elements(uniq(cunit1)) NE 1 then message, 'Wavelength units are different: ' + strjoin(string(cunit1))
 
   ; check that the wavelength axis is the same for all files
-  if n_elements(uniq(crval1)) NE 1 then message, 'Wavelength axes are different: CRVAL1 = ', crval1
-  if n_elements(uniq(crpix1)) NE 1 then message, 'Wavelength axes are different: CRPIX1 = ', crpix1
-  if n_elements(uniq(cdelt1)) NE 1 then message, 'Wavelength axes are different: CDELT1 = ', cdelt1
+  if n_elements(uniq(crval1)) NE 1 then message, 'Wavelength axes are different: CRVAL1 = ' + strjoin(string(crval1))
+  if n_elements(uniq(crpix1)) NE 1 then message, 'Wavelength axes are different: CRPIX1 = ' + strjoin(string(crpix1))
+  if n_elements(uniq(cdelt1)) NE 1 then message, 'Wavelength axes are different: CDELT1 = ' + strjoin(string(cdelt1))
   print, 'Wavelength axis are identical for all files.'
 
   ; find the smallest common dimensions

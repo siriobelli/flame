@@ -271,7 +271,7 @@ END
 
 PRO flame_combine_multislit, fuel=fuel
 ;
-; if the dithering length matches the distance between two slits, then it mean-stack
+; if the dithering length matches the distance between two slits, then it means
 ; that these are the A and B positions for the same object, and we need to combine them
 ;
 
@@ -286,7 +286,7 @@ PRO flame_combine_multislit, fuel=fuel
 	; dithering length (by definition; see flame_combine_oneslit)
 	dithering_length = abs( floor(diagnostics[w_A[0]].position) - floor(diagnostics[w_B[0]].position) )
 
-	; number of pixel along the spatial position
+	; number of pixels along the spatial position
 	Nx = n_elements(*fuel.slits[0].rough_wavecal)
 
 	; calculate the vertical coordinate of the geometric center of each slit
@@ -312,7 +312,10 @@ PRO flame_combine_multislit, fuel=fuel
 		mindelta = min(abs(delta), j_slit)
 
 		; if the dithering length falls within the central 50% of the slit, then we have a match
-		if abs(mindelta) LT 0.5 then begin
+		if abs(mindelta) LT 0.5 then $
+			; still need to check that these two slits are horizontally aligned
+			; do this by comparing the wavelength solutions
+			if fuel.slits[i_slit].outlambda_min eq fuel.slits[j_slit].outlambda_min then begin
 
 			print, ''
 			print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name + $
