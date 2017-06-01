@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  29 MAY 2017 17:49
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  1 JUN 2017 13:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -353,106 +353,114 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <6> on input line 26.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 69.
+(Font)              <10> on input line 72.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 69.
+(Font)              <7> on input line 72.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 69.
+(Font)              <5> on input line 72.
  [1
 
 {/afs/mpe.mpg.de/home/sirio/.texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-LaTeX Font Info:    Try loading font information for OMS+lmr on input line 88.
+LaTeX Font Info:    Try loading font information for OMS+lmr on input line 95.
 
 (/usr/share/texmf/tex/latex/lm/omslmr.fd
 File: omslmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `OMS/lmr/m/n' in size <10> not available
-(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 88.
+(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 95.
+ [2]
+Table 1 has been set to width 461.5671pt
 
-Table 1 has been set to width 493.54239pt
-
-Overfull \hbox (148.54239pt too wide) in paragraph at lines 131--152
+Overfull \hbox (116.5671pt too wide) in paragraph at lines 162--183
  [][] 
  []
 
-[2] [3] [4]
+[3] [4]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 279.
- [5] <diagnostics.pdf, id=198, 503.8825pt x 392.46625pt>
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 257.
+ <diagnostics.pdf, id=180, 503.8825pt x 392.46625pt>
 File: diagnostics.pdf Graphic file (type pdf)
 
 <use diagnostics.pdf>
-Package pdftex.def Info: diagnostics.pdf used on input line 286.
+Package pdftex.def Info: diagnostics.pdf used on input line 264.
 (pdftex.def)             Requested size: 310.4979pt x 241.84138pt.
- [6 <./diagnostics.pdf>] [7]
-<slits.png, id=220, 618.05907pt x 618.05907pt>
+ [5] [6 <./diagnostics.pdf>]
+<slits.png, id=207, 618.05907pt x 618.05907pt>
 File: slits.png Graphic file (type png)
  <use slits.png>
-Package pdftex.def Info: slits.png used on input line 339.
+Package pdftex.def Info: slits.png used on input line 317.
 (pdftex.def)             Requested size: 241.49895pt x 241.49474pt.
- [8 <./slits.png>]
-Overfull \hbox (42.22884pt too wide) in paragraph at lines 365--366
+ [7] [8 <./slits.png>]
+Overfull \hbox (42.22884pt too wide) in paragraph at lines 343--344
 \T1/lmr/m/n/10 ing it to the model. This can be done be set-ting \T1/lmtt/m/n/1
 0 util.wavecal_rough_continuum_degree
  []
 
-<wavecal1.pdf, id=227, 498.86375pt x 422.57875pt>
+<wavecal1.pdf, id=224, 498.86375pt x 422.57875pt>
 File: wavecal1.pdf Graphic file (type pdf)
  <use wavecal1.pdf>
-Package pdftex.def Info: wavecal1.pdf used on input line 371.
+Package pdftex.def Info: wavecal1.pdf used on input line 349.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
 
-<wavecal2.pdf, id=228, 498.86375pt x 422.57875pt>
+<wavecal2.pdf, id=225, 498.86375pt x 422.57875pt>
 File: wavecal2.pdf Graphic file (type pdf)
  <use wavecal2.pdf>
-Package pdftex.def Info: wavecal2.pdf used on input line 373.
+Package pdftex.def Info: wavecal2.pdf used on input line 351.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
 
-<wavecal3.pdf, id=229, 498.86375pt x 422.57875pt>
+<wavecal3.pdf, id=226, 498.86375pt x 422.57875pt>
 File: wavecal3.pdf Graphic file (type pdf)
  <use wavecal3.pdf>
-Package pdftex.def Info: wavecal3.pdf used on input line 375.
+Package pdftex.def Info: wavecal3.pdf used on input line 353.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
- [9]
-<wavecal_accurate.pdf, id=241, 510.90875pt x 422.57875pt>
+
+<wavecal_accurate.pdf, id=228, 510.90875pt x 422.57875pt>
 File: wavecal_accurate.pdf Graphic file (type pdf)
 
 <use wavecal_accurate.pdf>
-Package pdftex.def Info: wavecal_accurate.pdf used on input line 395.
+Package pdftex.def Info: wavecal_accurate.pdf used on input line 373.
 (pdftex.def)             Requested size: 241.49895pt x 199.74689pt.
- [10 <./wavecal1.pdf> <./wavecal2.pdf> <./wavecal3.pdf>] [11 <./wavecal_accurat
-e.pdf>]
-Overfull \hbox (31.08255pt too wide) in paragraph at lines 441--442
-\T1/lmr/m/n/10 thresh-old num-ber by chang-ing the vari-able \T1/lmtt/m/n/10 fl
-ame.util.identify_lines_Nmin_lines\T1/lmr/m/n/10 .
+ [9 <./wavecal1.pdf> <./wavecal2.pdf> <./wavecal3.pdf>] [10 <./wavecal_accurate
+.pdf>]
+Overfull \hbox (25.83257pt too wide) in paragraph at lines 421--422
+\T1/lmr/m/n/10 thresh-old num-ber by chang-ing the vari-able \T1/lmtt/m/n/10 fu
+el.util.identify_lines_Nmin_lines\T1/lmr/m/n/10 .
  []
 
 
-Overfull \hbox (60.40678pt too wide) in paragraph at lines 441--442
+Overfull \hbox (55.1568pt too wide) in paragraph at lines 421--422
 \T1/lmr/m/n/10 tions. This can be done by chang-ing the vari-able \T1/lmtt/m/n/
-10 flame.util.identify_lines_poly_degree\T1/lmr/m/n/10 . 
+10 fuel.util.identify_lines_poly_degree\T1/lmr/m/n/10 . 
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 466.
+[11]
+Table 2 has been set to width 493.54239pt
+
+Overfull \hbox (148.54239pt too wide) in paragraph at lines 469--475
+ [][] 
+ []
+
 [12]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 466.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 505.
+ [13]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 505.
  (./manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 466.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 466.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 505.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 505.
 Package rerunfilecheck Info: File `manual.out' has not changed.
-(rerunfilecheck)             Checksum: 52E2B105C30C4E2DB0A0C797BD652211;2055.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 466.
+(rerunfilecheck)             Checksum: 85D633E2CF06172326A709601D7CF726;1906.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 505.
  ) 
 Here is how much of TeX's memory you used:
- 7059 strings out of 494946
- 103740 string characters out of 6177758
- 207442 words of memory out of 5000000
- 10117 multiletter control sequences out of 15000+600000
+ 7071 strings out of 494946
+ 103874 string characters out of 6177758
+ 208756 words of memory out of 5000000
+ 10124 multiletter control sequences out of 15000+600000
  55418 words of font info for 46 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  29i,8n,40p,951b,914s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dv
-ips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share
+ips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}{/usr/share
 /texmf/fonts/enc/dvips/lm/lm-mathsy.enc}</usr/share/texmf/fonts/type1/public/lm
 /lmbx10.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texm
 f/fonts/type1/public/lm/lmmi10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr1
@@ -462,10 +470,10 @@ sr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/pub
 lic/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/shar
 e/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/public/l
 m/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.pfb>
-Output written on manual.pdf (12 pages, 1158893 bytes).
+Output written on manual.pdf (13 pages, 1159724 bytes).
 PDF statistics:
- 351 PDF objects out of 1000 (max. 8388607)
- 309 compressed objects within 4 object streams
- 88 named destinations out of 1000 (max. 500000)
- 263 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 360 PDF objects out of 1000 (max. 8388607)
+ 317 compressed objects within 4 object streams
+ 93 named destinations out of 1000 (max. 500000)
+ 255 words of extra memory for PDF output out of 10000 (max. 10000000)
 

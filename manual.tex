@@ -34,8 +34,9 @@
 
 
 \section{Introduction}
+\label{sec:introudction}
 
-\flame\ is a pipeline for reducing near-infrared multi-object spectroscopic data, written in IDL. Although created specifically for the LUCI instrument at LBT, it has been designed in a modular way and can be easily adapted to work with the data produced by different instruments.
+\flame\ is a pipeline for reducing near-infrared multi-object spectroscopic data, written in IDL. Although created specifically for the LUCI instrument at LBT, it has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. The present document describes in detail the reduction of LUCI data. Section \ref{sec:other_instruments} summarizes the different settings needed for the reduction of data taken with different instruments.
 
 
 
@@ -50,6 +51,8 @@
 
 
 \section{Installation}
+\label{sec:installation}
+
 
 \subsection{Requirements}
 
@@ -61,7 +64,7 @@ The following three external IDL libraries must be installed before running \fla
 \end{enumerate}
 Make sure to have the most recent versions of these libraries (at least more recent than the January 2016 release).
 
-Other third-party routines used by \flame\ are included in the distribution, in the flame/lib/ directory. These are the B-spline routines from the \texttt{idlutils} library.
+Other third-party routines used by \flame\ are included in the distribution, in the flame/lib/ directory. These are the B-spline routines from the \texttt{idlutils} library, the L.A.Cosmic routine written by Joshua Bloom and Pieter van Dokkum, and the readmhdufits routine written by Marc Kassis.
 
 
 \subsection{Download}
@@ -82,45 +85,73 @@ Download the \flame\ IDL code from \url{http://siriobelli.github.io/flame/}. Eit
 \newpage
 
 \section{Setting up the Data Reduction}
+\label{sec:setup}
+
+
+\subsection{Basic input}
 
 Go to the directory that you want to use for the reduction of a data set (it is recommended to create a new directory for this purpose). Then:
 \begin{itemize}
-\item Copy the file \texttt{flame\_driver.pro} from the flame/pro/ directory to the current directory.
-\item Create an ASCII file with, in each line, the full name (including absolute path) of a raw science file (e.g., science.txt)
+\item Copy the file \texttt{flame\_driver\_luci.pro} from the flame/pro/ directory to the current directory.
+\item Create an ASCII file (e.g., science.txt) with, in each line, the full name (including absolute path) of a raw science file.
 \item \emph{(optional)} Create additional ASCII files with the names of the calibration frames (e.g., darks.txt, flats.txt, etc.)
 \end{itemize}
 
+The data reduction is entirely controlled via the driver file. Open the local copy with a text editor and have a look at the code. The driver file is divided into three parts. The first part is where the input parameters are set; the second part is the initialization, and the third part is the data reduction. In this section we discuss the first part.
 
-\subsection{Standard options}
-
-The data reduction is entirely controlled via the driver file \texttt{flame\_driver.pro}. Open the local copy with a text editor and have a look at the code. The driver file is divided into two parts. The first part is where the input parameters are set. The second part is the data reduction, and does not require any input from the user.
-
-The very first step is to create the \inp\ structure:
+The first step in the driver file creates the \inp\ structure:
 \begin{lstlisting}
  input = flame_create_input()
 \end{lstlisting}
 We now need to populate the fields in the \inp\ structure with values that are appropriate for the data set that we are reducing.
-We start by specifying the ASCII files containing the FITS file names; for example like this:
+We start by specifying the name of the file containing the science frames; for example like this:
 \begin{lstlisting}
 input.science_filelist = 'science.txt'
-input.dark_filelist = 'dark.txt'
-input.pixelflat_filelist = 'default'
-input.illumflat_filelist = 'none'
-input.arc_filelist = 'none'
 \end{lstlisting}
-The science frames must always be specified, while for the other fields there are three possibilities: they can be set to \textquoteleft none\textquoteright\ (no calibration applied), to \textquoteleft default\textquoteright\ (the default calibration will be applied), or can be set to a text file containing the user-supplied calibration frames (such as \textquoteleft dark.txt\textquoteright).
 
-Finally, the y pixel position of a reference star in both the A and the B position must be provided:
+In the near-infrared the observations are usually spatially dithered for an effective sky subtraction. \flame\ supports a two-point dithering, also called AB dithering, which is activated via the flag:
+\begin{lstlisting}
+input.AB_subtraction = 1
+\end{lstlisting}
+
+When observing faint targets, it is recommended to place a slit on a relatively bright star (hereafter called the reference star) from which the conditions and the spatial dithering can be accurately measured. In the AB dithering scheme, the star trace will appear on two different positions, which may be in the same slit or in two different slits. The y pixel position of the reference star in both the A and the B position must be provided:
 \begin{lstlisting}
 input.star_y_A = 547
 input.star_y_B = 560
 \end{lstlisting}
-These coordinates do not need to be exact. If the trace is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the dithering pattern must be specified manually. These and other advanced features are explained in the next section.
+These coordinates do not need to be exact. If the trace is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the dithering pattern must be specified manually (see Section \ref{sec:troubleshooting}). If no AB dithering is performed, the B star position should be set to zero.
+
+While the default behavior is to reduce all the slits in the mask, it is sometimes preferable to reduce only one slit, for example to obtain a quick reduction of a representative object while observing. This can be achieved by specifying:
+\begin{lstlisting}
+input.reduce_only_oneslit = 2
+\end{lstlisting}
+where in this case we would get the reduction of only the second slit. The default value is zero which means that all the slits will be reduced.
+
+Finally, to reduce longslit observations, it is sufficient to set the longslit flag:
+\begin{lstlisting}
+input.longslit = 1
+\end{lstlisting}
+Because the longslit spans the whole detector in the vertical range, the edges of the longslit are not well defined. This means that the slit curvature cannot be traced, and the spatial distortion cannot be rectified. The region of interest must be specified by providing the y pixel coordinates of the top and bottom limits:
+\begin{lstlisting}
+input.longslit_edge = [1050, 1350]
+\end{lstlisting}
+If longslit\_edge is set to [0,0], the default is to reduce the full frame excluding 10\% of pixels at the bottom and 10\% at the top. For example, for a frame that is 2048 pixels tall, this would correspond to the [205, 1843] range.
 
 
 \subsection{Advanced options}
 
-The \inp\ structure contains additional fields that can be used to specify advanced options. We now discuss the most useful ones; the full list is reported in Table \ref{tab:input}.
+The \inp\ structure contains additional fields that can be used to specify advanced options. The full list is reported in Table \ref{tab:input}. The expanded driver file \texttt{flame\_driver\_complete.pro} includes all the options: the relevant lines can be copied and then pasted in the local copy of the driver.
+
+The calibration data are supplied to the pipeline via ASCII files containing a list of FITS files, similarly to what done for the science data:
+\begin{lstlisting}
+input.dark_filelist = 'dark.txt'
+input.pixelflat_filelist = 'pixelflat.txt'
+input.illumflat_filelist = 'none'
+input.arc_filelist = 'none'
+input.slitflat_filelist = 'none'
+\end{lstlisting}
+Each of these fields can be set to \textquoteleft none\textquoteright\ (no calibration applied), or to a text file containing the user-supplied calibration frames (such as \textquoteleft dark.txt\textquoteright).
+
 
 \begin{deluxetable}{lll}
 \tabletypesize{\footnotesize}
@@ -130,6 +161,12 @@ The \inp\ structure contains additional fields that can be used to specify advan
 \colhead{Field} & \colhead{Default Value} & \colhead{Description} }
 \startdata
 science\_filelist   	     & science.txt 		& name of ASCII file containing the list of science frames \\
+AB\_subtraction      & 1      & flag to enable AB subtraction \\
+input.star\_y\_A 		 & 0			& pixel y-coordinate of the A position of the star trace \\
+input.star\_y\_B 		 & 0			& pixel y-coordinate of the B position of the star trace \\
+reduce\_only\_oneslit 	& 0 				& if non-zero, reduce only that one slit \\
+longslit 				& 0 				& set to one to reduce long-slit data \\
+longslit\_edge			& [0, 0] 			& when reducing long-slit data, only consider this range of pixel y-coordinate \\
 dark\_filelist   		       & none 				& name of ASCII file containing the list of dark frames\\
 pixelflat\_filelist        & none 				& name of ASCII file containing the list of frames for pixel flat field	\\
 illumflat\_filelist   		 & none 				& name of ASCII file containing the list of frames for illumination flat field	\\
@@ -137,22 +174,14 @@ arc\_filelist   		  & none 				& name of ASCII file containing the list of lamp 
 dither\_filelist   		& none 				& name of ASCII file containing the list of dither positions \\
 slitflat\_filelist    & none        & name of ASCII file containing the list of slit flats \\
 slitflat\_offset      & 0           & vertical offset in pixels between the slit flat and the science frames \\
+slit\_position\_file  & none        & name of ASCII file containing the approximate y-coordinates of the slit edges \\
+max\_slitwidth\_arcsec & 0          & threshold value of the slit width to identify the alignment boxes \\
 intermediate\_dir		 & intermediate/		& directory that will contain the intermediate products \\
-output\_dir				   & output/			& directory that will contain the final output \\
-input.star\_y\_A 		 & 0			& pixel y-coordinate of the A position of the star trace \\
-input.star\_y\_B 		 & 0			& pixel y-coordinate of the B position of the star trace \\
-reduce\_only\_oneslit 	& 0 				& if non-zero, reduce only that one slit \\
-longslit 				& 0 				& set to one to reduce long-slit data \\
-longslit\_edge			& [0, 0] 			& when reducing long-slit data, only consider this range of pixel y-coordinate \\
-star\_x\_range 			& [1000, 1200]		& range of star trace (in pixel x-coordinate) that will be extracted \\
-rough\_wavecal\_R 	& 500				& target spectral resolution for the rough wavecal calibration \\
-trace\_slit\_with\_skylines			& 1 				& if set, the slit detection is based on the sky emission lines instead of the continuum
+output\_dir				   & output/			& directory that will contain the final output
 \enddata
 %\tablecomments{Some comment here.}
 \end{deluxetable}
 
-
-\subsubsection{Specify dithering pattern}
 
 It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the dithering offset for each frame, and the dithering pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, in arcseconds, corresponding to that frame (for example 5, -5, 5, -5, etc). Then the file name needs to be input in the \inp\ structure:
 \begin{lstlisting}
@@ -160,58 +189,6 @@ input.startrace_y_pos = [0, 0]
 input.dither_filelist = 'dither.txt'
 \end{lstlisting}
 
-
-\subsubsection{Specify the x coordinates for the reference star}
-
-When the reference star is present, its trace is extracted and used as a diagnostic tool (see Section \ref{sec:diagnostics}). Only the central part of the trace is used, in the interval [1000, 1200] in x-pixel coordinates. If the trace is too faint in this central region, it is possible to define a different range for the extraction:
-\begin{lstlisting}
-input.xrange_star = [100, 500]
-\end{lstlisting}
-
-
-
-\subsubsection{Reduce only one slit}
-
-Because reducing the entire slitmask can take a long time, especially for observations with a large number of frames, \flame\ offers the possibility to reduce only one slit. This is particularly useful when observing, so that quick decisions can be made based on the final reduction of a representative object. To reduce only one slit we need to specify the slit index (starting from 1). For example if we are interested in the third slit:
-\begin{lstlisting}
-input.reduce_only_oneslit = 3
-\end{lstlisting}
-The default value for input.reduce\_only\_oneslit is zero, which means that all the slits will be reduced.
-
-
-\subsubsection{Detection of slit edges with sky background}
-\label{sec:use_sky_edge}
-
-In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges (see Section \ref{sec:getslits}). It is possible to use the continuum emission instead, by specifying
-\begin{lstlisting}
-input.trace_slit_with_skylines = 0
-\end{lstlisting}
-
-
-\subsubsection{Detection of slit edges with slit flat field}
-
-If the slit edges are not well defined in the science frames, it is possible to use a flat field for the slit identification:
-\begin{lstlisting}
-input.trace_slit_with_skylines = 0
-input.slitflat_filelist = 'slitflat.txt'
-input.slitflat_offset = 4
-\end{lstlisting}
-where the file slitflat.txt contains a list of file names corresponding to the slit flat field data. These can be the same as the pixel and/or illumination flats.
-It is often the case that the science frames present a vertical shift compared to the calibration frames because of flexure. In this case the shift needs to be measured manually and specified via the \texttt{slitflat\_offset} setting.
-
-
-\subsubsection{Longslit observations}
-
-To reduce longslit observations, it is sufficient to set the longslit flag:
-\begin{lstlisting}
-input.longslit = 1
-\end{lstlisting}
-
-The reduction of longslit observations is slightly different from the reduction of a slit in a multi-object mask because the edges of the longslit are not well defined. This means that the slit curvature cannot be traced, and therefore it is advisable to reduce only the region of interest, possibly at the center of the detector. The y pixel coordinates delimiting the region of interest can be specified in the following way:
-\begin{lstlisting}
-input.longslit_edge = [1150, 1250]
-\end{lstlisting}
-If the longslit\_edge keyword is not specified, the default is to reduce the full frame excluding 10\% of pixels at the bottom and 10\% at the top. For example, for a frame that is 2048 pixels tall, this would correspond to the [205, 1843] range.
 
 % Next, we need to define the directories for intermediate and final outputs:
 % \begin{lstlisting}
@@ -259,6 +236,7 @@ During the initialization, relevant fields from the FITS header of the science f
 
 
 \section{Running the Data Reduction}
+\label{sec:data_reduction}
 
 Once the first part of the driver file has been edited, the data reduction is fully automatic. One way to run \flame\ at this point would be to execute the driver directly from the command line:
 \begin{lstlisting}
@@ -433,12 +411,14 @@ Sometimes the dithering is such that one object spends half of the time in one s
 
 
 \section{Troubleshooting}
+\label{sec:troubleshooting}
+
 
 \subsection{Bad fit to sky lines}
 
 Sometime the sky lines are not bright or numerous enough for a reliable wavelength calibration. This can happen especially in the K band, where the OH lines are less numerous and the spectrum is typically dominated by thermal emission. Another situation where this issue can arise is when the OH lines are faint due to very short exposure times. In this cases it is always advisable to obtain arcs. There are however a few settings that can be optimized to obtain a satisfactory wavelength solution.
 
-During the \texttt{flame\_identify\_lines} step, at each pixel row a polynomial is fit to the position of the sky lines (see Figure \ref{fig:speclines}). This part is critical and is often the first to fail in sub-optimal conditions. If the number of sky lines identified in one row is too low, the fit will not be considered valid. It is possible to change this threshold number by changing the variable \texttt{flame.util.identify\_lines\_Nmin\_lines}. However, with a low number of lines it is also necessary to lwer the degree of the polynomial, to avoid over-fitting and obtaining meaningless wavelength solutions. This can be done by changing the variable \texttt{flame.util.identify\_lines\_poly\_degree}.
+During the \texttt{flame\_identify\_lines} step, at each pixel row a polynomial is fit to the position of the sky lines (see Figure \ref{fig:speclines}). This part is critical and is often the first to fail in sub-optimal conditions. If the number of sky lines identified in one row is too low, the fit will not be considered valid. It is possible to change this threshold number by changing the variable \texttt{fuel.util.identify\_lines\_Nmin\_lines}. However, with a low number of lines it is also necessary to lwer the degree of the polynomial, to avoid over-fitting and obtaining meaningless wavelength solutions. This can be done by changing the variable \texttt{fuel.util.identify\_lines\_poly\_degree}.
 
 Another possibility is to manually exclude those sky lines that are clearly problematic. This can be done easily by commenting out one or more entries in the line list, which is stored as a text file in the flame/data/ directory.
 
@@ -447,6 +427,65 @@ Another possibility is to manually exclude those sky lines that are clearly prob
 
 If the slit identification fails or is not accurate, one alternative is to use the longslit option to manually select the region within one slit to reduce. By default the longslit option assumes that the slit is spatially centered on the mask. If this assumption causes a wildly wrong initial guess for the wavelength range, it is possible to override this value by changing the \texttt{fuel.slits.range\_lambda0} variable, which is a 2-element array containing the minimum and maximum values to be considered for the wavelength of the first pixel.
 
+Sometimes using a different science frame gives a better slit identification. The default frame used for the slit identification is the one in the middle; this file name is stored in \texttt{fuel.util.master\_getslit} and can be changed.
+
+
+\subsubsection{Detection of slit edges with sky background}
+\label{sec:use_sky_edge}
+
+In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges (see Section \ref{sec:getslits}). It is possible to use the continuum emission instead, by specifying
+\begin{lstlisting}
+input.trace_slit_with_skylines = 0
+\end{lstlisting}
+
+
+\subsubsection{Detection of slit edges with slit flat field}
+
+If the slit edges are not well defined in the science frames, it is possible to use a flat field for the slit identification:
+\begin{lstlisting}
+input.trace_slit_with_skylines = 0
+input.slitflat_filelist = 'slitflat.txt'
+input.slitflat_offset = 4
+\end{lstlisting}
+where the file slitflat.txt contains a list of file names corresponding to the slit flat field data. These can be the same as the pixel and/or illumination flats.
+It is often the case that the science frames present a vertical shift compared to the calibration frames because of flexure. In this case the shift needs to be measured manually and specified via the \texttt{slitflat\_offset} setting.
+
+
+\subsection{Specify the x coordinates for the reference star}
+
+When the reference star is present, its trace is extracted and used as a diagnostic tool (see Section \ref{sec:diagnostics}). Only the central part of the trace is used, in the interval [1000, 1200] in x-pixel coordinates. If the trace is too faint in this central region, it is possible to define a different range for the extraction:
+\begin{lstlisting}
+input.xrange_star = [100, 500]
+\end{lstlisting}
+
+
+
+\begin{deluxetable}{lll}
+\tabletypesize{\footnotesize}
+\tablewidth{0pc}
+\tablecaption{Settings in the \texttt{fuel.util} structure \label{tab:util}}
+\tablehead{
+\colhead{Field} & \colhead{Default Value} & \colhead{Description} }
+\startdata
+star\_x\_range 			& [1000, 1200]		& range of star trace (in pixel x-coordinate) that will be extracted \\
+rough\_wavecal\_R 	& 500				& target spectral resolution for the rough wavecal calibration \\
+trace\_slit\_with\_skylines			& 1 				& if set, the slit detection is based on the sky emission lines instead of the continuum
+\enddata
+%\tablecomments{Some comment here.}
+\end{deluxetable}
+
+
+
+% ***********************************************************************************************
+% ***********************************************************************************************
+%									6. OTHER INSTRUMENTS
+% ***********************************************************************************************
+% ***********************************************************************************************
+
+\section{Other instruments}
+\label{sec:other_instruments}
+
+\subsection{Keck LRIS}
 
 
 % ***********************************************************************************************
