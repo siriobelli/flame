@@ -345,7 +345,7 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
+FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skyspec=rough_skyspec
 	;
 	; Three steps:
 	; First, use a coarse, logarithmic grid with constant pixel scale (uniform wavelength solution)
@@ -424,6 +424,9 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit
 
   cgPS_close
 
+	; output the observed sky spectrum used for the wavecal
+	rough_skyspec = sky
+
 	; return the approximate wavelength axis
 	return, poly(indgen(n_elements(sky)), wavecal_coefficients)
 
@@ -457,8 +460,10 @@ PRO flame_wavecal_rough, fuel
 		print, '--------------------------------------------------------------------'
 		print, ''
 
-		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=this_slit)
+		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=this_slit, rough_skyspec=rough_skyspec)
     *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
+		*(fuel.slits[i_slit].rough_skyspec) = rough_skyspec
+
 
   endfor
 

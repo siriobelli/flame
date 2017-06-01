@@ -468,6 +468,7 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
       'height', slit_height, $
       'bottom_poly', poly_coeff, $
       'rough_wavecal', ptr_new(/allocate_heap), $
+      'rough_skyspec', ptr_new(/allocate_heap), $
       'cutouts', cutouts, $
       'outlambda_min', 0d, $
       'outlambda_delta', 0d, $
