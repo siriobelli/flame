@@ -231,11 +231,21 @@ FUNCTION flame_initialize_lris, input
   ; create new file names for the science frames
   new_filenames = lris_dir + file_basename(fuel.util.science_filenames)
 
-  ; use the readmhdufits.pro routine provided by Keck
   for i=0, fuel.util.N_frames-1 do begin
+
+    ; use the readmhdufits.pro routine provided by Keck
     image = readmhdufits(fuel.util.science_filenames[i], header=header, gaindata=gaindata)
+
+    ; make wavelength axis horizontal
     image = transpose(image)
+
+    ; for the blue channel, the exptime is missing; use the elaptime instead
+    if fxpar(header, 'EXPTIME', missing=-1.0) eq -1.0 then $
+      fxaddpar, header, 'EXPTIME', fxpar(header, 'ELAPTIME', missing=1.0), 'added by flame; see ELAPTIME'
+
+    ; write the new FITS file
     mwrfits, image, new_filenames[i], header
+
   endfor
 
   ; update the file names in the fuel structure
