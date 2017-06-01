@@ -295,14 +295,19 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 
   ; extract the sky spectrum from a bunch of central pixel rows
   central_skyspec = median( im[*, sorted_rows[0]:sorted_rows[5]], dimension=2 )
+  central_skyspec[ where(~finite(central_skyspec), /null) ] = 0.0
 
-  ; measure the overall shift since the rough_wavecal may have
+  ; take the reference spectrum from the rough wavecal
+  ref_skyspec = *slit.rough_skyspec
+  ref_skyspec[ where(~finite(ref_skyspec), /null) ] = 0.0
+
+  ; measure the overall shift since the rough wavecal may have
   ; been obtained on different spatial positions or different frames
   lag = indgen(100)-50 ; up to 50 pixels each direction
-  crosscorr = c_correlate( median(central_skyspec, 3), median(*slit.rough_skyspec, 3), lag)
+  crosscorr = c_correlate( median(central_skyspec, 3), median(ref_skyspec, 3), lag)
   max_crosscorr = max( crosscorr, max_ind, /nan)
   delta = -lag[max_ind]
-  print, delta, max_crosscorr
+  print, 'shifting the central pixel row by ' + strtrim(delta, 2) + ' pixels'
 
   approx_lambda_axis = shift(*slit.rough_wavecal, delta)
   if delta GT 0 then approx_lambda_axis[0:delta] = !values.d_nan
