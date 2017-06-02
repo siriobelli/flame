@@ -12,7 +12,7 @@ FUNCTION flame_create_input
     pixelflat_filelist: 'none', $
     illumflat_filelist: 'none', $
     arc_filelist: 'none', $
-    dither_filelist: 'none', $
+    dither_file: 'none', $
     slitflat_filelist: 'none', $
     slit_position_file: 'none', $
     slitflat_offset: 0.0, $

@@ -48,12 +48,12 @@
   ; vertical offset, in pixel, between the slit-flat field and the science frames
   input.slitflat_offset = 0
 
-  ; if we don't have a star on the slit then we have to specify the dithering
-  ; in this case, you must set input.star_y_A and input.star_y_B to 0
-  input.dither_filelist = 'none'
-
   ; manual slit positions
   input.slit_position_file = 'none'
+
+  ; if we don't have a star on the slit then we have to specify the dithering
+  ; in this case, you must set input.star_y_A and input.star_y_B to 0
+  input.dither_file = 'none'
 
   ; for when the alignment boxes have varying width (otherwise leave to 0)
   input.max_slitwidth_arcsec = 0.0

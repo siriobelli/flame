@@ -93,11 +93,11 @@ FUNCTION flame_util_create_fuel, input
     master_getslit = corrscience_filenames[N_frames/2]
 
   ; check that the dither file exists and read it
-  dither_filelist_norm = strlowcase( strtrim( input.dither_filelist, 2 ))
-  if dither_filelist_norm EQ 'none' or dither_filelist_norm EQ '' then $
+  dither_file_norm = strlowcase( strtrim( input.dither_file, 2 ))
+  if dither_file_norm EQ 'none' or dither_file_norm EQ '' then $
     dither_blind_positions = ptr_new() else begin
-      if ~file_test(input.dither_filelist) then message, 'file ' + input.dither_filelist + ' not found!'
-      readcol, input.dither_filelist, dither_blind_positions, format='D'
+      if ~file_test(input.dither_file) then message, 'file ' + input.dither_file + ' not found!'
+      readcol, input.dither_file, dither_blind_positions, format='D'
     endelse
 
   ; create the util substructure

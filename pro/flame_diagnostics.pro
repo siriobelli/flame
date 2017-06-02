@@ -309,7 +309,7 @@ FUNCTION flame_diagnostics_blind, fuel
   pixel_scale = fuel.instrument.pixel_scale    ; arcsec/pixel
 
   ; check that dither blind positions were specified
-  if ~finite(fuel.util.dither_blind_positions[0]) then message, 'dither_filelist needs to be specified'
+  if ~finite(fuel.util.dither_blind_positions[0]) then message, 'dither_file needs to be specified'
 
   ; create a template of the diagnostics structure
   diagnostics_tmp = { $
