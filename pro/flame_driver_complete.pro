@@ -42,6 +42,12 @@
   ; text file containing the list of FITS files with arcs for wavelength calibration
   input.arc_filelist = 'none'
 
+  ; text file containing the list of FITS files for slit-flat field
+  input.slitflat_filelist = 'none'
+
+  ; vertical offset, in pixel, between the slit-flat field and the science frames
+  input.slitflat_offset = 0
+
   ; if we don't have a star on the slit then we have to specify the dithering
   ; in this case, you must set input.star_y_A and input.star_y_B to 0
   input.dither_filelist = 'none'
@@ -49,20 +55,14 @@
   ; manual slit positions
   input.slit_position_file = 'none'
 
-  ; text file containing the list of FITS files for slit-flat field
-  input.slitflat_filelist = 'none'
-
-  ; vertical offset, in pixel, between the slit-flat field and the science frames
-  input.slitflat_offset = 0
+  ; for when the alignment boxes have varying width (otherwise leave to 0)
+  input.max_slitwidth_arcsec = 0.0
 
   ; specify the directory for the intermediate products
   input.intermediate_dir = 'intermediate/'
 
   ; specify the directory for the final output
   input.output_dir = 'output/'
-
-  ; for when the alignment boxes have varying width (otherwise leave to 0)
-  input.max_slitwidth_arcsec = 0.0
 
 
 
@@ -82,10 +82,10 @@
   ; Usually the settings in fuel.util should be left to their default values
 
   ; change the range in x-coordinates used to extract the star traces:
-  ; util.star_x_range = [100, 500]
+  ; fuel.util.star_x_range = [100, 500]
 
   ; change the extension of the range in y-coordinates used to fit the star traces:
-  ; util.star_y_window = 40
+  ; fuel.util.star_y_window = 40
 
   ; set this to zero if you want to use the sky background to trace the slit edges
   ; instead of the OH lines (e.g. in the K band or in the optical or with slit flats)
