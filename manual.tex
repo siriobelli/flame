@@ -48,7 +48,9 @@
 % ***********************************************************************************************
 % ***********************************************************************************************
 
-
+%%%
+%%% Note: the links do not show up on the pdf, even though they work if you know where to click.
+%%%
 
 \section{Installation}
 \label{sec:installation}
@@ -69,7 +71,7 @@ Other third-party routines used by \flame\ are included in the distribution, in 
 
 \subsection{Download}
 
-Download the \flame\ IDL code from \url{http://siriobelli.github.io/flame/}. Either save it in the directory where you keep your IDL code, or add the flame/ directory to the IDL path. No other step is necessary.
+Download \flame\ from \url{http://siriobelli.github.io/flame/}. You can either save it in the directory where you keep your IDL code, or save it somewhere else and then add the flame/ directory to the IDL path. No other step is necessary.
 
 
 
@@ -82,7 +84,6 @@ Download the \flame\ IDL code from \url{http://siriobelli.github.io/flame/}. Eit
 % ***********************************************************************************************
 
 
-\newpage
 
 \section{Setting up the Data Reduction}
 \label{sec:setup}
@@ -92,65 +93,99 @@ Download the \flame\ IDL code from \url{http://siriobelli.github.io/flame/}. Eit
 
 Go to the directory that you want to use for the reduction of a data set (it is recommended to create a new directory for this purpose). Then:
 \begin{itemize}
-\item Copy the file \texttt{flame\_driver\_luci.pro} from the flame/pro/ directory to the current directory.
-\item Create an ASCII file (e.g., science.txt) with, in each line, the full name (including absolute path) of a raw science file.
-\item \emph{(optional)} Create additional ASCII files with the names of the calibration frames (e.g., darks.txt, flats.txt, etc.)
+\item Copy the driver file (\texttt{flame\_driver\_luci.pro}) from the flame/pro/ directory to the current directory.
+\item Create a text file (e.g., science.txt) with, in each line, the full name, including the absolute path, of a raw science frame (either FITS files or gzipped FITS files).
+\item \emph{(optional)} Create additional text files with the names of the calibration frames (e.g., darks.txt, flats.txt, etc.)
 \end{itemize}
 
-The data reduction is entirely controlled via the driver file. Open the local copy with a text editor and have a look at the code. The driver file is divided into three parts. The first part is where the input parameters are set; the second part is the initialization, and the third part is the data reduction. In this section we discuss the first part.
+The data reduction is controlled entirely via the driver file. Open the local copy with a text editor and have a look at the code. The driver file is divided into three parts. The first part is where the input parameters are set; the second part is the initialization, and the third part is the data reduction. In this section we discuss the first part.
 
 The first step in the driver file creates the \inp\ structure:
 \begin{lstlisting}
  input = flame_create_input()
 \end{lstlisting}
 We now need to populate the fields in the \inp\ structure with values that are appropriate for the data set that we are reducing.
-We start by specifying the name of the file containing the science frames; for example like this:
+
+\subsubsection{Science frames}
+We start by specifying the name of the file containing the science frames; for example:
 \begin{lstlisting}
 input.science_filelist = 'science.txt'
 \end{lstlisting}
+If the file is not in the current working directory, then the absolute path must be provided. However it is recommended to run the data reduction from the same directory in which the input files and the driver file are stored.
 
-In the near-infrared the observations are usually spatially dithered for an effective sky subtraction. \flame\ supports a two-point dithering, also called AB dithering, which is activated via the flag:
+\subsubsection{Dithering}
+Near-infrared observations are usually spatially dithered for an effective sky subtraction. \flame\ supports a two-point dithering, also called AB dithering, which is activated via the flag:
 \begin{lstlisting}
 input.AB_subtraction = 1
 \end{lstlisting}
 
-When observing faint targets, it is recommended to place a slit on a relatively bright star (hereafter called the reference star) from which the conditions and the spatial dithering can be accurately measured. In the AB dithering scheme, the star trace will appear on two different positions, which may be in the same slit or in two different slits. The y pixel position of the reference star in both the A and the B position must be provided:
+\subsubsection{Reference star}
+When observing faint targets, it is recommended to place a slit on a relatively bright star (hereafter called the reference star) from which the observing conditions and the spatial dithering can be accurately measured. In the AB dithering scheme, the star trace will appear on two different positions, which may be in the same slit or in two different slits. The y pixel position of the reference star in both the A and the B position must be provided:
 \begin{lstlisting}
-input.star_y_A = 547
+input.star_y_A = 520
 input.star_y_B = 560
 \end{lstlisting}
-These coordinates do not need to be exact. If the trace is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the dithering pattern must be specified manually (see Section \ref{sec:troubleshooting}). If no AB dithering is performed, the B star position should be set to zero.
+These coordinates do not need to be exact. If the trace of the reference star is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the dithering pattern must be specified manually (see Section \ref{sec:troubleshooting}). If no AB dithering is performed, the B star position should be set to zero.
 
-While the default behavior is to reduce all the slits in the mask, it is sometimes preferable to reduce only one slit, for example to obtain a quick reduction of a representative object while observing. This can be achieved by specifying:
+\subsubsection{Slits to be reduced}
+While the default behavior is to reduce all the slits in the mask, it is sometimes preferable to reduce only one slit, for example to obtain the reduction of one representative object while observing. This can be achieved by specifying:
 \begin{lstlisting}
 input.reduce_only_oneslit = 2
 \end{lstlisting}
 where in this case we would get the reduction of only the second slit. The default value is zero which means that all the slits will be reduced.
 
+\subsubsection{Longslit observations}
 Finally, to reduce longslit observations, it is sufficient to set the longslit flag:
 \begin{lstlisting}
 input.longslit = 1
 \end{lstlisting}
-Because the longslit spans the whole detector in the vertical range, the edges of the longslit are not well defined. This means that the slit curvature cannot be traced, and the spatial distortion cannot be rectified. The region of interest must be specified by providing the y pixel coordinates of the top and bottom limits:
+Because the longslit typically spans the whole detector in the vertical range, the edges of the longslit are not well defined. The region of interest must be specified by providing the y pixel coordinates of the top and bottom limits:
 \begin{lstlisting}
 input.longslit_edge = [1050, 1350]
 \end{lstlisting}
-If longslit\_edge is set to [0,0], the default is to reduce the full frame excluding 10\% of pixels at the bottom and 10\% at the top. For example, for a frame that is 2048 pixels tall, this would correspond to the [205, 1843] range.
+If longslit\_edge is set to [0,0], the default is to reduce the full frame excluding 10\% of pixels at the bottom and 10\% at the top. For example, for a frame that is 2048 pixels tall, this would correspond to the [205, 1843] range. Since the slit curvature cannot be traced, the spatial distortion will not be rectified for longslit data.
 
 
-\subsection{Advanced options}
+\subsection{Optional input}
 
-The \inp\ structure contains additional fields that can be used to specify advanced options. The full list is reported in Table \ref{tab:input}. The expanded driver file \texttt{flame\_driver\_complete.pro} includes all the options: the relevant lines can be copied and then pasted in the local copy of the driver.
+The \inp\ structure contains additional fields that can be used to specify optional settings. The full list is reported in Table \ref{tab:input}. The expanded driver file \texttt{flame\_driver\_complete.pro} includes all the options: the relevant lines can be copied and then pasted in the local copy of the driver.
 
-The calibration data are supplied to the pipeline via ASCII files containing a list of FITS files, similarly to what done for the science data:
+\subsubsection{Dark frames}
+Dark frames, if provided, are used to construct the median-combined master dark, which is then subtracted from each science frame. When adopting an AB dithering, the dark current is automatically corrected for during the A-B subtraction, and dark frames are not needed.
+
+The dark frames, as well as all the other calibration frames, are supplied to the pipeline via text files containing a list of FITS files, similarly to what done for the science data:
 \begin{lstlisting}
 input.dark_filelist = 'dark.txt'
+\end{lstlisting}
+The only difference is that all the calibration files are optional, and the default value for the filelist parameter is always \texttt{'none'}.
+
+
+
+\subsubsection{Flat field}
+
+A flat field is a calibration frame taken with the purpose of removing unwanted patterns in the data. However, there are many ways in which flat fields can be obtained: using a lamp or the twilight sky; with or without the slitmask; with or without the dispersion element; and with different filters, cameras, and so on.
+
+In \flame\ the flat fields are divided into three types, based on how they are used during the data reduction, rather than what instrument configuration was adopted in taking the calibrations. This means that the user is free to choose the actual configuration for each type of flat field.
+
+The \textbf{pixel flat field} is used to correct for the pixel-to-pixel variation in sensitivity. First the large-scale variation in the illumination is removed via polynomial fitting, and then the flat field is divided by its median pixel value. Pixel flats work best if taken without slitmask, in order to obtain a smooth illumination of the full detector. If the imaging mode produces small-scale patterns due to the presence of dust, the dispersion element can be used (with or without a long slit). The LUCI detectors present pixel-to-pixel variation of the order of a few percent. These variations vary with time, and often times it is better not to flat field the data rather than using a flat field obtained in a different observing run.
+
+The \textbf{illumination flat field} corrects for the uneven illumination of the slit along the spatial direction.
+
+Finally, the \textbf{slit flat field} is used to identify the slit traces and trace the geometric distortion of the slit edges.
+
+Each of the three types of flat field can be specified in the usual way, for example:
+\begin{lstlisting}
 input.pixelflat_filelist = 'pixelflat.txt'
 input.illumflat_filelist = 'none'
-input.arc_filelist = 'none'
-input.slitflat_filelist = 'none'
+input.slitflat_filelist = 'slitflat.txt'
 \end{lstlisting}
-Each of these fields can be set to \textquoteleft none\textquoteright\ (no calibration applied), or to a text file containing the user-supplied calibration frames (such as \textquoteleft dark.txt\textquoteright).
+
+
+\subsubsection{Arcs}
+The near-infrared sky spectrum is dominated by OH emission lines, which are ideal for wavelength calibrating the observations. However, in particular cases these OH lines are not strong enough (for example when the exposure time is very short) or do not cover the full observed range (this can happen with high-resolution observations in the K band). Also, spectra taken with optical instruments have very few sky emission lines. In all these cases, it is necessary to observe the spectrum of arc lamps in order to obtain a reliable wavelength calibration. These arc frames can be specified via:
+\begin{lstlisting}
+input.arc_filelist = 'arcs.txt'
+\end{lstlisting}
 
 
 \begin{deluxetable}{lll}
@@ -171,10 +206,10 @@ dark\_filelist   		       & none 				& name of ASCII file containing the list of
 pixelflat\_filelist        & none 				& name of ASCII file containing the list of frames for pixel flat field	\\
 illumflat\_filelist   		 & none 				& name of ASCII file containing the list of frames for illumination flat field	\\
 arc\_filelist   		  & none 				& name of ASCII file containing the list of lamp arc frames	\\
-dither\_filelist   		& none 				& name of ASCII file containing the list of dither positions \\
 slitflat\_filelist    & none        & name of ASCII file containing the list of slit flats \\
 slitflat\_offset      & 0           & vertical offset in pixels between the slit flat and the science frames \\
 slit\_position\_file  & none        & name of ASCII file containing the approximate y-coordinates of the slit edges \\
+dither\_file       		& none 				& name of ASCII file containing the list of dither positions \\
 max\_slitwidth\_arcsec & 0          & threshold value of the slit width to identify the alignment boxes \\
 intermediate\_dir		 & intermediate/		& directory that will contain the intermediate products \\
 output\_dir				   & output/			& directory that will contain the final output
@@ -183,20 +218,20 @@ output\_dir				   & output/			& directory that will contain the final output
 \end{deluxetable}
 
 
+\subsubsection{Dithering positions}
 It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the dithering offset for each frame, and the dithering pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, in arcseconds, corresponding to that frame (for example 5, -5, 5, -5, etc). Then the file name needs to be input in the \inp\ structure:
 \begin{lstlisting}
 input.startrace_y_pos = [0, 0]
-input.dither_filelist = 'dither.txt'
+input.dither_file = 'dither.txt'
 \end{lstlisting}
 
-
-% Next, we need to define the directories for intermediate and final outputs:
-% \begin{lstlisting}
-% input.intermediate_dir = 'intermediate/'
-% input.output_dir = 'output/'
-% \end{lstlisting}
-% If these directories do not exist, they will be created by \flame. Note that these definitions use relative paths, but it is safer to always use absolute paths (e.g., /scr/observing/run\_1/mask\_1/output/).
-
+\subsubsection{Directories}
+Next, we need to define the directories for intermediate and final outputs:
+\begin{lstlisting}
+input.intermediate_dir = 'intermediate/'
+input.output_dir = 'output/'
+\end{lstlisting}
+If these directories do not exist, they will be created by \flame. Note that these definitions use relative paths, but absolute paths can also be used.
 
 
 
@@ -240,7 +275,7 @@ During the initialization, relevant fields from the FITS header of the science f
 
 Once the first part of the driver file has been edited, the data reduction is fully automatic. One way to run \flame\ at this point would be to execute the driver directly from the command line:
 \begin{lstlisting}
-idl flame_driver.pro
+> idl flame_driver.pro
 \end{lstlisting}
 Another possibility, which allows some interaction and testing, is to copy line-by-line the content of the driver file onto an interactive IDL session. In this way one can explore the output files and the fuel structure after every step.
 
