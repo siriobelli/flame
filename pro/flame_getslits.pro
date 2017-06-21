@@ -70,8 +70,6 @@ FUNCTION flame_getslits_trace_continuum, image_in, approx_edge, top=top, bottom=
 
   image = image_in
 
-  mwrfits, image, 'test.fits', /create
-
   ; from now on, the code assumes that we are interested in finding the top edge of a slit
   ; if instead we want the bottom edge, simply take the negative of the image
   if keyword_set(bottom) then image *= -1.0
