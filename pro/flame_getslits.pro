@@ -470,7 +470,8 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
       'cutouts', cutouts, $
       'outlambda_min', 0d, $
       'outlambda_delta', 0d, $
-      'outlambda_Npix', 0L )
+      'outlambda_Npix', 0L, $
+      'output_file', '' )
 
     ; now we need to merge old and new slit structures
 
