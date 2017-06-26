@@ -313,8 +313,8 @@ PRO flame_combine_multislit, fuel=fuel
 	; loop through the slits
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
-		; if the dithering length is smaller than the slit height, then it is an on-slit dithering
-		if dithering_length LE fuel.slits[i_slit].height then continue
+		; if the dithering length is clearly smaller than the slit height, then it is an on-slit dithering
+		if dithering_length LE 0.85*fuel.slits[i_slit].height then continue
 		; otherwise, check whether we have a good match among the slits
 
 		; this is the distance of this slit to every other slit
