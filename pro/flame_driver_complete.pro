@@ -152,3 +152,5 @@
   flame_rectify, fuel
 
   flame_combine, fuel
+
+  flame_checkdata, fuel
