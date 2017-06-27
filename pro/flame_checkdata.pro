@@ -1,5 +1,5 @@
 
-PRO flame_checkdata_seeing, fuel
+PRO flame_checkdata_refstar, fuel
 
 	; check if the reference star has been specified
 	if fuel.input.star_y_A eq 0.0 then return
@@ -33,8 +33,8 @@ PRO flame_checkdata_seeing, fuel
 
 	; get the wavelength calibration from the header
  	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
-	lambda_0 = sxpar(header, 'CRVAL1')
-	lambda_delta = sxpar(header, 'CDELT1')
+	lambda_axis = sxpar(header, 'CRVAL1') + sxpar(header,'CDELT1') * $
+		( findgen(sxpar(header,'NAXIS1')) - sxpar(header,'CRPIX1') + 1d )
 
 
  	; median profile and fit
@@ -57,6 +57,9 @@ PRO flame_checkdata_seeing, fuel
 
 	; calculate seeing in arcsec
 	median_seeing = 2.355 * ref_coeff[2] * fuel.instrument.pixel_scale
+	print, ''
+	print, 'The final effective seeing calculated from the reference star is ' + $
+	 	cgnumber_formatter(median_seeing, decimals=2) + ' arcsec.'
 
 	; plot the median profile
 	cgplot, yaxis, ref_profile, psym=16, charsize=1, xtit='y pixel coordinate', $
@@ -116,9 +119,9 @@ PRO flame_checkdata_seeing, fuel
 		xra=[0, N_pixel_x], xsty=1+8, xthick=4, ythick=4, $
 		position = [0.15, 0.55, 0.9, 0.9], xtickformat='(A1)'
 
-	; top x-axis with wavelength
-	cgaxis, xaxis=1, xra=lambda_0 + [0, N_pixel_x*lambda_delta], xsty=1, charsize=1, $
-		xtit='wavelength (' + lambda_unit + ')'
+	; top x-axis with pixel coordinate
+	cgaxis, xaxis=1, xra = [ 0 , N_pixel_x ], xsty=1, charsize=1, $
+		xtit='x-coordinate (pixel)'
 
 	; show the median seeing
 	cgplot, [0, N_pixel_x], [0,0]+median_seeing, /overplot, thick=3, linestyle=2
@@ -130,8 +133,12 @@ PRO flame_checkdata_seeing, fuel
 	cgplot, coord_x, center, thick=4, charsize=1, $
 		xtit='x-coordinate (pixel)', ytit='center position (pixel)', $
 		yra=[min(center, /nan)-1.0, max(center, /nan)+1.0], $
-		xra=[0, N_pixel_x], xsty=1, xthick=4, ythick=4, $
+		xra=[0, N_pixel_x], xsty=1+4, xthick=4, ythick=4, $
 		position = [0.15, 0.15, 0.9, 0.55], /noerase
+
+	; bottom x-axis with wavelength
+	cgaxis, xaxis=0, xra = [ lambda_axis[0] , lambda_axis[-1] ], xsty=1, charsize=1, $
+		xtit='wavelength (' + lambda_unit + ')'
 
 	; overplot zero line
 	cgplot, [0, N_pixel_x], [0,0], /overplot, thick=3, linestyle=2
@@ -140,7 +147,17 @@ PRO flame_checkdata_seeing, fuel
 	; extract and plot 1D spectrum of reference star
 	; ----------------------------------------------
 
-	;spectrum = total(ref_spec[])
+	; extract spectrum from +/- 2 sigma around the center
+	window_min = ( ref_coeff[1] - 2.0*ref_coeff[2] ) > 0
+	window_max = ref_coeff[1] + 2.0*ref_coeff[2] < N_pixel_x-1
+
+	; extract boxcar spectrum
+	spectrum = total(ref_spec[ * , window_min:window_max ], 2, /nan)
+
+	; show star spectrum
+	cgplot, lambda_axis, smooth(spectrum, 17), charsize=1, $
+		xtit='wavelength (' + lambda_unit + ')', ytit='flux', /ynozero, $
+		title='boxcar extraction of the reference star spectrum'
 
 
 	cgPS_close
@@ -157,9 +174,8 @@ PRO flame_checkdata, fuel
 
 	flame_util_module_start, fuel, 'flame_checkdata'
 
-
-	; calculate seeing from the reference star
-	flame_checkdata_seeing, fuel
+	; calculate diagnostics from reference star
+	flame_checkdata_refstar, fuel
 
 
   flame_util_module_end, fuel
