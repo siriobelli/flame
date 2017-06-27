@@ -107,8 +107,8 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	; minimum number of OH lines for a reliable wavelength solution
 	Nmin_lines = fuel.util.identify_lines_Nmin_lines
 
-	; convert linewidth to micron (assuming linear wavelength solution)
-	linewidth_um = linewidth * (approx_wavecal[3]-approx_wavecal[2])
+	; convert linewidth to micron
+	linewidth_um = linewidth * median( approx_wavecal - shift(approx_wavecal, 1) )
 
 	; identify the OH lines that are in this wavelength range
 	w_lines = where(line_list_in GT min(approx_wavecal, /nan) $
@@ -309,6 +309,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   delta = -lag[max_ind]
   print, 'shifting the central pixel row by ' + strtrim(delta, 2) + ' pixels'
 
+  ; apply the shift to the rough wavecal to obtain a good starting guess
   approx_lambda_axis = shift(*slit.rough_wavecal, delta)
   if delta GT 0 then approx_lambda_axis[0:delta] = !values.d_nan
   if delta LT 0 then approx_lambda_axis[-1-abs(delta):-1] = !values.d_nan
@@ -324,9 +325,12 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   ; load line list
 	readcol, fuel.util.linelist_filename, line_list, format='D', /silent
 
+  ; calcolate typical wavelength step of one pixel
+  lambda_step = median( approx_lambda_axis - shift(approx_lambda_axis, 1) )
+
   ; approximate sky line width (assuming one arcsec slit width)
 	approximate_linewidth_um = median(approx_lambda_axis) / (2.36 * fuel.instrument.resolution_slit1arcsec)
-	linewidth = approximate_linewidth_um / ( approx_lambda_axis[3] - approx_lambda_axis[2] )
+	linewidth = approximate_linewidth_um / lambda_step
 
 	; as initial guess for the wavelength axis, use what found during the rough wavecal
 	wavelength_axis_guess = approx_lambda_axis
