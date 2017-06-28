@@ -165,6 +165,196 @@ PRO flame_checkdata_refstar, fuel
 END
 
 
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+
+PRO flame_checkdata_slit, fuel, i_slit=i_slit
+
+	print, 'Checking slit number ' + strtrim(fuel.slits[i_slit].number, 2)
+
+
+	; load the sky spectrum for this slit
+	;-------------------------------------
+
+	; filename of the output sky stack
+	skystack_filename = fuel.input.output_dir + 'slit' + $
+		string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name + '_stack_sky.fits'
+
+	; load the sky spectrum
+	sky_spec2d = mrdfits(skystack_filename, 0, header, /silent)
+
+	; extract 1D spectrum
+	sky_spec =  mean(sky_spec2d, dimension=2, /nan)
+
+	; get the wavelength calibration from the header
+ 	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
+	lambda_axis = sxpar(header, 'CRVAL1') + sxpar(header,'CDELT1') * $
+		( findgen(sxpar(header,'NAXIS1')) - sxpar(header,'CRPIX1') + 1d )
+
+	; for now we only support micron
+	if lambda_unit ne 'micron' then message, lambda_unit + ' not supported!'
+
+
+	; fit the OH lines
+	;-------------------------------------
+
+	; load line list
+	readcol, fuel.util.linelist_filename, line_list, format='D', /silent
+
+  ; calculate approximate sky line width
+	linewidth_um = median(lambda_axis) / (2.36 * fuel.instrument.resolution_slit1arcsec)
+
+	; identify the OH lines that are in this wavelength range
+	w_lines = where(line_list GT min(lambda_axis, /nan) $
+		AND line_list LT max(lambda_axis, /nan), /null )
+
+	; make sure there are sky lines here
+	if w_lines EQ !NULL then begin
+    print, 'Warning: wavelength range does not contain sky lines'
+    return
+  endif
+
+	; keep only the OH lines of interest
+	line_list = line_list[w_lines]
+
+	; arrays for the fit results
+	sky_lambda_th = []
+	sky_lambda_obs = []
+	sky_sigma = []
+
+	; fit a Gaussian to every sky line
+	for i_line=0,n_elements(line_list)-1 do begin
+
+		; select the region to fit
+		w_fit = where( abs(lambda_axis-line_list[i_line]) LT 6.0*linewidth_um, /null )
+
+		; check that the region is within the observed range
+		if w_fit eq !NULL then continue
+
+    ; check that there actually is signal and it's not just a bunch of NaNs
+    if n_elements( where( finite(sky_spec[w_fit]), /null ) ) LE 5 then continue
+
+		; error handling for the gaussian fitting
+		catch, error_gaussfit
+		if error_gaussfit ne 0 then begin
+			print, 'GAUSSFIT ERROR STATUS: ' + strtrim(error_gaussfit,2)
+			catch, /cancel
+			continue
+		endif
+
+		; estimate parameters of the Gaussian
+		est_peak = max( median( sky_spec[w_fit], 3) , /nan)
+		est_center = line_list[i_line]
+		est_sigma = linewidth_um
+		est_cont = min( median( sky_spec[w_fit], 3) , /nan)
+
+		; Gaussian fit
+		!NULL = gaussfit( lambda_axis[w_fit], sky_spec[w_fit], gauss_param, nterms=4, $
+			estimates=[est_peak, est_center, est_sigma, est_cont], sigma=gauss_err, chisq=chisq )
+
+		; check that chi square makes sense
+		if ~finite(chisq) then continue
+
+		; check that the peak of the Gaussian is positive
+		if gauss_param[0] LT 0.0 then continue
+
+		; check that the SNR is high
+		if gauss_param[0] LT 5.0*gauss_err[0] then continue
+
+		; check that the center of the Guassian is in the observed range
+		if gauss_param[1] LT min(lambda_axis[w_fit]) or gauss_param[1] GT max(lambda_axis[w_fit]) then continue
+
+		; check that the Gaussian width makes sense
+		if gauss_param[2] LT linewidth_um/10.0 or gauss_param[2] GT linewidth_um*10.0 then continue
+
+		; save the results
+		sky_lambda_th = [sky_lambda_th, line_list[i_line] ]
+		sky_lambda_obs = [sky_lambda_obs, gauss_param[1] ]
+		sky_sigma = [sky_sigma, gauss_param[2] ]
+
+	endfor
+
+	; calculate the wavelength residuals in angstrom
+	residuals = 1d4 * (sky_lambda_th-sky_lambda_obs)
+
+	; calculate the spectral resolution R
+	spectral_R = sky_lambda_th/(sky_sigma*2.36)
+
+	; plot the result of the fit
+	;-------------------------------------
+
+  cgPS_open, fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+		'-' + fuel.slits[i_slit].name +  '_datacheck.ps', /nomatch
+
+	; x axis range
+	xra=[lambda_axis[0], lambda_axis[-1]]
+
+
+	; panel 1: plot the spectrum
+	cgplot, lambda_axis, sky_spec, charsize=0.8, xsty=1, xtit='', ytit='sky flux', $
+		title = skystack_filename, position = [0.10, 0.70, 0.95, 0.95], $
+		xtickformat="(A1)", xra=xra, /nodata
+
+	; show the OH lines that were identified
+	for i_line=0, n_elements(sky_lambda_th)-1 do $
+		cgplot, sky_lambda_th[i_line] + [0,0], [-2,2]*max(abs(sky_spec)), /overplot, color='red'
+
+	; show the spectrum on top, for clarity
+	cgplot, lambda_axis, sky_spec, /overplot
+
+
+	; panel 2: show the residuals
+	cgplot, sky_lambda_th, residuals, /ynozero, xra=xra, $
+		xsty=1, psym=16, color='red', symsize=0.7, $
+		ytit='residuals (angstrom)', charsize=0.8, $
+		/noerase, position = [0.10, 0.45, 0.95, 0.70], xtickformat="(A1)"
+	cgplot, [xra[0], xra[1]], [0,0], /overplot, thick=3, linestyle=2
+
+
+	; panel 3: plot the spectral resolution
+	cgplot, sky_lambda_th, spectral_R, /ynozero, xra=xra, $
+		xsty=1, psym=16, color='red', symsize=0.7, $
+		xtit='pixel coordinate', ytit='spectral resolution R', charsize=0.8, $
+		/noerase, position = [0.10, 0.20, 0.95, 0.45]
+	cgplot, [xra[0], xra[1]], [0,0]+median(spectral_R), /overplot, thick=3, linestyle=2
+
+
+	; print some stats on wavelength calibration
+	cgtext, 0.10, 0.11, 'wavelength calibration residuals: ', /normal, charsize=0.7
+	cgtext, 0.10, 0.08, 'standard deviation = ' + $
+		cgnumber_formatter( stddev(residuals, /nan), decimals=3) + ' ' + STRING("305B), /normal, charsize=0.7
+	cgtext, 0.10, 0.06, 'root mean square = ' + $
+		cgnumber_formatter( sqrt( mean(residuals^2, /nan)), decimals=3) + ' ' + STRING("305B), /normal, charsize=0.7
+	cgtext, 0.10, 0.04, 'median absolute deviation = ' + $
+		cgnumber_formatter( median(abs(residuals)), decimals=3) + ' ' + STRING("305B), /normal, charsize=0.7
+
+
+	; print some stats on spectral resolution
+	cgtext, 0.50, 0.11, 'spectral resolution: ', /normal, charsize=0.7
+	cgtext, 0.50, 0.08, 'median R = ' + $
+		cgnumber_formatter( median(spectral_R), decimals=0), /normal, charsize=0.7
+	cgtext, 0.50, 0.06, 'stddev R = ' + $
+		cgnumber_formatter( stddev(spectral_R, /nan), decimals=0), /normal, charsize=0.7
+
+
+	; print some stats on velocity resolution
+	cgtext, 0.75, 0.11, 'median velocity resolution: ', /normal, charsize=0.7
+	cgtext, 0.75, 0.08, 'FWHM = ' + $
+		cgnumber_formatter( median(3d5/spectral_R), decimals=1) + ' km/s', /normal, charsize=0.7
+	cgtext, 0.75, 0.06, 'sigma = ' + $
+		cgnumber_formatter( median(3d5/spectral_R)/2.36, decimals=1) + ' km/s', /normal, charsize=0.7
+
+
+	cgPS_close
+
+
+END
+
+
 ;*******************************************************************************
 ;*******************************************************************************
 ;*******************************************************************************
@@ -176,6 +366,11 @@ PRO flame_checkdata, fuel
 
 	; calculate diagnostics from reference star
 	flame_checkdata_refstar, fuel
+
+	; calculate diagnostics for each slit
+	for i_slit=0, n_elements(fuel.slits)-1 do $
+		flame_checkdata_slit, fuel, i_slit=i_slit
+
 
 
   flame_util_module_end, fuel
