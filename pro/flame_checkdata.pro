@@ -172,7 +172,7 @@ END
 
 
 
-PRO flame_checkdata_slit, fuel, i_slit=i_slit
+PRO flame_checkdata_sky, fuel, i_slit=i_slit
 
 	print, 'Checking slit number ' + strtrim(fuel.slits[i_slit].number, 2)
 
@@ -287,9 +287,6 @@ PRO flame_checkdata_slit, fuel, i_slit=i_slit
 	; plot the result of the fit
 	;-------------------------------------
 
-  cgPS_open, fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
-		'-' + fuel.slits[i_slit].name +  '_datacheck.ps', /nomatch
-
 	; x axis range
 	xra=[lambda_axis[0], lambda_axis[-1]]
 
@@ -318,7 +315,7 @@ PRO flame_checkdata_slit, fuel, i_slit=i_slit
 	; panel 3: plot the spectral resolution
 	cgplot, sky_lambda_th, spectral_R, /ynozero, xra=xra, $
 		xsty=1, psym=16, color='red', symsize=0.7, $
-		xtit='pixel coordinate', ytit='spectral resolution R', charsize=0.8, $
+		xtit='wavelength (micron)', ytit='spectral resolution R', charsize=0.8, $
 		/noerase, position = [0.10, 0.20, 0.95, 0.45]
 	cgplot, [xra[0], xra[1]], [0,0]+median(spectral_R), /overplot, thick=3, linestyle=2
 
@@ -349,10 +346,20 @@ PRO flame_checkdata_slit, fuel, i_slit=i_slit
 		cgnumber_formatter( median(3d5/spectral_R)/2.36, decimals=1) + ' km/s', /normal, charsize=0.7
 
 
-	cgPS_close
+END
 
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+PRO flame_checkdata_speclines, fuel, i_slit=i_slit
+
+return
 
 END
+
 
 
 ;*******************************************************************************
@@ -368,9 +375,20 @@ PRO flame_checkdata, fuel
 	flame_checkdata_refstar, fuel
 
 	; calculate diagnostics for each slit
-	for i_slit=0, n_elements(fuel.slits)-1 do $
-		flame_checkdata_slit, fuel, i_slit=i_slit
+	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
+		cgPS_open, fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+			'-' + fuel.slits[i_slit].name +  '_datacheck.ps', /nomatch
+
+		; calculate diagnostics from the sky spectrum
+		flame_checkdata_sky, fuel, i_slit=i_slit
+
+		; show result of wavelength calibration on individual frames
+		flame_checkdata_speclines, fuel, i_slit=i_slit
+
+		cgPS_close
+
+	endfor
 
 
   flame_util_module_end, fuel
