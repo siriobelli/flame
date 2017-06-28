@@ -414,7 +414,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
   model_flux = model_flux[w_reasonable]
 
 	; start PS file
-  ps_filename = file_dirname(slit_filename, /mark_directory) + 'wavelength_solution_estimate.ps'
+  ps_filename = file_dirname(slit_filename, /mark_directory) + 'rough_wavelength_calibration.ps'
 	cgPS_open, ps_filename, /nomatch
 
 	; find the wavelength solution
