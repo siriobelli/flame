@@ -15,26 +15,16 @@ PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectificat
 	; how many pixels on the wavelength direction
 	N_lambda_pix = (size(slit_image))[1]
 
-	; calculate the wavelength solution using the rectification matrices
+	; create empty frame that will contain the wavelength solution
+	wavelength_solution = dblarr(N_lambda_pix, N_spatial_pix)
 
-	; make the arrays that will have the new coordinate of each pixel
-	lambda = slit_image * 0.0
-	gamma = lambda
+	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
+	for ix=0,N_lambda_pix-1 do $
+		for iy=0,N_spatial_pix-1 do begin
+			flame_util_transform_direct, rectification, x=ix, y=iy, lambda=lambda, gamma=gamma
+			wavelength_solution[ix, iy] = lambda
+		endfor
 
-	; order of polynomial
-	Nord = (size(rectification.Klambda))[1]
-	xexp  = findgen(Nord)
-	yexp  = findgen(Nord)
-
-	for ix=0.0,N_lambda_pix-1 do $
-		for iy=0.0,N_spatial_pix-1 do $
-			lambda[ix,iy] = lambda_0 + delta_lambda * total(((iy)^xexp # (ix)^yexp ) * rectification.Klambda)
-
-	for ix=0.0,N_lambda_pix-1 do $
-		for iy=0.0,N_spatial_pix-1 do $
-			gamma[ix,iy] = total(((iy)^xexp # (ix)^yexp ) * rectification.Kgamma)
-
-	wavelength_solution = lambda
 
 	;**************
 	; 2D B-spline *

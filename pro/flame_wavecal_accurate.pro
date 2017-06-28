@@ -105,20 +105,19 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		lambda_min:slit.outlambda_min, lambda_delta:slit.outlambda_delta}
 
 	; finally, output the actual wavelength calibration as a 2D array
-	wavecal_accurate = im * 0.0
 
-	; order of polynomial
-	Nord = (size(Klambda))[1]
-	xexp  = findgen(Nord)
-	yexp  = findgen(Nord)
+	; create empty frame that will contain the wavelength solution
+	wavelength_solution = im * 0.0
 
-	for ix=0.0,N_imx-1 do $
-		for iy=0.0,N_imy-1 do $
-			wavecal_accurate[ix,iy] = lambda_0 + delta_lambda * total(((iy)^xexp # (ix)^yexp ) * Klambda)
+	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
+	for ix=0, N_imx-1 do $
+		for iy=0, N_imy-1 do begin
+			flame_util_transform_direct, *cutout.rectification, x=ix, y=iy, lambda=lambda, gamma=gamma
+			wavelength_solution[ix, iy] = lambda
+		endfor
 
 	; write the accurate solution to a FITS file
-	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavecal_accurate, hdr
-
+	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D_bis.fits'), wavelength_solution, hdr
 
 END
 
@@ -299,17 +298,8 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	; -------------------------------------------------------
 	; plot the residuals of the wavelength solution
 
-	; extract the rectification matrix for lambda for this frame
-	Klambda = (*cutout.rectification).Klambda
-
-	; order of polynomial
-	Nord = (size(Klambda))[1]
-
-	xexp  = findgen(Nord)
-	yexp  = findgen(Nord)
-	lambda_model = dblarr(n_elements(speclines))
-	for i_OH=0, n_elements(speclines)-1 do lambda_model[i_OH] = $
-		slit.outlambda_min + slit.outlambda_delta * total(((speclines[i_OH].y)^xexp # (speclines[i_OH].x)^yexp ) * Klambda)
+	; calculate the wavelength solution at the location of the speclines
+	flame_util_transform_direct, *cutout.rectification, x=speclines.x, y=speclines.y, lambda=lambda_model, gamma=gamma_model
 
 	; show the residuals
 	cgplot, speclines.x, 1d4 * (speclines.lambda-lambda_model), psym=16, $
@@ -359,37 +349,15 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	; -------------------------------------------------------
 	; show the predicted position from the accurate 2D wavelength solution
 
-	; extract the rectification matrix for going from lambda,gamma to x,y to for this frame
-	Kx = (*cutout.rectification).Kx
-	Ky = (*cutout.rectification).Ky
-	Nord = (size(Kx))[1]
-	xexp  = findgen(Nord)
-	yexp  = findgen(Nord)
-
 	; generate the locus of points with fixed lambda and variable gamma
 	gamma_array = dindgen(max(y1))
 
-	; line1
-	x1_model = dblarr(n_elements(gamma_array))
-	for i=0, n_elements(x1_model)-1 do x1_model[i] = $
-		total(((gamma_array[i])^xexp # ( (lambda1-slit.outlambda_min)/slit.outlambda_delta )^yexp ) * Kx)
+	; apply the inverse transformation to obtain the (x, y) coordinates
+	flame_util_transform_inverse, (*cutout.rectification), lambda=gamma_array*0.0+lambda1, gamma=gamma_array, x=x1_model, y=y1_model
+	flame_util_transform_inverse, (*cutout.rectification), lambda=gamma_array*0.0+lambda2, gamma=gamma_array, x=x2_model, y=y2_model
 
-	y1_model = dblarr(n_elements(gamma_array))
-	for i=0, n_elements(y1_model)-1 do y1_model[i] = $
-		total(((gamma_array[i])^xexp # ( (lambda1-slit.outlambda_min)/slit.outlambda_delta )^yexp ) * Ky)
-
+	; plot the theoretical lines of fixed wavelength
 	cgplot, x1_model-x1_model[ (sort(abs(y1_model-y_ref)))[0] ], y1_model, /overplot, color='blu7', thick=5
-
-
-	; line2
-	x2_model = dblarr(n_elements(gamma_array))
-	for i=0, n_elements(x2_model)-1 do x2_model[i] = $
-		total(((gamma_array[i])^xexp # ( (lambda2-slit.outlambda_min)/slit.outlambda_delta )^yexp ) * Kx)
-
-	y2_model = dblarr(n_elements(gamma_array))
-	for i=0, n_elements(y2_model)-1 do y2_model[i] = $
-		total(((gamma_array[i])^xexp # ( (lambda2-slit.outlambda_min)/slit.outlambda_delta )^yexp ) * Ky)
-
 	cgplot, x2_model-x2_model[ (sort(abs(y2_model-y_ref)))[0] ] + offset, y2_model, /overplot, color='red7', thick=5
 
 
