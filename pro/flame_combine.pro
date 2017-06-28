@@ -109,22 +109,21 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	; select all X frames
 	w_X = where(diagnostics.offset_pos eq 'X', /null)
 
+	; read in a header with the wavelength calibration
+	header = headfits(flame_util_replace_string(filenames[0], '.fits', '_rectified.fits'))
 
-	; combine all frames for sky spectrum
+
+	; combine sky spectra
 	;*************************************
 
 	; rectified but non-sky-subtracted files
-	sky_filenames = flame_util_replace_string(filenames, '.fits', '_rectified.fits')
-
-	; read in the header with the wavelength calibration
-	header = headfits(sky_filenames[0])
+	sky_filenames = flame_util_replace_string(filenames, '.fits', '_skymodel_rectified.fits')
 
 	; stack and get the sky spectrum
-	stack_sky = flame_combine_stack(filenames=sky_filenames, sigma_clip=sigma_clip, sigma_im=stack_sky_sigma)
+	stack_sky = flame_combine_stack(filenames=sky_filenames, sigma_clip=sigma_clip)
 
 	; write out the sky spectrum
 	writefits, filename_prefix + '_stack_sky.fits', stack_sky, header
-	writefits, filename_prefix + '_stack_sky.fits', stack_sky_sigma, /append
 
 
 	; stack all A, B, and X frames
