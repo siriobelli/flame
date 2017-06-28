@@ -100,8 +100,9 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	polywarp, OH_x[w_goodpix], OH_y[w_goodpix], $
 		OH_lambdax[w_goodpix], OH_gamma[w_goodpix], degree, Kx, Ky, /double, status=status
 
-	; save into slit structure
-	*cutout.rectification = {Klambda:Klambda, Kgamma:Kgamma, Kx:Kx, Ky:Ky}
+	; save into slit structure - copy also the lambda_min and lambda_step parameters
+	*cutout.rectification = {Klambda:Klambda, Kgamma:Kgamma, Kx:Kx, Ky:Ky, $
+		lambda_min:slit.outlambda_min, lambda_delta:slit.outlambda_delta}
 
 	; finally, output the actual wavelength calibration as a 2D array
 	wavecal_accurate = im * 0.0
