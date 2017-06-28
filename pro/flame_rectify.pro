@@ -5,9 +5,13 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 
 	print, 'rectifying ', filename
 
+	; check whether there is an extension (containing the error spectrum)
+	rdfits_struct, filename, struct, /silent, /header_only
+	Next = n_tags(struct)
+
 	; read in file to rectify
 	im = mrdfits(filename, 0, header, /silent)
-	im_sigma = mrdfits(filename, 1, /silent)
+	if Next GT 1 then im_sigma = mrdfits(filename, 1, /silent)
 
 	; read dimensions of the image
 	N_imx = (size(im))[1]
@@ -21,14 +25,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 
 	; resample image onto new grid
 	new_im = poly_2D(im, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
-	new_im_sigma = poly_2D(im_sigma, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
-
-	;************** take care of NaNs
-	; NOTE: what you really want to do is to calculate the inverse transformation
-	; from real_y,lambda back to x,y and check for each pixel whether that was a NaN
-	;***************
-
-	; *********** wait a minute, I think that poly_2d treats NaNs correctly!!!!
+	if Next GT 1 then new_im_sigma = poly_2D(im_sigma, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
 
 	; add the wavelength calibration to the FITS header
 	SXADDPAR, Header, 'CTYPE1', 'AWAV    '
@@ -52,7 +49,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 
 	; write rectified image
 	writefits, output_name, new_im, header
-	writefits, output_name, new_im_sigma, /append
+	if Next GT 1 then writefits, output_name, new_im_sigma, /append
 
 END
 
@@ -81,6 +78,10 @@ PRO flame_rectify, fuel
 			; rectify observed frame
 			flame_rectify_one, filename=filename, rectification=(*this_cutout.rectification), $
 				output_name = flame_util_replace_string(filename, '.fits', '_rectified.fits'), slit=this_slit
+
+			; rectify sky model
+			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skymodel.fits'), rectification=(*this_cutout.rectification), $
+				output_name = flame_util_replace_string(filename, '.fits', '_skymodel_rectified.fits'), slit=this_slit
 
 			; rectify sky-subtracted frame
 			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skysub.fits'), rectification=(*this_cutout.rectification), $
