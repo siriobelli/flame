@@ -65,6 +65,7 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
   ; let's define a "good" fit one that satisfies these criteria:
   ; - Gaussian width not larger than 5 times the estimated value
   ; - peak must be positive
+  ; - peak is within the fitted range
   ; - signal/noise ratio of the peak must be larger than 5
 
   ; read in the frame
@@ -94,7 +95,9 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
     cgtext, 'A', 0.18, 0.85, /normal
 
     ; check if the A fit makes sense
-    if fit_A.width LT 5.0*est_width and fit_A.peak GT 0.0 and fit_A.peak/fit_A.peak_err GT 5.0 $
+    if fit_A.width LT 5.0*est_width and fit_A.peak GT 0.0 and $
+      fit_A.center GE A_yrange[0] and fit_A.center LE A_yrange[1] and $
+      fit_A.peak/fit_A.peak_err GT 5.0 $
       then A_ok = 1 else A_ok = 0
 
   endif else A_ok = 0
@@ -111,8 +114,10 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
     cgtext, 'B', 0.18, 0.38, /normal
 
     ; check if the B fit makes sense
-    if fit_B.width LT 5.0*est_width and fit_B.peak GT 0.0 and fit_B.peak/fit_B.peak_err GT 5.0 $
-      then B_ok = 1 else B_ok = 0
+    if fit_B.width LT 5.0*est_width and fit_B.peak GT 0.0 and $
+     fit_B.center GE B_yrange[0] and fit_B.center LE B_yrange[1] and $
+     fit_B.peak/fit_B.peak_err GT 5.0 $
+     then B_ok = 1 else B_ok = 0
 
   endif else B_ok = 0
 
