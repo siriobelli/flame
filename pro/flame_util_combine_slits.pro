@@ -193,8 +193,9 @@ PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_
     cube_weight = 1.0/cube_sigma^2
     spec_tot = total( cube*cube_weight , 3, /nan) / total( cube_weight , 3, /nan)
     spec_sigma_tot = 1.0 / sqrt( total( cube_weight , 3, /nan) )
-    if keyword_set(sky_filenames) then $
-      sky_tot = total( cube_sky*cube_weight , 3, /nan) / total( cube_weight , 3, /nan)
+    if keyword_set(sky_filenames) then $  ; NB: the skies are always combined linearly, with no weights
+      ;sky_tot = total( cube_sky*cube_weight , 3, /nan) / total( cube_weight , 3, /nan)
+      sky_tot = mean(cube_sky, dimension=3, /nan)
   endif
 
   ; ; option 2: weighted mean, all pixels in one frame have the same weight
