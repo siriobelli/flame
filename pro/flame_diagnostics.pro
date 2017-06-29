@@ -364,6 +364,7 @@ PRO flame_diagnostics_plot, diagnostics
 ; and airmass for the star trace as a function of frame number
 ;
 
+
   ; plot parameters
   extra_structure = {noerase:1, xtickformat:'(A1)', charsize:0.7, xsty:1, ynozero:1, psym:-16}
   x0 = 0.1
@@ -372,50 +373,79 @@ PRO flame_diagnostics_plot, diagnostics
   y1 = 0.95
   delta_y = (y1-y0)/5.0
 
- frame_num = diagnostics.frame_num
+  ; number of frames
+  Nfr = n_elements(diagnostics)
+
+  ; sequential number for frames: 0, 1, 2....
+  frame_seqnum = indgen(Nfr)
+
+  ; set the range for the x axis
+  xra=[0, Nfr-1]
+
+  ; these are the values used to label the x axis
+  xtickname = strtrim(fix(diagnostics.frame_num), 2)
+  xtickv = frame_seqnum
+  xminor = 1
+
+  ; if there are too many frames, only label some of them
+  while n_elements(xtickv) GT 18 do begin
+
+    ; make the array of subindices used to select every other element
+    if n_elements(xtickname) mod 2 eq 0 then $
+      subset = 2*indgen(n_elements(xtickname)/2) else $   ; if odd
+      subset = 2*indgen((1+n_elements(xtickname))/2)      ; if even, select also the last element
+
+    ; keep only every other element for the labeling of the axis
+    xtickname = xtickname[ subset ]
+    xtickv = xtickv[ subset ]
+
+    ; therefore, need to double the number of minor tick marks between two major marks
+    xminor *= 2
+
+  endwhile
+
 
   ; check if a reference star was measured
   if where( finite(diagnostics.flux), /null) NE !NULL then begin
 
-    ; if there are multiple frames with the same number (e.g. from two different nights)
-    ; then use sequential numbers instead
-    if n_elements( uniq(frame_num, sort(frame_num)) ) NE n_elements(frame_num) then $
-      frame_num = indgen( n_elements(diagnostics) )
-
     ; plot flux
-    cgplot, frame_num, diagnostics.flux/median(diagnostics.flux), $
-      _extra = extra_structure, xra=xra, $
-      ytit='flux / median', position=[x0,y1-delta_y,x1,y1]
+    cgplot, frame_seqnum, diagnostics.flux/median(diagnostics.flux), $
+      _extra = extra_structure, xra=xra, /xsty, $
+      ytit='flux / median', position=[x0,y1-delta_y,x1,y1], $
+      xtickv = xtickv, xticks=n_elements(xtickv)-1, xminor=xminor, xticklen=0.04
+
     cgplot, [0, 10000], 1+[0,0], /overplot
 
     ; plot seeing
-    cgplot, frame_num, diagnostics.seeing, $
-      _extra = extra_structure, xra=xra, $
-      ytit='FWHM (arcsec)', position=[x0,y1-2.0*delta_y,x1,y1-delta_y]
+    cgplot, frame_seqnum, diagnostics.seeing, $
+      _extra = extra_structure, xra=xra, /xsty, $
+      ytit='FWHM (arcsec)', position=[x0,y1-2.0*delta_y,x1,y1-delta_y], $
+      xtickv = xtickv, xticks=n_elements(xtickv)-1, xminor=xminor, xticklen=0.04
 
   endif
 
   ; plot position of A frames
   if where(diagnostics.offset_pos eq 'A', /null) ne !NULL then $
-    cgplot, frame_num[where(diagnostics.offset_pos eq 'A', /null)], $
+    cgplot, frame_seqnum[where(diagnostics.offset_pos eq 'A', /null)], $
       diagnostics[where(diagnostics.offset_pos eq 'A', /null)].position, $
-      _extra = extra_structure, xra=xra, $
-      ytit='A $\Delta$ y (pixels)', position=[x0,y1-3.0*delta_y,x1,y1-2.0*delta_y]
+      _extra = extra_structure, xra=xra, /xsty, $
+      ytit='A $\Delta$ y (pixels)', position=[x0,y1-3.0*delta_y,x1,y1-2.0*delta_y], $
+      xtickv = xtickv, xticks=n_elements(xtickv)-1, xminor=xminor, xticklen=0.04
 
   ; plot position of B frames
   if where(diagnostics.offset_pos eq 'B', /null) ne !NULL then $
-    cgplot, frame_num[where(diagnostics.offset_pos eq 'B', /null)], $
+    cgplot, frame_seqnum[where(diagnostics.offset_pos eq 'B', /null)], $
       diagnostics[where(diagnostics.offset_pos eq 'B', /null)].position, $
-      _extra = extra_structure, xra=xra, $
-      ytit='B $\Delta$ y (pixels)', position=[x0,y1-4.0*delta_y,x1,y1-3.0*delta_y]
+      _extra = extra_structure, xra=xra, /xsty, $
+      ytit='B $\Delta$ y (pixels)', position=[x0,y1-4.0*delta_y,x1,y1-3.0*delta_y], $
+      xtickv = xtickv, xticks=n_elements(xtickv)-1, xminor=xminor, xticklen=0.04
 
   ; plot airmass
   extra_structure.xtickformat = ''
-  cgplot, frame_num, diagnostics.airmass, $
-    _extra = extra_structure, xra=xra, $
-    ytit='airmass', xtit='frame number', position=[x0,y1-5.0*delta_y,x1,y1-4.0*delta_y]
-
-
+  cgplot, frame_seqnum, diagnostics.airmass, $
+    _extra = extra_structure, xra=xra, /xsty, $
+    ytit='airmass', xtit='frame number', position=[x0,y1-5.0*delta_y,x1,y1-4.0*delta_y], $
+    xtickv = xtickv, xticks=n_elements(xtickv)-1, xtickname=xtickname, xminor=xminor, xticklen=0.04
 
 END
 
