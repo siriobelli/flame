@@ -1,5 +1,10 @@
 
 PRO flame_checkdata_refstar, fuel
+;
+; Use the final stacked spectrum of the reference star to measure and plot
+; the effective seeing, and track seeing and vertical position as a function of wavelength.
+; Also extract and plot the 1D spectrum.
+;
 
 	; check if the reference star has been specified
 	if fuel.input.star_y_A eq 0.0 then return
@@ -57,9 +62,9 @@ PRO flame_checkdata_refstar, fuel
 
 	; calculate seeing in arcsec
 	median_seeing = 2.355 * ref_coeff[2] * fuel.instrument.pixel_scale
-	print, ''
 	print, 'The final effective seeing calculated from the reference star is ' + $
 	 	cgnumber_formatter(median_seeing, decimals=2) + ' arcsec.'
+	print, ''
 
 	; plot the median profile
 	cgplot, yaxis, ref_profile, psym=16, charsize=1, xtit='y pixel coordinate', $
@@ -173,6 +178,10 @@ END
 
 
 PRO flame_checkdata_sky, fuel, i_slit=i_slit
+;
+; For each slit, use the final stacked sky spectrum to measure spectral resolution
+; and residuals of the wavelength calibration. Show plot and print stats.
+;
 
 	print, 'Checking slit number ' + strtrim(fuel.slits[i_slit].number, 2)
 
@@ -355,8 +364,137 @@ END
 
 
 PRO flame_checkdata_speclines, fuel, i_slit=i_slit
+;
+; For a given slit, show the distribution of line widhts and wavelength residuals
+; of all speclines identifications, as a function of frame number, with the goal of
+; identifying problematic frames
+;
 
-return
+	this_slit = fuel.slits[i_slit]
+
+	; read in and stack together all the relevant info for each single speclines, for all frames
+	;----------------------------------------------------------------------------------
+
+	line_frame = []
+	line_width = []
+	line_resid = []
+
+	; number of frames
+	Nfr = n_elements(this_slit.cutouts)
+
+	; loop through each frame
+	for i_frame=0, Nfr-1 do begin
+		speclines = *this_slit.cutouts[i_frame].speclines
+
+		; calculate residuals
+		flame_util_transform_direct, *this_slit.cutouts[i_frame].rectification, $
+			x=speclines.x, y=speclines.y, lambda=lambda, gamma=gamma
+
+		line_frame = [line_frame, replicate(i_frame, n_elements(speclines))]
+		line_width = [line_width, speclines.sigma]
+		line_resid = [line_resid, 1d4*(lambda-speclines.lambda)]	; in angstrom
+
+
+	endfor
+
+	; total number of speclines for all frames
+	Nlines = n_elements(line_frame)
+
+	; take care of the frame numbers for the x axis titles (see also flame_diagnostics)
+	;----------------------------------------------------------------------------------
+
+	; slightly perturb the frame number to improve clarity in the plot
+	line_frame_pert = line_frame + 0.1*randomn(seed, Nlines)
+
+  ; these are the values used to label the x axis
+  xtickname = strtrim(fix(fuel.diagnostics.frame_num), 2)
+  xtickv = indgen(Nfr)
+  xminor = 1
+
+  ; if there are too many frames, only label some of them
+  while n_elements(xtickv) GT 18 do begin
+
+    ; make the array of subindices used to select every other element
+    if n_elements(xtickname) mod 2 eq 0 then $
+      subset = 2*indgen(n_elements(xtickname)/2) else $   ; if odd
+      subset = 2*indgen((1+n_elements(xtickname))/2)      ; if even, select also the last element
+
+    ; keep only every other element for the labeling of the axis
+    xtickname = xtickname[ subset ]
+    xtickv = xtickv[ subset ]
+
+    ; therefore, need to double the number of minor tick marks between two major marks
+    xminor *= 2
+
+  endwhile
+
+
+	; plot 1: line widths
+	;----------------------------------------------------------------------------------
+
+	; calculate reasonable range for plot
+	width_sorted = line_width[sort(line_width)]
+	width_range = [ width_sorted[0.05*Nlines], width_sorted[0.95*Nlines] ]
+	width_range += [-1.0, 1.0] * 0.5*(width_range[1]-width_range[0])
+
+	; plot distribution of linewidths
+	cgplot, line_frame_pert, line_width, psym=16, symsize=0.4, charsize=1, color='blk4', $
+		yra=width_range, /ysty, ytit='line width (raw pixels)', $
+		xra=[-1, Nfr], /xsty, xtit='frame number', $
+    xtickv=xtickv, xticks=n_elements(xtickv)-1, xtickname=xtickname, xminor=xminor
+
+	; overplot median for each frame
+	for i_frame=0, Nfr-1 do begin
+
+		; select speclines that belong to this frame
+		line_width_0 = line_width[ where(line_frame eq i_frame, /null) ]
+
+		; find percentiles to plot
+		width_sorted = line_width_0[sort(line_width_0)]
+		top68 = width_sorted[0.84*n_elements(width_sorted)]
+		bottom_68 = width_sorted[0.16*n_elements(width_sorted)]
+
+		; overplot median and 68 percentile
+		cgplot, [ i_frame ], [ median(line_width_0) ], $
+		/overplot, psym=16, color='red', $
+		/err_clip, err_yhigh=top68-median(line_width_0), err_ylow=median(line_width_0)-bottom_68
+
+	endfor
+
+
+	; plot 2: residuals
+	;----------------------------------------------------------------------------------
+
+	; calculate reasonable range for plot
+	resid_sorted = line_resid[sort(line_resid)]
+	resid_range = [ resid_sorted[0.05*Nlines], resid_sorted[0.95*Nlines] ]
+	resid_range += [-1.0, 1.0] * 0.5*(resid_range[1]-resid_range[0])
+
+	; plot distribution of residuals
+	cgplot, line_frame_pert, line_resid, psym=16, symsize=0.4, charsize=1, color='blk4', $
+		yra=resid_range, /ysty, ytit='residuals (angstrom)', $
+		xra=[-1, Nfr], /xsty, xtit='frame number', $
+    xtickv=xtickv, xticks=n_elements(xtickv)-1, xtickname=xtickname, xminor=xminor
+
+	; overplot median for each frame
+	for i_frame=0, Nfr-1 do begin
+
+		; select speclines that belong to this frame
+		line_resid_0 = line_resid[ where(line_frame eq i_frame, /null) ]
+
+		; find percentiles to plot
+		resid_sorted = line_resid_0[sort(line_resid_0)]
+		top68 = resid_sorted[0.84*n_elements(resid_sorted)]
+		bottom_68 = resid_sorted[0.16*n_elements(resid_sorted)]
+
+		; overplot median and 68 percentile
+		cgplot, [ i_frame ], [ median(line_resid_0) ], $
+		/overplot, psym=16, color='red', $
+		/err_clip, err_yhigh=top68-median(line_resid_0), err_ylow=median(line_resid_0)-bottom_68
+
+	endfor
+
+	cgplot, [-1, Nfr], [0, 0], /overplot, thick=3, linestyle=2
 
 END
 
