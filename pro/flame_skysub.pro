@@ -1,8 +1,8 @@
 
 
-PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectification, $
-	lambda_0=lambda_0, delta_lambda=delta_lambda
+PRO flame_skysub_oneframe, cutout
 
+	slit_filename = cutout.filename
 	print, 'Sky subtraction for ', slit_filename
 
 	; read in the slit image
@@ -21,7 +21,7 @@ PRO flame_skysub_oneframe, slit_filename=slit_filename, rectification=rectificat
 	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
 	for ix=0,N_lambda_pix-1 do $
 		for iy=0,N_spatial_pix-1 do begin
-			flame_util_transform_direct, rectification, x=ix, y=iy, lambda=lambda, gamma=gamma
+			flame_util_transform_direct, *(cutout.rectification), x=ix, y=iy, lambda=lambda, gamma=gamma
 			wavelength_solution[ix, iy] = lambda
 		endfor
 
@@ -97,29 +97,10 @@ PRO flame_skysub, fuel
 	flame_util_module_start, fuel, 'flame_skysub'
 
 
-	; extract the slits structures
-	slits = fuel.slits
-
- 	; loop through all the slits
-	for i_slit=0, n_elements(slits)-1 do begin
-
-		this_slit = fuel.slits[i_slit]
-
-		for i_frame=0, n_elements(this_slit.cutouts)-1 do begin
-
-			this_cutout = this_slit.cutouts[i_frame]
-
-			slit_filename = this_cutout.filename
-			rectification = *(this_cutout.rectification)
-			lambda_0 = this_slit.outlambda_min
-			delta_lambda = this_slit.outlambda_delta
-
-			flame_skysub_oneframe, slit_filename=slit_filename, $
-				rectification=rectification, lambda_0=lambda_0, delta_lambda=delta_lambda
-
-		endfor
-
-	endfor
+ 	; loop through all the slits & frames
+	for i_slit=0, n_elements(fuel.slits)-1 do $
+		for i_frame=0, fuel.util.N_frames-1 do $
+			flame_skysub_oneframe, fuel.slits[i_slit].cutouts[i_frame]
 
 
   flame_util_module_end, fuel
