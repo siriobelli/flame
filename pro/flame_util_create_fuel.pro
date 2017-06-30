@@ -130,6 +130,7 @@ FUNCTION flame_util_create_fuel, input
     identify_lines_poly_degree: 5, $
     identify_lines_Nmin_lines: 8, $
     wavesolution_degree: 3, $
+    skysub_plot_range: [0.4, 0.6], $
     combine_sigma_clip : 2.0, $
     start_time: systime(/seconds), $
     last_routine_time: systime(/seconds), $

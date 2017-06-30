@@ -1,6 +1,6 @@
 
 
-PRO flame_skysub_oneframe, cutout
+PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 
 	slit_filename = cutout.filename
 	print, 'Sky subtraction for ', slit_filename
@@ -32,23 +32,45 @@ PRO flame_skysub_oneframe, cutout
 
 	pixel_ycoord_2d = replicate(1, N_lambda_pix ) # indgen( N_spatial_pix )
 
+	; exclude bad pixels and the top and bottom 2 pixel rows
 	w_good = where(finite(slit_image) and finite(wavelength_solution) AND $
 		pixel_ycoord_2d GT 2 and pixel_ycoord_2d LT N_spatial_pix-3, /null, complement=w_bad )
 
+	; work in 1D
 	pixel_wavelength = wavelength_solution[w_good]
 	pixel_flux = slit_image[w_good]
+	pixel_sigma = slit_image_sigma[w_good]
 	pixel_ycoord = pixel_ycoord_2d[w_good]
 
-	; simple Poisson error - NOT USING THIS ANYMORE DURING ITERATIVE BSPLINE FITTING
-;	inverse_variance = 1.0/pixel_flux
-;	sigma = sqrt(pixel_flux)
+	; sort by wavelength
+	w_sort = sort(pixel_wavelength)
+	pixel_wavelength = pixel_wavelength[w_sort]
+	pixel_flux = pixel_flux[w_sort]
+	pixel_sigma = pixel_sigma[w_sort]
+	pixel_ycoord = pixel_ycoord[w_sort]
+
+	; for each object calculate the distance from the running median
+	pixel_delta = pixel_flux - median(pixel_flux, N_spatial_pix)
+
+  ; calculate local average
+	running_average = smooth(pixel_delta, N_spatial_pix*2, edge_truncate=1)
+
+  ; calculate local average of squares
+	running_average_square = smooth(pixel_delta^2, N_spatial_pix*2, edge_truncate=1)
+
+	; calculate running variance of the pixel_delta values
+	pixel_variance =  running_average_square - running_average^2
 
 	; use the wavelengths of all the pixels in the central row as breakpoints (or nodes) for the B-spline
 	breakpoints = wavelength_solution[*,N_spatial_pix/2]
 
-	; plot all pixels in a small wavelength range (from 1/4 to 2/4 of entire observed range)
+	; set the range for the plot
+	rel_range = fuel.util.skysub_plot_range
+	xrange=breakpoints[ [n_elements(breakpoints)*rel_range[0], n_elements(breakpoints)*rel_range[1]] ]
+
+	; plot all pixels in a small wavelength range
 	cgplot, pixel_wavelength, pixel_flux, psym=3, xtit='wavelength (micron)', $
-		xra=breakpoints[ [n_elements(breakpoints)*1/4, n_elements(breakpoints)*2/4] ], $
+		xra=xrange, $
 		title=(strsplit(slit_filename,'/', /extract))[-1]
 
 	; sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
@@ -56,7 +78,7 @@ PRO flame_skysub_oneframe, cutout
 	; 	outmask=outmask, upper=4.0, lower=4.0 )
 
 	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
-		fullbkpt=breakpoints, $
+		fullbkpt=breakpoints, invvar=1.0/pixel_variance, $
 		outmask=outmask, upper=4.0, lower=4.0 )
 
 	; wavelength axis finely sampled
@@ -100,7 +122,7 @@ PRO flame_skysub, fuel
  	; loop through all the slits & frames
 	for i_slit=0, n_elements(fuel.slits)-1 do $
 		for i_frame=0, fuel.util.N_frames-1 do $
-			flame_skysub_oneframe, fuel.slits[i_slit].cutouts[i_frame]
+			flame_skysub_oneframe, fuel=fuel, cutout=fuel.slits[i_slit].cutouts[i_frame]
 
 
   flame_util_module_end, fuel
