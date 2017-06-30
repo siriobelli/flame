@@ -212,11 +212,23 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
 	 ind3d = array_indices(cc_table, ind)
   best_coefficients = [ lambda_ref, pix_scale_grid[ind3d[2]], a2_grid[ind3d[1]], a3_grid[ind3d[0]] ]
 
-	print, ''
-  print, 'cross correlation at peak = ', max_cc
-  print, 'pixel shift = ', best_delta
-  print, 'pixel scale = ', best_coefficients[1]
-	print, 'a2 = ', best_coefficients[2]
+	print, ' '
+
+	; check if the best-fit values are at the edge of the grids
+	if n_elements(pix_scale_grid) GT 1 then if ind3d[2] eq 0 or ind3d[2] eq n_elements(pix_scale_grid) -1 then $
+		print, '******* WARNING! best-fit value for the pixel scale is at the edge of the grid! *******'
+
+	if n_elements(a2_grid) GT 1 then if ind3d[1] eq 0 or ind3d[1] eq n_elements(a2_grid) -1 then $
+		print, '******* WARNING! best-fit value for a2 is at the edge of the grid! *******'
+
+	if n_elements(a3_grid) GT 1 then if ind3d[0] eq 0 or ind3d[0] eq n_elements(a3_grid) -1 then $
+		print, '******* WARNING! best-fit value for a3 is at the edge of the grid! *******'
+
+		print, ''
+	  print, 'cross correlation at peak = ', max_cc
+	  print, 'pixel shift = ', best_delta
+	  print, 'pixel scale = ', best_coefficients[1]
+		print, 'a2 = ', best_coefficients[2]
 
   ; applying the shift best_delta to the polynomial we find another polynomial function:
   new_coefficients = [ poly(best_delta, best_coefficients), $
@@ -279,8 +291,8 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		print, 'SECOND STEP: rough estimate of second-order variation'
 
 		; set the size of the grid
-		N1 = 20
-		N2 = 40
+		N1 = 30
+		N2 = 60
 
 		; make the grid
 	  ; for the pixel scale, bracket the value found in the coarse fit, +/- 20% of its value
@@ -314,20 +326,19 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		print, 'THIRD STEP: refine wavelength solution by using non-uniform wavelength axis'
 
 		; set the size of the grid
-		N1 = 21
-		N2 = 41
+		N1 = 41
+		N2 = 61
 
 		; make the grid
-	  ; for the pixel scale, bracket the value found in the previous fit, +/- 10% of its value
-		pix_scale_grid = wavecal_coefficients[1] *( 0.90 + 0.20*dindgen(N1)/double(N1-1) )
+	  ; for the pixel scale, bracket the value found in the previous fit, +/- 20% of its value
+		pix_scale_grid = wavecal_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
 
-		; for the a2 grid, bracket the value found in the previous fit, +/- a factor of 3
-	  a2_grid =  wavecal_coefficients[2] *( 0.3 + 2.7*dindgen(N1)/double(N1-1) )
+		; for the a2 grid, bracket the value found in the previous fit, +/- a factor of 5
+	  a2_grid =  wavecal_coefficients[2] *( 0.2 + 4.8*dindgen(N1)/double(N1-1) )
 
 	  ; there should not be a large shift in wavelength now
 		fullrange = wavecal_coefficients[1]*n_elements(sky)
-	  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.1,0.1]
-
+	  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.05,0.05]
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
