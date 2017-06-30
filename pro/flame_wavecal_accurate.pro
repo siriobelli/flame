@@ -127,20 +127,21 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_illum_correction, slit=slit, cutout=cutout
+PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	;
-	; use the speclines to dervie and apply an illumination correction
+	; use the speclines to derive and apply an illumination correction
 	; along the spatial slit axis
 	;
 
-	;
-	; WARNING: THE ILLUMINATION-CORRECTED FRAMES ARE NOT ACTUALLY USED FOR NOW
-	;
+	cutout = fuel.slits[i_slit].cutouts[i_frame]
 
 	speclines = *cutout.speclines
 
 	; read in slit
-	im = readfits(cutout.filename, hdr)
+	im = mrdfits(cutout.filename, 0, hdr, /silent)
+	im_sigma = mrdfits(cutout.filename, 1, /silent)
+
+	; cutout dimensions
 	N_pixel_x = (size(im))[1]
 	N_pixel_y = (size(im))[2]
 
@@ -160,18 +161,9 @@ PRO flame_wavecal_illum_correction, slit=slit, cutout=cutout
 		OHnorm[w_thisline] = OHflux[w_thisline] / median(OHflux[w_thisline])
 	endfor
 
-	; extract the rectification matrix for gamma
-	Kgamma = (*cutout.rectification).Kgamma
-
-	; order of polynomial
-	Nord = (size(Kgamma))[1]
-	xexp  = findgen(Nord)
-	yexp  = findgen(Nord)
-
 	; calculate the gamma coordinate of each OHline detection
-	OHgamma = dblarr(n_elements(speclines))
-	for i_line=0, n_elements(speclines)-1 do $
-		OHgamma[i_line] = total(((speclines[i_line].y)^xexp # (speclines[i_line].x)^yexp ) * Kgamma)
+	flame_util_transform_direct, *cutout.rectification, x=speclines.x, y=speclines.y, $
+		lambda=OHlambda, gamma=OHgamma
 
 	; sort by gamma
 	sorted_gamma = OHgamma[sort(OHgamma)]
@@ -199,11 +191,13 @@ PRO flame_wavecal_illum_correction, slit=slit, cutout=cutout
 	; overplot flat illumination
 	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], [1,1], /overplot, linestyle=2, thick=3
 
-	; calculate the gamma coordinate for each observed pixel
+	; calculate the gamma coordinate for each observed pixel, row by row
 	gamma_coordinate = im * 0.0
-	for ix=0.0,N_pixel_x-1 do $
-		for iy=0.0,N_pixel_y-1 do $
-			gamma_coordinate[ix,iy] = total(((iy)^xexp # (ix)^yexp ) * Kgamma)
+	for i_row=0, N_pixel_y-1 do begin
+		flame_util_transform_direct, *cutout.rectification, x=dindgen(N_pixel_x), y=replicate(i_row, N_pixel_x), $
+			lambda=lambda_row, gamma=gamma_row
+		gamma_coordinate[*,i_row] = gamma_row
+	endfor
 
 	; calculate the illumination correction at each pixel
 	illumination_correction = poly(gamma_coordinate, poly_coeff)
@@ -214,9 +208,14 @@ PRO flame_wavecal_illum_correction, slit=slit, cutout=cutout
 
 	; apply illumination correction
 	im /= illumination_correction
+	im_sigma /= illumination_correction
 
 	; write out the illumination-corrected cutout
-  writefits, flame_util_replace_string(cutout.filename, '.fits', '_illumcorr.fits'), im, hdr
+  writefits, flame_util_replace_string(cutout.filename, '_corr', '_illcorr'), im, hdr
+	writefits, flame_util_replace_string(cutout.filename, '_corr', '_illcorr'), im_sigma, /append
+
+	; save the filename of the illumination-corrected frame in the cutout structure
+	fuel.slits[i_slit].cutouts[i_frame].filename = flame_util_replace_string(cutout.filename, '_corr', '_illcorr')
 
 
 END
@@ -401,14 +400,13 @@ PRO flame_wavecal_accurate, fuel
 				flame_wavecal_plots, slit=this_slit, cutout=this_slit.cutouts[i_frame]
 
 				; calculate and apply the illumination correction
-					flame_wavecal_illum_correction, slit=this_slit, cutout=this_slit.cutouts[i_frame]
+				if fuel.util.illumination_correction then $
+					flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 
 				cgPS_close
 
 
 		endfor
-
-		; make summary plots, including all frames for one slit
 
 	endfor
 
