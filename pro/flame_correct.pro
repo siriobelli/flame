@@ -27,17 +27,22 @@ PRO flame_correct_median_combine, filenames, outfilename
   ; read in first frame
   first_frame = readfits(filenames[0], hdr)
 
-  ; read the type of data (long, float, etc)
-  data_type = size(first_frame, /type)
+  ; if there is only one frame, then it's easy
+  if n_elements(filenames) eq 1 then master = first_frame else begin
 
-  ; make 3D array containing all frames at once
-  cube = make_array( (size(first_frame))[1], (size(first_frame))[2], n_elements(filenames), type=data_type )
+    ; read the type of data (long, float, etc)
+    data_type = size(first_frame, /type)
 
-  ; read in all frames into the cube
-  for i=0, n_elements(filenames)-1 do cube[*,*,i] = readfits(filenames[i])
+    ; make 3D array containing all frames at once
+    cube = make_array( (size(first_frame))[1], (size(first_frame))[2], n_elements(filenames), type=data_type )
 
-  ; take the median
-  master = median(cube, dimension=3)
+    ; read in all frames into the cube
+    for i=0, n_elements(filenames)-1 do cube[*,*,i] = readfits(filenames[i])
+
+    ; take the median
+    master = median(cube, dimension=3, /even)
+
+  endelse
 
   ; write out the master file
   writefits, outfilename, master, hdr
