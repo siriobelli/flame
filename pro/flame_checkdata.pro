@@ -45,6 +45,10 @@ PRO flame_checkdata_refstar, fuel
  	; median profile and fit
  	; -----------------------------
 
+	; get an idea of the seeing from the diagnostics
+	approx_seeing = median(fuel.diagnostics.seeing)		; FWHM, in arcsec
+	approx_seeing /= fuel.instrument.pixel_scale		; FWHM, in pixels
+
 	; make the y-axis
 	yaxis = dindgen( (size(ref_spec))[2] )
 
@@ -55,7 +59,7 @@ PRO flame_checkdata_refstar, fuel
 	est_peak = max(ref_profile, est_center)
 
 	; fit a gaussian to the integrated profile
-	wfit = where( finite(ref_profile) )
+	wfit = where( abs(yaxis-est_center) LT 1.5*approx_seeing and finite(ref_profile) )
   fit_result = gaussfit(yaxis[wfit], ref_profile[wfit], ref_coeff, nterms=4, $
     estimates=[ est_peak, est_center, 3.0, 0.0], $
     chisq=chisq, sigma=coeff_err)
@@ -101,16 +105,23 @@ PRO flame_checkdata_refstar, fuel
     ; spatial profile
     profile = median(cutout_bin, dimension=1)
 
-		; fit a Gaussian
-		wfit = where( finite(profile) )
-  	fit_result = gaussfit(yaxis[wfit], profile[wfit], coeff, nterms=4, $
-    	estimates=ref_coeff, $
-    	chisq=chisq, sigma=coeff_err)
+		; range to fit
+		wfit = where( abs(yaxis-est_center) LT 1.5*approx_seeing and finite(profile), /null )
 
-		; save the result of the fit
-		coord_x = [coord_x, 0.5*(starting_pixel+end_pixel)]
-		seeing = [seeing, 2.355 * coeff[2] * fuel.instrument.pixel_scale]
-		center = [center, coeff[1]]
+		; if there's nothing to fit, skip this bin
+		if n_elements(wfit) GT 4 then begin
+
+			; fit a Gaussian
+			fit_result = gaussfit(yaxis[wfit], profile[wfit], coeff, nterms=4, $
+	    	estimates=ref_coeff, $
+	    	chisq=chisq, sigma=coeff_err)
+
+			; save the result of the fit
+			coord_x = [coord_x, 0.5*(starting_pixel+end_pixel)]
+			seeing = [seeing, 2.355 * coeff[2] * fuel.instrument.pixel_scale]
+			center = [center, coeff[1]]
+
+		endif
 
     ; advance to next bin
     starting_pixel += binsize
