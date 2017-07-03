@@ -132,7 +132,7 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	for i_line=0,n_elements(line_list)-1 do begin
 
 		; select the region to fit
-		w_fit = where( abs(approx_wavecal-line_list[i_line]) LT 6.0*linewidth_um, /null )
+		w_fit = where( abs(approx_wavecal-line_list[i_line]) LT 0.5*fuel.util.identify_lines_linefit_window*linewidth_um, /null )
 
 		; check that the region is within the observed range
 		if w_fit eq !NULL then continue
@@ -332,6 +332,9 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 	approximate_linewidth_um = median(approx_lambda_axis) / (2.36 * fuel.instrument.resolution_slit1arcsec)
 	linewidth = approximate_linewidth_um / lambda_step
 
+  ; start with a larger linewidth, for a generous range where the line could be
+  linewidth *= 2.0
+
 	; as initial guess for the wavelength axis, use what found during the rough wavecal
 	wavelength_axis_guess = approx_lambda_axis
 
@@ -352,8 +355,8 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 		; extract this pixel row from the slit
 		this_row = im[*, i_row]
 
-		; if this is the first row of the bottom half, then use the initial wavelength guess
-		if i_row eq i0_bottom then wavelength_axis_guess = approx_lambda_axis
+		; if this is the first row of the bottom half, then use the wavelength solution found for the first row
+		if i_row eq i0_bottom then wavelength_axis_guess = wavelength_solution_0
 
 		; fit the emission lines and find the wavelength solution
 		flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=this_row, $
@@ -362,7 +365,10 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 			speclines=speclines_thisrow, wavecal=wavelength_axis_for_this_row, plot_title='row '+strtrim(i_row,2)
 
 		; if sky lines were not found, then skip to next row
-		if n_elements(speclines_thisrow) EQ 0 then continue
+		if n_elements(speclines_thisrow) EQ 0 then begin
+      print, ' (lines not found) ', format='(a,$)'
+      continue
+    endif
 
 		; set the y coordinate for the OH lines
 		speclines_thisrow.y = i_row
@@ -373,9 +379,17 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 		; save the wavelength solution
 		wavelength_solution[*, i_row] = wavelength_axis_for_this_row
 
-		; if a solution was found, then use it as the initial guess for the next row
-		if where(finite(wavelength_axis_for_this_row), /null) NE !NULL then $
+		; if a solution was found
+		if where(finite(wavelength_axis_for_this_row), /null) NE !NULL then begin
+
+      ; use it as the initial guess for the next row
 			wavelength_axis_guess = wavelength_axis_for_this_row
+
+      ; if not already done, save the "zero" solution for when doing the bottom half of the slit
+      if n_elements(wavelength_solution_0) eq 0 then $
+        wavelength_solution_0 = wavelength_axis_for_this_row
+
+    endif
 
 	endfor
 
