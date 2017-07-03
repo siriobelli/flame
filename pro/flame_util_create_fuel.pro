@@ -119,7 +119,7 @@ FUNCTION flame_util_create_fuel, input
     slitim_filename: 'slitim.fits', $
     flame_data_dir: data_dir, $
     sky_emission_filename: data_dir + 'sky_emission_model_nir.dat', $
-    linelist_filename: data_dir + 'line_list.dat', $
+    linelist_filename: data_dir + 'line_list_midres.dat', $
     star_x_range: [1000, 1200], $
     star_y_window: 0, $
     trace_slit_with_skylines : 1, $
