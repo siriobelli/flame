@@ -229,8 +229,8 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	linewidth_um = median(lambda_axis) / (2.36 * fuel.instrument.resolution_slit1arcsec)
 
 	; identify the OH lines that are in this wavelength range
-	w_lines = where(line_list GT min(lambda_axis, /nan) $
-		AND line_list LT max(lambda_axis, /nan), /null )
+	w_lines = where(line_list GT min(lambda_axis, /nan)+6.0*linewidth_um $
+		AND line_list LT max(lambda_axis, /nan)-6.0*linewidth_um, /null )
 
 	; make sure there are sky lines here
 	if w_lines EQ !NULL then begin
