@@ -93,34 +93,41 @@ FUNCTION flame_combine_AB, filename_top=filename_top, filename_bottom=filename_b
 	;
 
 	; read in frames with error spectra too
-	stack_top = mrdfits(filename_top, 0, /silent)
-	stack_top_sigma = mrdfits(filename_top, 1, /silent)
-	stack_bottom = mrdfits(filename_bottom, 0, /silent)
-	stack_bottom_sigma = mrdfits(filename_bottom, 1, /silent)
+	top = mrdfits(filename_top, 0, /silent)
+	top_sigma = mrdfits(filename_top, 1, /silent)
+	bottom = mrdfits(filename_bottom, 0, /silent)
+	bottom_sigma = mrdfits(filename_bottom, 1, /silent)
 
 	; A-B stack
-	stack_AB = stack_top - stack_bottom
-	stack_AB_sigma = sqrt(stack_top_sigma^2 + stack_bottom_sigma^2)
+	AB = top - bottom
+	AB_sigma = sqrt(top_sigma^2 + bottom_sigma^2)
+
+	; change NaNs into zeros, to properly account for the empty areas at the edges
+	AB[where(~finite(AB), /null)] = 0.0
 
 	; invert the A-B stack
-	stack_BA = -stack_AB
-	stack_BA_sigma = stack_AB_sigma
+	BA = -AB
+	BA_sigma = AB_sigma
 
 	; zero padding on top
-	padding = dblarr( (size(stack_top))[1], dithering_length )
+	padding = dblarr( (size(top))[1], dithering_length )
 	padding[*] = 0.0
-	AB_cleansum_padded = [ [stack_AB], [padding] ]
-	AB_cleansum_padded_sigma = [ [stack_AB_sigma], [padding] ]
-	BA_cleansum_padded = [ [stack_BA], [padding] ]
-	BA_cleansum_padded_sigma = [ [stack_BA_sigma], [padding] ]
+	AB_padded = [ [AB], [padding] ]
+	AB_padded_sigma = [ [AB_sigma], [padding] ]
+	BA_padded = [ [BA], [padding] ]
+	BA_padded_sigma = [ [BA_sigma], [padding] ]
 
 	; shift by the dithering length
-	BA_cleansum_shifted = shift(BA_cleansum_padded, 0, dithering_length)
-	BA_cleansum_shifted_sigma = shift(BA_cleansum_padded_sigma, 0, dithering_length)
+	BA_shifted = shift(BA_padded, 0, dithering_length)
+	BA_shifted_sigma = shift(BA_padded_sigma, 0, dithering_length)
 
 	; combine positive and negative
-	AB_combined = mean( [ [[AB_cleansum_padded]], [[BA_cleansum_shifted]] ], dimension=3, /nan )
-	sigma_im = 0.5 * sqrt( AB_cleansum_padded_sigma^2 + BA_cleansum_shifted_sigma^2 )
+	AB_combined = mean( [ [[AB_padded]], [[BA_shifted]] ], dimension=3, /nan )
+	sigma_im = sqrt( total( [ [[AB_padded_sigma^2]], [[BA_shifted_sigma^2]] ], 3, /nan ) ) / $
+	 	double( total( finite([ [[AB_padded_sigma]], [[BA_shifted_sigma]] ]), 3 ) )
+
+	; revert the true bad pixels (i.e., both A and B are NaN) into NaNs
+	AB_combined[where(~finite(sigma_im), /null)] = !values.d_nan
 
 	return, AB_combined
 
