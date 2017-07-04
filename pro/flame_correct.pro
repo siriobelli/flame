@@ -360,12 +360,8 @@ PRO flame_correct, fuel
   ; make bad pixel mask using darks and/or flats
   badpixel_mask = flame_correct_badpixel( fuel, master_dark, master_pixelflat )
 
-  ; create the master slit flat
-  if fuel.util.filenames_slitflat NE !NULL then $
-    flame_correct_median_combine, fuel.util.filenames_slitflat, fuel.util.master_getslit
 
-
-  ; apply corrections ----------------------------------------------------------
+  ; apply corrections to each frame ----------------------------------------------------------
 
   print, ''
   for i_frame=0,fuel.util.N_frames-1 do begin
@@ -443,6 +439,10 @@ PRO flame_correct, fuel
 
 
   endfor
+
+
+  ; create the master slit flat ----------------------------------------------
+  flame_correct_median_combine, fuel.util.filenames_slitflat, fuel.util.master_getslit
 
 
   flame_util_module_end, fuel
