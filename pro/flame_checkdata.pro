@@ -202,7 +202,7 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 
 	; filename of the output sky stack
 	skystack_filename = fuel.input.output_dir + 'slit' + $
-		string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name + '_stack_sky.fits'
+		string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name + '_sky.fits'
 
 	; load the sky spectrum
 	sky_spec2d = mrdfits(skystack_filename, 0, header, /silent)

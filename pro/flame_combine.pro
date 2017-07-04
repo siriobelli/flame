@@ -84,6 +84,53 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 
+FUNCTION flame_combine_AB, filename_top=filename_top, filename_bottom=filename_bottom, $
+		dithering_length=dithering_length, sigma_im=sigma_im
+	;
+	; For on-source dithering, combine A and B traces together.
+	; filename_top is the filename of the frame with the trace on top.
+	; Optionally output error spectrum
+	;
+
+	; read in frames with error spectra too
+	stack_top = mrdfits(filename_top, 0, /silent)
+	stack_top_sigma = mrdfits(filename_top, 1, /silent)
+	stack_bottom = mrdfits(filename_bottom, 0, /silent)
+	stack_bottom_sigma = mrdfits(filename_bottom, 1, /silent)
+
+	; A-B stack
+	stack_AB = stack_top - stack_bottom
+	stack_AB_sigma = sqrt(stack_top_sigma^2 + stack_bottom_sigma^2)
+
+	; invert the A-B stack
+	stack_BA = -stack_AB
+	stack_BA_sigma = stack_AB_sigma
+
+	; zero padding on top
+	padding = dblarr( (size(stack_top))[1], dithering_length )
+	padding[*] = 0.0
+	AB_cleansum_padded = [ [stack_AB], [padding] ]
+	AB_cleansum_padded_sigma = [ [stack_AB_sigma], [padding] ]
+	BA_cleansum_padded = [ [stack_BA], [padding] ]
+	BA_cleansum_padded_sigma = [ [stack_BA_sigma], [padding] ]
+
+	; shift by the dithering length
+	BA_cleansum_shifted = shift(BA_cleansum_padded, 0, dithering_length)
+	BA_cleansum_shifted_sigma = shift(BA_cleansum_padded_sigma, 0, dithering_length)
+
+	; combine positive and negative
+	AB_combined = mean( [ [[AB_cleansum_padded]], [[BA_cleansum_shifted]] ], dimension=3, /nan )
+	sigma_im = 0.5 * sqrt( AB_cleansum_padded_sigma^2 + BA_cleansum_shifted_sigma^2 )
+
+	return, AB_combined
+
+END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
 
 PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
@@ -123,7 +170,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	stack_sky = flame_combine_stack(filenames=sky_filenames, sigma_clip=sigma_clip)
 
 	; write out the sky spectrum
-	writefits, filename_prefix + '_stack_sky.fits', stack_sky, header
+	writefits, filename_prefix + '_sky.fits', stack_sky, header
 
 
 	; stack all A, B, and X frames
@@ -136,14 +183,14 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
 		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, sigma_im=stack_X_sigma)
-		writefits, filename_prefix + '_stack_X.fits', stack_X, header
-		writefits, filename_prefix + '_stack_X.fits', stack_X_sigma, /append
-		fuel.slits[i_slit].output_file = filename_prefix + '_stack_X.fits'
+		writefits, filename_prefix + '_X.fits', stack_X, header
+		writefits, filename_prefix + '_X.fits', stack_X_sigma, /append
+		fuel.slits[i_slit].output_file = filename_prefix + '_X.fits'
 
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
 		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, sigma_im=stack_X_skysub_sigma)
-		writefits, filename_prefix + '_stack_X_skysub.fits', stack_X_skysub, header
-		writefits, filename_prefix + '_stack_X_skysub.fits', stack_X_skysub_sigma, /append
+		writefits, filename_prefix + '_skysub_X.fits', stack_X_skysub, header
+		writefits, filename_prefix + '_skysub_X.fits', stack_X_skysub_sigma, /append
 
 	endif
 
@@ -151,14 +198,14 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
 		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, sigma_im=stack_B_sigma)
-		writefits, filename_prefix + '_stack_B.fits', stack_B, header
-		writefits, filename_prefix + '_stack_B.fits', stack_B_sigma, /append
-		fuel.slits[i_slit].output_file = filename_prefix + '_stack_B.fits'
+		writefits, filename_prefix + '_B.fits', stack_B, header
+		writefits, filename_prefix + '_B.fits', stack_B_sigma, /append
+		fuel.slits[i_slit].output_file = filename_prefix + '_B.fits'
 
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
 		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, sigma_im=stack_B_skysub_sigma)
-		writefits, filename_prefix + '_stack_B_skysub.fits', stack_B_skysub, header
-		writefits, filename_prefix + '_stack_B_skysub.fits', stack_B_skysub_sigma, /append
+		writefits, filename_prefix + '_skysub_B.fits', stack_B_skysub, header
+		writefits, filename_prefix + '_skysub_B.fits', stack_B_skysub_sigma, /append
 
 	endif
 
@@ -166,14 +213,14 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
 		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, sigma_im=stack_A_sigma)
-		writefits, filename_prefix + '_stack_A.fits', stack_A, header
-		writefits, filename_prefix + '_stack_A.fits', stack_A_sigma, /append
-		fuel.slits[i_slit].output_file = filename_prefix + '_stack_A.fits'
+		writefits, filename_prefix + '_A.fits', stack_A, header
+		writefits, filename_prefix + '_A.fits', stack_A_sigma, /append
+		fuel.slits[i_slit].output_file = filename_prefix + '_A.fits'
 
 		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
 		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, sigma_im=stack_A_skysub_sigma)
-		writefits, filename_prefix + '_stack_A_skysub.fits', stack_A_skysub, header
-		writefits, filename_prefix + '_stack_A_skysub.fits', stack_A_skysub_sigma, /append
+		writefits, filename_prefix + '_skysub_A.fits', stack_A_skysub, header
+		writefits, filename_prefix + '_skysub_A.fits', stack_A_skysub_sigma, /append
 
 	endif
 
@@ -183,43 +230,43 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	if w_B NE !NULL and w_X ne !NULL then begin
 
-		writefits, filename_prefix + '_stack_B-X.fits', stack_B - stack_X, header
-		writefits, filename_prefix + '_stack_B-X.fits', sqrt(stack_B_sigma^2 + stack_X_sigma^2), /append
+		writefits, filename_prefix + '_B-X.fits', stack_B - stack_X, header
+		writefits, filename_prefix + '_B-X.fits', sqrt(stack_B_sigma^2 + stack_X_sigma^2), /append
 
 		writefits, filename_prefix + '_rejectedpixels_B-X.fits', rejected_im_B + rejected_im_X, header
 
-		writefits, filename_prefix + '_stack_B-X_skysub.fits', stack_B_skysub - stack_X_skysub, header
-		writefits, filename_prefix + '_stack_B-X_skysub.fits', sqrt(stack_B_skysub_sigma^2 + stack_X_skysub_sigma^2), /append
+		writefits, filename_prefix + '_skysub_B-X.fits', stack_B_skysub - stack_X_skysub, header
+		writefits, filename_prefix + '_skysub_B-X.fits', sqrt(stack_B_skysub_sigma^2 + stack_X_skysub_sigma^2), /append
 
-		fuel.slits[i_slit].output_file = filename_prefix + '_stack_B-X_skysub.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B-X.fits'
 
 	endif
 
 	if w_A NE !NULL and w_X ne !NULL then begin
 
-		writefits, filename_prefix + '_stack_A-X.fits', stack_A - stack_X, header
-		writefits, filename_prefix + '_stack_A-X.fits', sqrt(stack_A_sigma^2 + stack_X_sigma^2), /append
+		writefits, filename_prefix + '_skysub_A-X.fits', stack_A - stack_X, header
+		writefits, filename_prefix + '_skysub_A-X.fits', sqrt(stack_A_sigma^2 + stack_X_sigma^2), /append
 
 		writefits, filename_prefix + '_rejectedpixels_A-X.fits', rejected_im_A + rejected_im_X, header
 
-		writefits, filename_prefix + '_stack_A-X_skysub.fits', stack_A_skysub - stack_X_skysub, header
-		writefits, filename_prefix + '_stack_A-X_skysub.fits', sqrt(stack_A_skysub_sigma^2 + stack_X_skysub_sigma^2), /append
+		writefits, filename_prefix + '_skysub_A-X.fits', stack_A_skysub - stack_X_skysub, header
+		writefits, filename_prefix + '_skysub_A-X.fits', sqrt(stack_A_skysub_sigma^2 + stack_X_skysub_sigma^2), /append
 
-		fuel.slits[i_slit].output_file = filename_prefix + '_stack_A-X_skysub.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-X.fits'
 
 	endif
 
 	if w_A NE !NULL and w_B ne !NULL then begin
 
-		writefits, filename_prefix + '_stack_A-B.fits', stack_A - stack_B, header
-		writefits, filename_prefix + '_stack_A-B.fits', sqrt(stack_A_sigma^2 + stack_B_sigma^2), /append
+		writefits, filename_prefix + '_A-B.fits', stack_A - stack_B, header
+		writefits, filename_prefix + '_A-B.fits', sqrt(stack_A_sigma^2 + stack_B_sigma^2), /append
 
 		writefits, filename_prefix + '_rejectedpixels_A-B.fits', rejected_im_A + rejected_im_B, header
 
-		writefits, filename_prefix + '_stack_A-B_skysub.fits', stack_A_skysub - stack_B_skysub, header
-		writefits, filename_prefix + '_stack_A-B_skysub.fits', sqrt(stack_A_skysub_sigma^2 + stack_B_skysub_sigma^2), /append
+		writefits, filename_prefix + '_skysub_A-B.fits', stack_A_skysub - stack_B_skysub, header
+		writefits, filename_prefix + '_skysub_A-B.fits', sqrt(stack_A_skysub_sigma^2 + stack_B_skysub_sigma^2), /append
 
-		fuel.slits[i_slit].output_file = filename_prefix + '_stack_A-B_skysub.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-B.fits'
 
 	endif
 
@@ -230,19 +277,6 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	; combine A and B into negative-positive-negative
 	;*************************************
 
-	; A-B stack
-	stack_AB = stack_A_skysub - stack_B_skysub
-	stack_AB_sigma = sqrt(stack_A_skysub_sigma^2 + stack_B_skysub_sigma^2)
-
-	; NOTE: if A is not the "top" position, then this is actually B-A.
-	; This ensures that the central trace of AB_combined is always positive
-	if diagnostics[w_A[0]].position LT diagnostics[w_B[0]].position then $
-		stack_AB = stack_B_skysub - stack_A_skysub
-
-	; invert the A-B stack
-	stack_BA = -stack_AB
-	stack_BA_sigma = stack_AB_sigma
-
 	; find the dithering length
 	; (keep in mind that the rectification step already shifted each frame to the floor() of the reference position)
 	dithering_length = abs( floor(diagnostics[w_A[0]].position) - floor(diagnostics[w_B[0]].position) )
@@ -250,31 +284,33 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	; if the dithering was not along the slit, then we are done
 	if dithering_length GE (size(stack_A))[2] then return
 
-	; zero padding on top
-	padding = dblarr( (size(stack_A))[1], dithering_length )
-	padding[*] = 0.0
-	AB_cleansum_padded = [ [stack_AB], [padding] ]
-	AB_cleansum_padded_sigma = [ [stack_AB_sigma], [padding] ]
-	BA_cleansum_padded = [ [stack_BA], [padding] ]
-	BA_cleansum_padded_sigma = [ [stack_BA_sigma], [padding] ]
+	; combine A and B traces
 
-	; shift by the dithering length
-	BA_cleansum_shifted = shift(BA_cleansum_padded, 0, dithering_length)
-	BA_cleansum_shifted_sigma = shift(BA_cleansum_padded_sigma, 0, dithering_length)
-
-	; combine positive and negative
-	AB_combined = mean( [ [[AB_cleansum_padded]], [[BA_cleansum_shifted]] ], dimension=3, /nan )
-	AB_combined_sigma = 0.5 * sqrt( AB_cleansum_padded_sigma^2 + BA_cleansum_shifted_sigma^2 )
+	; make sure to pick the right offset position for the "top" trace
+		if diagnostics[w_A[0]].position GT diagnostics[w_B[0]].position then begin
+			AB = flame_combine_AB( filename_top=filename_prefix + '_A.fits', filename_bottom=filename_prefix + '_B.fits', $
+				dithering_length=dithering_length, sigma_im=AB_sigma )
+			AB_skysub = flame_combine_AB( filename_top=filename_prefix + '_skysub_A.fits', filename_bottom=filename_prefix + '_skysub_B.fits', $
+				dithering_length=dithering_length, sigma_im=AB_skysub_sigma )
+		endif else begin
+			AB = flame_combine_AB( filename_top=filename_prefix + '_B.fits', filename_bottom=filename_prefix + '_A.fits', $
+				dithering_length=dithering_length, sigma_im=AB_sigma )
+			AB_skysub = flame_combine_AB( filename_top=filename_prefix + '_skysub_B.fits', filename_bottom=filename_prefix + '_skysub_A.fits', $
+				dithering_length=dithering_length, sigma_im=AB_skysub_sigma )
+		endelse
 
 	; output final result
-	writefits, filename_prefix + '_ABcombined.fits', AB_combined, header
-	writefits, filename_prefix + '_ABcombined.fits', AB_combined_sigma, /append
+	writefits, filename_prefix + '_ABcombined.fits', AB, header
+	writefits, filename_prefix + '_ABcombined.fits', AB_sigma, /append
+	writefits, filename_prefix + '_skysub_ABcombined.fits', AB_skysub, header
+	writefits, filename_prefix + '_skysub_ABcombined.fits', AB_skysub_sigma, /append
 
 	; also output the SNR map
-	writefits, filename_prefix + '_ABcombined_SNR.fits', AB_combined/AB_combined_sigma, header
+	writefits, filename_prefix + '_ABcombined_SNR.fits', AB/AB_sigma, header
+	writefits, filename_prefix + '_skysub_ABcombined_SNR.fits', AB_skysub/AB_skysub_sigma, header
 
 	; update the filename of the final output
-	fuel.slits[i_slit].output_file = filename_prefix + '_ABcombined.fits'
+	fuel.slits[i_slit].output_file = filename_prefix + '_skysub_ABcombined.fits'
 
 
 END
@@ -349,15 +385,15 @@ PRO flame_combine_multislit, fuel=fuel
 
 			; combine the A-B stacks
 			outname = fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
-				string(fuel.slits[j_slit].number, format='(I02)') + '_stack_A-B.fits'
-			flame_util_combine_slits, [filename_prefix_i + '_stack_A-B.fits', filename_prefix_j + '_stack_A-B.fits'], $
+				string(fuel.slits[j_slit].number, format='(I02)') + '_A-B.fits'
+			flame_util_combine_slits, [filename_prefix_i + '_A-B.fits', filename_prefix_j + '_A-B.fits'], $
 			 	output = outname, signs = signs, $
-				 sky_filenames=[filename_prefix_i + '_stack_sky.fits', filename_prefix_j + '_stack_sky.fits']
+				 sky_filenames=[filename_prefix_i + '_sky.fits', filename_prefix_j + '_sky.fits']
 
 			; combine the skysubtracted A-B stacks
 			outname = fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
-			 string(fuel.slits[j_slit].number, format='(I02)') + '_stack_A-B_skysub.fits'
- 			flame_util_combine_slits, [filename_prefix_i + '_stack_A-B_skysub.fits', filename_prefix_j + '_stack_A-B_skysub.fits'], $
+			 string(fuel.slits[j_slit].number, format='(I02)') + '_skysub_A-B.fits'
+ 			flame_util_combine_slits, [filename_prefix_i + '_skysub_A-B.fits', filename_prefix_j + '_skysub_A-B.fits'], $
  			 	output = outname, signs = signs
 
 			; update the file name of the final output
