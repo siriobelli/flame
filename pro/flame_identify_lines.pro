@@ -195,17 +195,14 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	; fit a polynomial to the skyline positions
 	wavesol_coeff = poly_fit( speclines.x, speclines.lambda, poly_degree )
 
+  ; ; calculate residuals
+  ; residuals = speclines.lambda-poly(speclines.x, wavesol_coeff)
+  ; sigma_res = stddev(residuals, /nan)
+  ; w_outliers = where(abs(residuals) GT 3.0*sigma_res, /null)
+  ; if n_elements(w_outliers) GT 0 then print, speclines[w_outliers].lambda
+
 	; calculate polynomial solution
 	poly_wl = poly(x, wavesol_coeff)
-
-	; properly handle regions with no information
-	; if where( ~finite(y), /null ) NE !NULL then begin	; check if there are NaNs in the input sky spectrum
-	; 	nosky_regions = label_region( ~finite(y) )		; this will have zero everywhere and N in the Nth "region" of NaNs
-	; 	nosky_regions[0] = nosky_regions[1]			; boundary issue
-	; 	nosky_regions[-1] = nosky_regions[-2]		; boundary issue
-	; 	if nosky_regions[1] ne 0 then poly_wl[ where(nosky_regions eq nosky_regions[1]) ] = !values.d_NaN	; void the region at the beginning
-	; 	if nosky_regions[-2] ne 0 then poly_wl[ where(nosky_regions eq nosky_regions[-2]) ] = !values.d_NaN	; void the region at the end
-	; endif
 
 	; charsize
 	ch = 0.8
@@ -491,10 +488,6 @@ PRO flame_identify_lines, fuel
 
 				; write a ds9 region file with the identified speclines
 				flame_identify_writeds9, speclines, filename=flame_util_replace_string(slit_filename, '.fits', '_speclines.reg')
-
-				; ; write a FITS file with the pixel-by-pixel wavelength solution
-				; writefits, flame_util_replace_string(slit_filename, '.fits', '_wavecal.fits'), $
-				; 	wavelength_solution, headfits(slit_filename)
 
 				; use the pixel-by-pixel wavelength solution OF THE FIRST FRAME to set the output grid in wavelength
 				if i_frame eq 0 then begin
