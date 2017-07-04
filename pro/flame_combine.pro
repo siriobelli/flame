@@ -7,10 +7,11 @@
 
 
 
-FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, rejected_im=rejected_im, sigma_im=sigma_im
+FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, rejected_im=rejected_im, error_image=error_image
 ;
 ; read in FITS files and mean-stack them doing a sigma clipping
 ; optionally, outputs an image with the number of masked pixels
+; and the error image
 ;
 
 	; number of frames
@@ -56,21 +57,24 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 	; make an image with the number of rejected pixels
 	rejected_im = total(mask_cube, 1)
 
-	; check if there are more than one extensions in the FITS file (i.e. sigma images)
+	; check if there are more than one extensions in the FITS file (i.e. error images)
 	fits_info, filenames[0], N_ext=N_ext, /silent
 
-	; if sigma images exist, then calculate the combined sigma image
-	if N_ext GE 2 then begin
+	; if sigma images exist, then calculate the combined error image
+	if N_ext GE 1 then begin
 
-			; read in the sigma images
-			im_cube_sigma = dblarr( N_frames, (size(im_0))[1], (size(im_0))[2] )
-			for i_frame=0,N_frames-1 do im_cube_sigma[i_frame,*,*] = mrdfits(filenames[i_frame], 1, /silent)
+			; read in the error images
+			error_cube = dblarr( N_frames, (size(im_0))[1], (size(im_0))[2] )
+			for i_frame=0,N_frames-1 do error_cube[i_frame,*,*] = mrdfits(filenames[i_frame], 1, /silent)
+
+			; turn masked pixels into NaNs
+			error_cube[where(mask_cube, /null)] = !values.d_nan
 
 			; make an image with the number of non-rejected pixels
 			nonrejected_im = N_frames - rejected_im
 
-			; make the final sigma image by adding the uncertainties in quadrature
-			sigma_im = sqrt( total(im_cube_sigma^2, 3, /nan)  ) / float(nonrejected_im)
+			; make the final error image by adding the uncertainties in quadrature
+			error_image = sqrt( total(error_cube^2, 1, /nan)  ) / float(nonrejected_im)
 
 	endif
 
@@ -85,7 +89,7 @@ END
 ;*******************************************************************************
 
 FUNCTION flame_combine_AB, filename_top=filename_top, filename_bottom=filename_bottom, $
-		dithering_length=dithering_length, sigma_im=sigma_im
+		dithering_length=dithering_length, error_image=error_image
 	;
 	; For on-source dithering, combine A and B traces together.
 	; filename_top is the filename of the frame with the trace on top.
@@ -123,11 +127,11 @@ FUNCTION flame_combine_AB, filename_top=filename_top, filename_bottom=filename_b
 
 	; combine positive and negative
 	AB_combined = mean( [ [[AB_padded]], [[BA_shifted]] ], dimension=3, /nan )
-	sigma_im = sqrt( total( [ [[AB_padded_sigma^2]], [[BA_shifted_sigma^2]] ], 3, /nan ) ) / $
+	error_image = sqrt( total( [ [[AB_padded_sigma^2]], [[BA_shifted_sigma^2]] ], 3, /nan ) ) / $
 	 	double( total( finite([ [[AB_padded_sigma]], [[BA_shifted_sigma]] ]), 3 ) )
 
 	; revert the true bad pixels (i.e., both A and B are NaN) into NaNs
-	AB_combined[where(~finite(sigma_im), /null)] = !values.d_nan
+	AB_combined[where(~finite(error_image), /null)] = !values.d_nan
 
 	return, AB_combined
 
@@ -189,13 +193,13 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_X ne !NULL then begin
 
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
-		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, sigma_im=stack_X_sigma)
+		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, error_image=stack_X_sigma)
 		writefits, filename_prefix + '_X.fits', stack_X, header
 		writefits, filename_prefix + '_X.fits', stack_X_sigma, /append
 		fuel.slits[i_slit].output_file = filename_prefix + '_X.fits'
 
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
-		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, sigma_im=stack_X_skysub_sigma)
+		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, error_image=stack_X_skysub_sigma)
 		writefits, filename_prefix + '_skysub_X.fits', stack_X_skysub, header
 		writefits, filename_prefix + '_skysub_X.fits', stack_X_skysub_sigma, /append
 
@@ -204,13 +208,13 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_B ne !NULL then begin
 
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
-		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, sigma_im=stack_B_sigma)
+		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, error_image=stack_B_sigma)
 		writefits, filename_prefix + '_B.fits', stack_B, header
 		writefits, filename_prefix + '_B.fits', stack_B_sigma, /append
 		fuel.slits[i_slit].output_file = filename_prefix + '_B.fits'
 
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
-		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, sigma_im=stack_B_skysub_sigma)
+		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, error_image=stack_B_skysub_sigma)
 		writefits, filename_prefix + '_skysub_B.fits', stack_B_skysub, header
 		writefits, filename_prefix + '_skysub_B.fits', stack_B_skysub_sigma, /append
 
@@ -219,13 +223,13 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_A ne !NULL then begin
 
 		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
-		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, sigma_im=stack_A_sigma)
+		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, error_image=stack_A_sigma)
 		writefits, filename_prefix + '_A.fits', stack_A, header
 		writefits, filename_prefix + '_A.fits', stack_A_sigma, /append
 		fuel.slits[i_slit].output_file = filename_prefix + '_A.fits'
 
 		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
-		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, sigma_im=stack_A_skysub_sigma)
+		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, error_image=stack_A_skysub_sigma)
 		writefits, filename_prefix + '_skysub_A.fits', stack_A_skysub, header
 		writefits, filename_prefix + '_skysub_A.fits', stack_A_skysub_sigma, /append
 
@@ -251,8 +255,8 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	if w_A NE !NULL and w_X ne !NULL then begin
 
-		writefits, filename_prefix + '_skysub_A-X.fits', stack_A - stack_X, header
-		writefits, filename_prefix + '_skysub_A-X.fits', sqrt(stack_A_sigma^2 + stack_X_sigma^2), /append
+		writefits, filename_prefix + '_A-X.fits', stack_A - stack_X, header
+		writefits, filename_prefix + '_A-X.fits', sqrt(stack_A_sigma^2 + stack_X_sigma^2), /append
 
 		writefits, filename_prefix + '_rejectedpixels_A-X.fits', rejected_im_A + rejected_im_X, header
 
@@ -296,14 +300,14 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	; make sure to pick the right offset position for the "top" trace
 		if diagnostics[w_A[0]].position GT diagnostics[w_B[0]].position then begin
 			AB = flame_combine_AB( filename_top=filename_prefix + '_A.fits', filename_bottom=filename_prefix + '_B.fits', $
-				dithering_length=dithering_length, sigma_im=AB_sigma )
+				dithering_length=dithering_length, error_image=AB_sigma )
 			AB_skysub = flame_combine_AB( filename_top=filename_prefix + '_skysub_A.fits', filename_bottom=filename_prefix + '_skysub_B.fits', $
-				dithering_length=dithering_length, sigma_im=AB_skysub_sigma )
+				dithering_length=dithering_length, error_image=AB_skysub_sigma )
 		endif else begin
 			AB = flame_combine_AB( filename_top=filename_prefix + '_B.fits', filename_bottom=filename_prefix + '_A.fits', $
-				dithering_length=dithering_length, sigma_im=AB_sigma )
+				dithering_length=dithering_length, error_image=AB_sigma )
 			AB_skysub = flame_combine_AB( filename_top=filename_prefix + '_skysub_B.fits', filename_bottom=filename_prefix + '_skysub_A.fits', $
-				dithering_length=dithering_length, sigma_im=AB_skysub_sigma )
+				dithering_length=dithering_length, error_image=AB_skysub_sigma )
 		endelse
 
 	; output final result
