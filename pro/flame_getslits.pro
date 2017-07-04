@@ -531,12 +531,12 @@ PRO flame_getslits_multislit, fuel=fuel
 
     if fuel.util.trace_slit_with_skylines eq 0 then begin
       ; identify top and bottom edge using sky background or flat lamp
-      slitid_top = flame_getslits_trace_continuum(image, approx_edges[1], /top )
-      slitid_bottom = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
+      slitid_top = flame_getslits_trace_continuum(image, edges_center[1], /top )
+      slitid_bottom = flame_getslits_trace_continuum(image, edges_center[0], /bottom )
     endif else begin
       ; identify top and bottom edge using OH lines (and in this case use the rectified image)
-      slitid_top = flame_getslits_trace_skylines(rectified_image, approx_edges[1], /top )
-      slitid_bottom = flame_getslits_trace_skylines(rectified_image, approx_edges[0], /bottom )
+      slitid_top = flame_getslits_trace_skylines(rectified_image, edges_center[1], /top )
+      slitid_bottom = flame_getslits_trace_skylines(rectified_image, edges_center[0], /bottom )
     endelse
 
     ; calculate the slit height
