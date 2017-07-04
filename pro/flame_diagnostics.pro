@@ -268,10 +268,12 @@ FUNCTION flame_diagnostics_fromdata, fuel
 
   for i_frame=0, fuel.util.N_frames-1 do begin
 
-    print, 'fitting star trace for ', fuel.util.science_filenames[i_frame] + ' at position ' + offset_pos[i_frame]
-
     ; if doing an A-B subtraction, then needs to find the sky frame
     if fuel.input.AB_subtraction then begin
+
+      ; for AB subtraction, you need at least two types of offset positions
+      if array_equal(offset_pos, offset_pos[0]) then $
+        message, 'input.AB_subtraction is set, but all frames are taken in the same offset position!'
 
       ; need to find the closest available frame (starting with the next one)
       distance = abs( i_frame+0.01 - indgen(fuel.util.N_frames) )
@@ -497,6 +499,33 @@ PRO flame_diagnostics, fuel
   new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:diagnostics, slits:fuel.slits }
   fuel=new_fuel
 
+
+  ; 5 - print out info
+  ;----------------------------------------
+
+  N_A = n_elements( where(diagnostics.offset_pos eq 'A', /null) )
+  N_B = n_elements( where(diagnostics.offset_pos eq 'B', /null) )
+  N_X = n_elements( where(diagnostics.offset_pos eq 'X', /null) )
+
+  print, ''
+  if N_A ne 0 then print, strtrim(N_A, 2) + ' frames in the A offset position'
+  if N_B ne 0 then print, strtrim(N_B, 2) + ' frames in the B offset position'
+  if N_X ne 0 then print, strtrim(N_X, 2) + ' frames in the X offset position (sky)'
+
+  ; for AB subtraction, you need at least two types of offset positions
+  if N_A*N_B eq 0 and N_A*N_X eq 0 and N_B*N_X eq 0 then $
+    message, 'input.AB_subtraction is set, but all frames are taken in the same offset position!'
+
+  ; if you have A and B then you should not have X
+  if N_A ne 0 and N_B ne 0 and N_X ne 0 then begin
+    print, ''
+    print, '**************************'
+    print, '***       WARNING      ***'
+    print, '**************************'
+    print, 'A and B frames are present.'
+    print, 'The frames marked X should not be present.'
+    print, 'Please check the offset positions and the input frames.'
+  endif
 
   flame_util_module_end, fuel
 
