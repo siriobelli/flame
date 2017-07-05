@@ -222,6 +222,7 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
     slits = { $
       number:1, $
       name:'longslit', $
+      skip:0, $
       PA:!values.d_nan, $
       approx_bottom:yrange[0], $
       approx_top:yrange[1], $
@@ -358,6 +359,7 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
     this_slit = { $
       number:slit_num[i_slit], $
       name:slit_name[i_slit], $
+      skip:0, $
       PA:slit_PA[i_slit], $
       approx_bottom:bottom[i_slit], $
       approx_top:top[i_slit], $

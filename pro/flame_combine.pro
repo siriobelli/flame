@@ -359,6 +359,8 @@ PRO flame_combine_multislit, fuel=fuel
 	; loop through the slits
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
+		if fuel.slits[i_slit].skip then continue
+
 		; if the dithering length is clearly smaller than the slit height, then it is an on-slit dithering
 		if dithering_length LE 0.85*fuel.slits[i_slit].height then continue
 		; otherwise, check whether we have a good match among the slits
@@ -372,6 +374,9 @@ PRO flame_combine_multislit, fuel=fuel
 
 		; select the slit with delta closest to zero
 		mindelta = min(abs(delta), j_slit)
+
+		; check that the candidate slit is not skipped
+		if fuel.slits[j_slit].skip then continue
 
 		; if the dithering length falls within the central 50% of the slit, then we have a match
 		if abs(mindelta) LT 0.5 then $
@@ -433,14 +438,29 @@ PRO flame_combine, fuel
  	; loop through all slits
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
+		if fuel.slits[i_slit].skip then continue
+
 		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name
+
+		; handle errors by ignoring that slit
+		catch, error_status
+		if error_status ne 0 then begin
+			print, ''
+	    print, '**************************'
+	    print, '***       WARNING      ***'
+	    print, '**************************'
+	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+			fuel.slits[i_slit].skip = 1
+			catch, /cancel
+			continue
+		endif
 
 		flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	endfor
 
 	; if there is more than one slit, it may be necessary to combine two different slits together
-	if n_elements(fuel.slits) GT 1 and fuel.input.AB_subtraction then flame_combine_multislit, fuel=fuel
+	if n_elements(where(fuel.slits.skip eq 0, /null)) GT 1 and fuel.input.AB_subtraction then flame_combine_multislit, fuel=fuel
 
 
 	flame_util_module_end, fuel

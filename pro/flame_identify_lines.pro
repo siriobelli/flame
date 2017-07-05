@@ -466,8 +466,25 @@ PRO flame_identify_lines, fuel
 	; loop through all slits
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
+    if fuel.slits[i_slit].skip then continue
+
 	  print, 'Finding emission lines for calibration for slit ', strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
 		print, ' '
+
+		; handle errors by ignoring that slit
+		catch, error_status
+		if error_status ne 0 then begin
+			print, ''
+      print, ''
+	    print, '**************************'
+	    print, '***       WARNING      ***'
+	    print, '**************************'
+      print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+      print, ''
+      fuel.slits[i_slit].skip = 1
+			catch, /cancel
+			continue
+		endif
 
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 

@@ -740,11 +740,10 @@ PRO flame_getslits, fuel
   ; write slitim (FITS file with slit image - just for diagnostics purpose)
   flame_getslits_write_slitim, fuel=fuel
 
-  ; if we are reducing only one slit, then delete all the others
-  if fuel.input.reduce_only_oneslit ne 0 and n_elements(fuel.slits) GT 1 then begin
-    new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, $
-      diagnostics:fuel.diagnostics, slits:fuel.slits[fuel.input.reduce_only_oneslit-1] }
-    fuel=new_fuel
+  ; if we are reducing only one slit, then set the skip flag in all the others
+  if fuel.input.reduce_only_oneslit ne 0 then begin
+    fuel.slits.skip = 1
+    fuel.slits[fuel.input.reduce_only_oneslit].skip = 0
   endif
 
 

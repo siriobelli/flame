@@ -120,9 +120,27 @@ PRO flame_skysub, fuel
 
 
  	; loop through all the slits & frames
-	for i_slit=0, n_elements(fuel.slits)-1 do $
+	for i_slit=0, n_elements(fuel.slits)-1 do begin
+
+		if fuel.slits[i_slit].skip then continue
+
+		; handle errors by ignoring that slit
+		catch, error_status
+		if error_status ne 0 then begin
+			print, ''
+	    print, '**************************'
+	    print, '***       WARNING      ***'
+	    print, '**************************'
+	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+			fuel.slits[i_slit].skip = 1
+			catch, /cancel
+			continue
+		endif
+
 		for i_frame=0, fuel.util.N_frames-1 do $
 			flame_skysub_oneframe, fuel=fuel, cutout=fuel.slits[i_slit].cutouts[i_frame]
+
+	endfor
 
 
   flame_util_module_end, fuel

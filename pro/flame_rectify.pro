@@ -65,9 +65,24 @@ PRO flame_rectify, fuel
 	; loop through all slits
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
+		if fuel.slits[i_slit].skip then continue
+
 		this_slit = fuel.slits[i_slit]
 
 		print, 'Rectifying slit ', this_slit.number, ' - ', this_slit.name
+
+		; handle errors by ignoring that slit
+		catch, error_status
+		if error_status ne 0 then begin
+			print, ''
+	    print, '**************************'
+	    print, '***       WARNING      ***'
+	    print, '**************************'
+	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+			fuel.slits[i_slit].skip = 1
+			catch, /cancel
+			continue
+		endif
 
 		for i_frame=0, n_elements(this_slit.cutouts)-1 do begin
 

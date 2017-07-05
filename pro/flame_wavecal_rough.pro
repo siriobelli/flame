@@ -463,15 +463,28 @@ PRO flame_wavecal_rough, fuel
 	; loop through all slits
 	for i_slit=0, n_elements(slits)-1 do begin
 
-		this_slit = fuel.slits[i_slit]
+		if fuel.slits[i_slit].skip then continue
 
 		print, ''
 		print, ''
-	  print, 'Rough wavelength calibration for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
+	  print, 'Rough wavelength calibration for slit ', strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
 		print, '--------------------------------------------------------------------'
 		print, ''
 
-		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=this_slit, rough_skyspec=rough_skyspec)
+		; handle errors by ignoring that slit
+		catch, error_status
+		if error_status ne 0 then begin
+			print, ''
+	    print, '**************************'
+	    print, '***       WARNING      ***'
+	    print, '**************************'
+	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+			fuel.slits[i_slit].skip = 1
+			catch, /cancel
+			continue
+		endif
+
+		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyspec=rough_skyspec)
     *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
 		*(fuel.slits[i_slit].rough_skyspec) = rough_skyspec
 

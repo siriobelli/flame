@@ -69,6 +69,8 @@ PRO flame_cutout_slits, fuel
   print,'Slits: ', n_elements(slits)
   for i_slit=0, n_elements(slits)-1 do begin
 
+    if slits[i_slit].skip then continue
+
     print,'Working on slit ', slits[i_slit].name, ' - ', slits[i_slit].number
 
     ; create directory

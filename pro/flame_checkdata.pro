@@ -21,7 +21,7 @@ PRO flame_checkdata_refstar, fuel
 				i_ref = i_slit
 
 	; if there is no slit with the reference star, then exit
-	if i_ref eq -1 then begin
+	if fuel.slits[i_ref].skip then begin
 		print, 'Did not find the slit with the reference star.'
 		return
 	endif
@@ -526,8 +526,24 @@ PRO flame_checkdata, fuel
 	; calculate diagnostics for each slit
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
+		if fuel.slits[i_slit].skip then continue
+
 		cgPS_open, fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
 			'-' + fuel.slits[i_slit].name +  '_datacheck.ps', /nomatch
+
+		; handle errors by ignoring that slit
+		catch, error_status
+		if error_status ne 0 then begin
+			print, ''
+	    print, '**************************'
+	    print, '***       WARNING      ***'
+	    print, '**************************'
+	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+			fuel.slits[i_slit].skip = 1
+			cgPS_close
+			catch, /cancel
+			continue
+		endif
 
 		; calculate diagnostics from the sky spectrum
 		flame_checkdata_sky, fuel, i_slit=i_slit
