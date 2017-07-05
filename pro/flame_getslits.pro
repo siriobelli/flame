@@ -743,7 +743,7 @@ PRO flame_getslits, fuel
   ; if we are reducing only one slit, then set the skip flag in all the others
   if fuel.input.reduce_only_oneslit ne 0 then begin
     fuel.slits.skip = 1
-    fuel.slits[fuel.input.reduce_only_oneslit].skip = 0
+    fuel.slits[fuel.input.reduce_only_oneslit-1].skip = 0
   endif
 
 
