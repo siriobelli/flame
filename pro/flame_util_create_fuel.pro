@@ -126,7 +126,7 @@ FUNCTION flame_util_create_fuel, input
     wavecal_rough_continuum_degree: 0, $
     identify_lines_poly_degree: 5, $
     identify_lines_Nmin_lines: 8, $
-    identify_lines_linefit_window: 5.0, $       ; in units of expected linewidth
+    identify_lines_linefit_window: 6.0, $       ; in units of expected linewidth
     wavesolution_degree: 3, $
     skysub_plot_range: [0.4, 0.6], $
     combine_sigma_clip : 2.0, $

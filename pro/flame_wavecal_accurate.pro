@@ -117,7 +117,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		endfor
 
 	; write the accurate solution to a FITS file
-	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D_bis.fits'), wavelength_solution, hdr
+	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
 
 END
 
