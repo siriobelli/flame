@@ -558,7 +558,7 @@ PRO flame_checkdata, fuel
 	print, ''
 	print, 'Outline of slits:'
 	for i_slit=0, n_elements(fuel.slits)-1 do $
-		print, 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + ' - ', $
+		print, 'slit ' + string(fuel.slits[i_slit].number, format='(I02)') + ' - ', $
 			fuel.slits[i_slit].name, string(9B) + string(9B) + ([' reduced', ' not reduced'])[fuel.slits[i_slit].skip]
 
 
