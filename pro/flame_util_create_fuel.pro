@@ -84,10 +84,7 @@ FUNCTION flame_util_create_fuel, input
 
   ; read slit-flat filenames
   filenames_slitflat = flame_create_fuel_loadfiles(input.slitflat_filelist)
-  if keyword_set(filenames_slitflat) then print, 'Reading slit flat frames: ', filenames_slitflat $
-    else $
-    if N_frames GE 3 then filenames_slitflat = corrscience_filenames[fix(N_frames/2)-1:fix(N_frames/2)+1] $
-      else filenames_slitflat = corrscience_filenames[N_frames/2]
+  if keyword_set(filenames_slitflat) then print, 'Reading slit flat frames: ', filenames_slitflat
 
   ; check that the dither file exists and read it
   dither_file_norm = strlowcase( strtrim( input.dither_file, 2 ))

@@ -245,7 +245,7 @@ FUNCTION flame_initialize_lris, input
       fxaddpar, header, 'EXPTIME', fxpar(header, 'ELAPTIME', missing=1.0), 'added by flame; see ELAPTIME'
 
     ; write the new FITS file
-    mwrfits, image, new_filenames[i], header
+    writefits, new_filenames[i], image, header
 
   endfor
 
@@ -255,11 +255,16 @@ FUNCTION flame_initialize_lris, input
   ; if provided, do the same to the slit flats
   if fuel.util.filenames_slitflat ne !NULL then $
     for i=0, n_elements(fuel.util.filenames_slitflat)-1 do begin
+
+      if ~file_test(fuel.util.filenames_slitflat[i]) then $
+        message, fuel.util.filenames_slitflat[i] + ' does not exist!'
+
       image = readmhdufits(fuel.util.filenames_slitflat[i], header=header, gaindata=gaindata)
       image = transpose(image)
       new_filename = lris_dir + file_basename(fuel.util.filenames_slitflat[i])
-      mwrfits, image, new_filename, header
+      writefits, new_filename, image, header
       fuel.util.filenames_slitflat[i] = new_filename
+
     endfor
 
   ; -----------------------------------------------------------------

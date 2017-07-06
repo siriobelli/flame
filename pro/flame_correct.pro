@@ -345,11 +345,88 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 
+PRO flame_correct_oneframe, fuel, filename_raw, filename_corr, $
+    master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
+
+  ; read in raw frame
+  frame = readfits(filename_raw, header)
+
+  ; CORRECTION 0: cosmic rays
+  if fuel.util.clean_individual_frames then begin
+
+    ; identify cosmic rays using L.A. Cosmic
+    la_cosmic, filename_raw, gain=fuel.instrument.gain, readn=fuel.instrument.readnoise, $
+    masklist = flame_util_replace_string( filename_corr, '_corr.fits', '_mask.fits'), $
+    outlist = flame_util_replace_string( filename_corr, '_corr.fits', '_cleaned.fits')
+
+    ; read in the cosmic ray mask
+    cr_mask = readfits( flame_util_replace_string( filename_corr, '_corr.fits', '_mask.fits') )
+
+    ; set the CRs to NaNs
+    frame[where(cr_mask, /null)] = !values.d_nan
+
+  endif
+
+  ; CORRECTION 1: non-linearity
+  frame_corr1 = poly(frame, fuel.instrument.linearity_correction )
+
+  ; CORRECTION 2: pixel flat field
+  if master_pixelflat NE !NULL then $
+    frame_corr2 = frame_corr1 / master_pixelflat $
+    else frame_corr2 = frame_corr1
+
+  ; CORRECTION 3: bad pixels
+  frame_corr3 = frame_corr2
+  if badpixel_mask NE !NULL then $
+    frame_corr3[where(badpixel_mask, /null)] = !values.d_nan
+
+  ; CORRECTION 4: convert to electrons per second
+
+  ; first convert from ADU to electrons
+  frame_electrons = frame_corr3 * fuel.instrument.gain
+
+  ; find the exposure time
+  exptime = fxpar(header, 'EXPTIME', missing=-1.0)
+  if exptime EQ -1.0 then begin
+    print, 'EXPTIME not found; setting to 1 second.'
+    exptime = 1.0
+  endif
+
+  ; now convert electrons to electrons per second
+  frame_corr4 = frame_electrons / exptime
+
+  ; change the flux units in the header
+  fxaddpar, header, 'BUNIT', 'electrons per second', ' '
+
+  ; ------------------------------------
+  ; error spectrum
+
+  ; make the error image in units of electrons (Poisson + readnoise )
+  frame_sigma_electrons = fuel.instrument.readnoise + sqrt(frame_electrons)
+
+  ; convert to electrons per second
+  frame_sigma = frame_sigma_electrons / exptime
+
+  ; ------------------------------------
+  ; write output
+
+  ; corrected frame in the first HDU, error frame in the second one
+  writefits, filename_corr, frame_corr4, header
+  writefits, filename_corr, frame_sigma, /append
+
+
+END
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
 
 PRO flame_correct, fuel
 
 	flame_util_module_start, fuel, 'flame_correct'
 
+  N_frames = fuel.util.N_frames
 
   ; create the master dark
   master_dark = flame_correct_master_dark( fuel )
@@ -363,86 +440,70 @@ PRO flame_correct, fuel
 
   ; apply corrections to each frame ----------------------------------------------------------
 
+  ; L.A. Cosmic notice
+  if fuel.util.clean_individual_frames then begin
+    print, '----------------------------------------------------'
+    print, ''
+    print, ' L.A. Cosmic: Laplacian cosmic ray removal'
+    print, ''
+    print, '      by Pieter van Dokkum'
+    print, '    IDL version by Josh Bloom'
+    print, ''
+    print, ' see van Dokkum P. G., 2001, PASP, 113, 1420  '
+    print, '----------------------------------------------------'
+  endif
+
   print, ''
-  for i_frame=0,fuel.util.N_frames-1 do begin
+
+  for i_frame=0,N_frames-1 do begin
 
     print, 'Correcting frame ', fuel.util.science_filenames[i_frame]
 
+    ; name for the raw frame (i.e. the input)
+    filename_raw = fuel.util.science_filenames[i_frame]
+
     ; name for the corrected frame (i.e. the output)
-    filename_corr = (fuel.util.corrscience_filenames)[i_frame]
+    filename_corr = fuel.util.corrscience_filenames[i_frame]
 
-    ; read in science frame
-    frame = readfits(fuel.util.science_filenames[i_frame], header)
-
-    ; CORRECTION 0: cosmic rays
-    if fuel.util.clean_individual_frames then begin
-
-      ; identify cosmic rays using L.A. Cosmic
-      la_cosmic, fuel.util.science_filenames[i_frame], gain=fuel.instrument.gain, readn=fuel.instrument.readnoise, $
-      masklist = flame_util_replace_string( filename_corr, '_corr.fits', '_mask.fits'), $
-      outlist = flame_util_replace_string( filename_corr, '_corr.fits', '_cleaned.fits')
-
-      ; read in the cosmic ray mask
-      cr_mask = readfits( flame_util_replace_string( filename_corr, '_corr.fits', '_mask.fits') )
-
-      ; set the CRs to NaNs
-      frame[where(cr_mask, /null)] = !values.d_nan
-
-    endif
-
-    ; CORRECTION 1: non-linearity
-    frame_corr1 = poly(frame, fuel.instrument.linearity_correction )
-
-    ; CORRECTION 2: pixel flat field
-    if master_pixelflat NE !NULL then $
-      frame_corr2 = frame_corr1 / master_pixelflat $
-      else frame_corr2 = frame_corr1
-
-    ; CORRECTION 3: bad pixels
-    frame_corr3 = frame_corr2
-    if badpixel_mask NE !NULL then $
-      frame_corr3[where(badpixel_mask, /null)] = !values.d_nan
-
-    ; CORRECTION 4: convert to electrons per second
-
-    ; first convert from ADU to electrons
-    frame_electrons = frame_corr3 * fuel.instrument.gain
-
-    ; find the exposure time
-    exptime = fxpar(header, 'EXPTIME', missing=-1.0)
-    if exptime EQ -1.0 then begin
-      print, 'EXPTIME not found; setting to 1 second.'
-      exptime = 1.0
-    endif
-
-    ; now convert electrons to electrons per second
-    frame_corr4 = frame_electrons / exptime
-
-    ; change the flux units in the header
-    fxaddpar, header, 'BUNIT', 'electrons per second', ' '
-
-    ; ------------------------------------
-    ; error spectrum
-
-    ; make the error image in units of electrons (Poisson + readnoise )
-    frame_sigma_electrons = fuel.instrument.readnoise + sqrt(frame_electrons)
-
-    ; convert to electrons per second
-    frame_sigma = frame_sigma_electrons / exptime
-
-    ; ------------------------------------
-    ; write output
-
-    ; corrected frame in the first HDU, error frame in the second one
-    writefits, filename_corr, frame_corr4, header
-    writefits, filename_corr, frame_sigma, /append
-
+    ; apply corrections and create "corrected" file
+    flame_correct_oneframe, fuel, filename_raw, filename_corr, $
+      master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
 
   endfor
 
 
   ; create the master slit flat ----------------------------------------------
-  flame_correct_median_combine, fuel.util.filenames_slitflat, fuel.util.master_getslit
+
+  ; if not specified by user, then use the three center-most science frames
+  if fuel.util.filenames_slitflat eq !NULL then begin
+
+    if N_frames GE 3 then filenames_slitflat = fuel.util.science_filenames[fix(N_frames/2)-1:fix(N_frames/2)+1] $
+      else filenames_slitflat = fuel.util.science_filenames[N_frames/2]
+
+  endif else $
+    filenames_slitflat = fuel.util.filenames_slitflat
+
+  filenames_slitflat_corr = strarr(n_elements(filenames_slitflat))
+
+  ; loop through slitflat frames
+  for i=0, n_elements(filenames_slitflat)-1 do begin
+
+    filename_raw = filenames_slitflat[i]
+
+    ; if this slitflat is NOT also a science frame, then apply correction
+    if array_equal(filename_raw, fuel.util.science_filenames, /not_equal) eq 1 then begin
+      filenames_slitflat_corr[i] = flame_util_replace_string( filename_raw, '.fits', '_corr.fits')
+      flame_correct_oneframe, fuel, filename_raw, filenames_slitflat_corr[i], $
+        master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
+    endif else $
+      filenames_slitflat_corr[i] = (fuel.util.corrscience_filenames)[where(fuel.util.science_filenames eq filename_raw, /null)]
+
+  endfor
+
+
+  ; median-combine the frames to make the master slit flat
+  flame_correct_median_combine, filenames_slitflat_corr, fuel.util.master_getslit
+
 
 
   flame_util_module_end, fuel
