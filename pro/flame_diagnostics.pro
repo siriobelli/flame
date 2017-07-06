@@ -513,8 +513,9 @@ PRO flame_diagnostics, fuel
   if N_X ne 0 then print, strtrim(N_X, 2) + ' frames in the X offset position (sky)'
 
   ; for AB subtraction, you need at least two types of offset positions
-  if N_A*N_B eq 0 and N_A*N_X eq 0 and N_B*N_X eq 0 then $
-    message, 'input.AB_subtraction is set, but all frames are taken in the same offset position!'
+  if fuel.input.AB_subtraction then $
+    if N_A*N_B eq 0 and N_A*N_X eq 0 and N_B*N_X eq 0 then $
+      message, 'input.AB_subtraction is set, but all frames are taken in the same offset position!'
 
   ; if you have A and B then you should not have X
   if N_A ne 0 and N_B ne 0 and N_X ne 0 then begin
