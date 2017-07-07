@@ -100,13 +100,6 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	; plot_title : (input) string to print as title of the plot
 	;
 
-  ; settings:
-	; the degree of the polynomial used to describe the wavelength solution
-	poly_degree = fuel.util.identify_lines_poly_degree
-
-	; minimum number of OH lines for a reliable wavelength solution
-	Nmin_lines = fuel.util.identify_lines_Nmin_lines
-
 	; convert linewidth to micron
 	linewidth_um = linewidth * median( approx_wavecal - shift(approx_wavecal, 1) )
 
@@ -187,10 +180,14 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	endfor
 
 	; if too few lines were found, then no reliable wavelength solution exists
-	if n_elements(speclines) LT Nmin_lines then begin
+	if n_elements(speclines) LT fuel.util.identify_lines_Nmin_lines then begin
 		speclines = !NULL
 		return
 	endif
+
+  ; set the degree for the polynomial fit - if there are few lines, decrease the degree
+  poly_degree = fuel.util.identify_lines_poly_degree
+  if poly_degree GT (n_elements(speclines)+1)/3 then poly_degree = (n_elements(speclines)+1)/3
 
 	; fit a polynomial to the skyline positions
 	;wavesol_coeff = poly_fit( speclines.x, speclines.lambda, poly_degree )
