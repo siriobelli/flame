@@ -355,7 +355,7 @@ PRO flame_correct_oneframe, fuel, filename_raw, filename_corr, $
   if fuel.util.clean_individual_frames then begin
 
     ; identify cosmic rays using L.A. Cosmic
-    la_cosmic, filename_raw, gain=fuel.instrument.gain, readn=fuel.instrument.readnoise, $
+    la_cosmic, filename_raw, gain=fuel.instrument.gain, readn=fuel.instrument.readnoise, niter=5, $
     masklist = flame_util_replace_string( filename_corr, '_corr.fits', '_mask.fits'), $
     outlist = flame_util_replace_string( filename_corr, '_corr.fits', '_cleaned.fits')
 
