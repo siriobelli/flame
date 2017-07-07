@@ -37,6 +37,8 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
 	; Return the polynomial coefficients.
 	;
 
+	; workaround so that the median() command always works
+	if n_elements(pix_scale_grid) eq 1 then pix_scale_grid = [pix_scale_grid]
 
   ; if some of the coefficient grids are not specified, then fix them to 0
   if ~keyword_set(a2_grid) then a2_grid = [0.0]
@@ -269,7 +271,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		;---------------------
 
 		print, ''
-		print, 'FIRST STEP: rough estimate of lambda and delta_lambda'
+		print, 'STEP 1: rough estimate of lambda and delta_lambda'
 
 		; set the size of the grid
 		N1 = 51
@@ -280,7 +282,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
-	   R_smooth = rough_wavecal_R[0], plot_title='first: find pixel scale and zero-point', $
+	   R_smooth = rough_wavecal_R[0], plot_title='step 1: find pixel scale and zero-point', $
 		 wavecal_coefficients=wavecal_coefficients
 
 
@@ -288,11 +290,13 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		;---------------------
 
 		print, ''
-		print, 'SECOND STEP: rough estimate of second-order variation'
+		print, 'STEP 2: rough estimate of second-order variation'
 
 		; set the size of the grid
-		N1 = 30
-		N2 = 60
+		; N1 = 30
+		; N2 = 60
+		N1 = 20
+		N2 = 20
 
 		; make the grid
 	  ; for the pixel scale, bracket the value found in the coarse fit, +/- 20% of its value
@@ -312,18 +316,44 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		fullrange = wavecal_coefficients[1]*n_elements(sky)
 	  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.15,0.15]
 
-		print, 'lambda0: ', lambda0_range
-		print, 'a1: ', pix_scale_grid[0], pix_scale_grid[-1]
-		print, 'a2: ', a2_grid[0], a2_grid[-1]
+		; print, 'lambda0: ', lambda0_range
+		; print, 'a1: ', pix_scale_grid[0], pix_scale_grid[-1]
+		; print, 'a2: ', a2_grid[0], a2_grid[-1]
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = rough_wavecal_R[1], plot_title='second: use second-order polynomial', $
+	   R_smooth = rough_wavecal_R[1], plot_title='step 2: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
+
+		;
+		; print, ''
+		; print, 'STEP 3: refine wavelength solution by using non-uniform wavelength axis'
+		;
+		; ; set the size of the grid
+		; N1 = 41
+		; N2 = 61
+		;
+		; ; make the grid
+	  ; ; for the pixel scale, bracket the value found in the previous fit, +/- 20% of its value
+		; pix_scale_grid = wavecal_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
+		;
+		; ; for the a2 grid, bracket the value found in the previous fit, +/- a factor of 5
+	  ; a2_grid =  wavecal_coefficients[2] *( 0.2 + 4.8*dindgen(N1)/double(N1-1) )
+		;
+	  ; ; there should not be a large shift in wavelength now
+		; fullrange = wavecal_coefficients[1]*n_elements(sky)
+	  ; lambda0_range = wavecal_coefficients[0] + fullrange*[-0.05,0.05]
+		;
+	  ; flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
+		;  lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
+	  ;  R_smooth = rough_wavecal_R[2], plot_title='step 3: use second-order polynomial', $
+		;  wavecal_coefficients=wavecal_coefficients
+		;
 
 
 		print, ''
-		print, 'THIRD STEP: refine wavelength solution by using non-uniform wavelength axis'
+		print, 'STEP 4: find wavelength solution for the two halves separately'
+
 
 		; set the size of the grid
 		N1 = 41
@@ -333,20 +363,49 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 	  ; for the pixel scale, bracket the value found in the previous fit, +/- 20% of its value
 		pix_scale_grid = wavecal_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
 
-		; for the a2 grid, bracket the value found in the previous fit, +/- a factor of 5
-	  a2_grid =  wavecal_coefficients[2] *( 0.2 + 4.8*dindgen(N1)/double(N1-1) )
+		; make the a2 grid; assume the sign does not change
+		a2_ref = wavecal_coefficients[1] / (4d*n_elements(sky) + 1d)
+		; log_grid = 10.0^( -3.0 + 3.0*dindgen(N2/2)/double(N2/2-1))
+		; a2_grid = [ -a2_ref * reverse(log_grid), 0.0, a2_ref * log_grid ]
+	  a2_grid =  wavecal_coefficients[2] * 3.0*dindgen(N2/2)/double(N2/2-1)
 
 	  ; there should not be a large shift in wavelength now
 		fullrange = wavecal_coefficients[1]*n_elements(sky)
 	  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.05,0.05]
 
-	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
+		; split sky into two halves
+		x_c = n_elements(sky)/2
+		sky_1 = sky[0 : x_c-1]
+		sky_2 = sky[x_c : *]
+
+		; for the second half, need to adjust the parameters
+		pix_scale_grid_2 = pix_scale_grid + 2.0*wavecal_coefficients[2]
+		lambda0_range_2 = lambda0_range + x_c * $
+		 (wavecal_coefficients[1]+2.0*wavecal_coefficients[2]) + wavecal_coefficients[2]*x_c^2
+
+		; cross-correlate the first half
+	  flame_wavecal_crosscorr, observed_sky=sky_1, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = rough_wavecal_R[2], plot_title='third: use second-order polynomial', $
-		 wavecal_coefficients=wavecal_coefficients
+	   R_smooth = rough_wavecal_R[2], plot_title='step 4: first half', $
+		 wavecal_coefficients=wavecal_coefficients_1
 
+		 ; cross-correlate the second half
+ 	  flame_wavecal_crosscorr, observed_sky=sky_2, model_lambda=model_lambda, model_flux=model_flux, $
+ 		 lambda0_range=lambda0_range_2, pix_scale_grid=pix_scale_grid_2, a2_grid=a2_grid, $
+ 	   R_smooth = rough_wavecal_R[2], plot_title='step 4: second half', $
+ 		 wavecal_coefficients=wavecal_coefficients_2
 
-		return, wavecal_coefficients
+		 ; calculate the two wavelength solutions for the two chunks
+		 wavecal_solution_1 = poly(dindgen(n_elements(sky_1)), wavecal_coefficients_1)
+		 wavecal_solution_2 = poly(dindgen(n_elements(sky_2)), wavecal_coefficients_2)
+
+		 ; merge the two halves
+		 wavecal_solution = [ wavecal_solution_1, wavecal_solution_2 ]
+
+		 ; smooth out the potential edge in the middle
+		 wavecal_solution = smooth(wavecal_solution, 100)
+
+		return, wavecal_solution
 
 END
 
@@ -429,7 +488,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
 	cgPS_open, ps_filename, /nomatch
 
 	; find the wavelength solution
-	wavecal_coefficients = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=sky, $
+	wavecal_solution = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=sky, $
 		model_lambda=model_lambda, model_flux=model_flux)
 
 
@@ -439,7 +498,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
 	rough_skyspec = sky
 
 	; return the approximate wavelength axis
-	return, poly(indgen(n_elements(sky)), wavecal_coefficients)
+	return, wavecal_solution
 
 END
 
@@ -472,17 +531,17 @@ PRO flame_wavecal_rough, fuel
 		print, ''
 
 		; handle errors by ignoring that slit
-		catch, error_status
-		if error_status ne 0 then begin
-			print, ''
-	    print, '**************************'
-	    print, '***       WARNING      ***'
-	    print, '**************************'
-	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-			fuel.slits[i_slit].skip = 1
-			catch, /cancel
-			continue
-		endif
+		; catch, error_status
+		; if error_status ne 0 then begin
+		; 	print, ''
+	  ;   print, '**************************'
+	  ;   print, '***       WARNING      ***'
+	  ;   print, '**************************'
+	  ;   print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+		; 	fuel.slits[i_slit].skip = 1
+		; 	catch, /cancel
+		; 	continue
+		; endif
 
 		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyspec=rough_skyspec)
     *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
