@@ -191,6 +191,10 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	; overplot flat illumination
 	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], [1,1], /overplot, linestyle=2, thick=3
 
+	; overplot the limit to the correction (25%)
+	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], 0.75+[0,0], /overplot, linestyle=2, thick=1
+	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], 1.25+[0,0], /overplot, linestyle=2, thick=1
+
 	; calculate the gamma coordinate for each observed pixel, row by row
 	gamma_coordinate = im * 0.0
 	for i_row=0, N_pixel_y-1 do begin
@@ -205,6 +209,10 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	; set the correction to NaN when outside the boundary
 	illumination_correction[where(gamma_coordinate LT gamma_min OR $
 		gamma_coordinate GT gamma_max, /null)] = !values.d_NaN
+
+	; set the correction to NaN if it's more than 25%
+	illumination_correction[where(illumination_correction GT 1.25 or $
+		illumination_correction LT 0.75, /null)] = !values.d_NaN
 
 	; apply illumination correction
 	im /= illumination_correction
