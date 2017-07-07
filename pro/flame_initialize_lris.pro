@@ -212,6 +212,17 @@ FUNCTION flame_initialize_lris, input
 
   ; -----------------------------------------------------------------
 
+  ; use the sky background to trace the slit edges
+  fuel.util.trace_slit_with_skylines = 0
+
+  ; identify cosmic rays using L.A.Cosmic in each science frame
+  fuel.util.clean_individual_frames = 1
+
+  ; do not apply illumination correction
+  fuel.util.illumination_correction = 0
+
+  ; -----------------------------------------------------------------
+
   ; read FITS header of first science frame
   science_header = headfits(fuel.util.science_filenames[0])
 

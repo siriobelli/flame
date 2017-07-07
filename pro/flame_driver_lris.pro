@@ -52,15 +52,6 @@
   fuel = flame_initialize_lris(input)
 
 
-  ; set this to zero if you want to use the sky background to trace the slit edges
-  ; instead of the OH lines (e.g. in the K band or in the optical or with slit flats)
-  fuel.util.trace_slit_with_skylines = 0
-
-  ; identify cosmic rays using L.A.Cosmic in each science frame
-  fuel.util.clean_individual_frames = 1
-
-
-
   ;****************************************************
   ;****************************************************
   ;               PART 3: DATA REDUCTION
@@ -89,5 +80,5 @@
   flame_rectify, fuel
 
   flame_combine, fuel
-  
+
   flame_checkdata, fuel
