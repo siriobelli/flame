@@ -181,7 +181,7 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 
 	; scatter plot of the illumination (show all OH lines)
 	cgplot, sorted_gamma[w_tofit], sorted_illum[w_tofit], psym=3, /ynozero, charsize=1.2, $
-		xtitle='gamma coordinate', ytitle='Illumination', title='Illumination correction'
+		xtitle='gamma coordinate', ytitle='Illumination'
 
 	; overplot the smooth illumination
 	x_axis = gamma_min + (gamma_max-gamma_min)*dindgen(200)/199.
@@ -194,6 +194,9 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	; overplot the limit to the correction (25%)
 	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], 0.75+[0,0], /overplot, linestyle=2, thick=1
 	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], 1.25+[0,0], /overplot, linestyle=2, thick=1
+
+	; if we do not have to apply the illumination correction, then we are done
+	if ~fuel.util.illumination_correction then return
 
 	; calculate the gamma coordinate for each observed pixel, row by row
 	gamma_coordinate = im * 0.0
@@ -423,8 +426,7 @@ PRO flame_wavecal_accurate, fuel
 				flame_wavecal_plots, slit=this_slit, cutout=this_slit.cutouts[i_frame]
 
 				; calculate and apply the illumination correction
-				if fuel.util.illumination_correction then $
-					flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
+				flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 
 				cgPS_close
 

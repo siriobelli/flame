@@ -4,7 +4,10 @@
 ;
 ;******************************************************************
 
-PRO flame_cutout_slits_extract, slit_structure, science_filenames, output_filenames
+PRO flame_cutout_slits_extract, slit_structure, science_filenames, output_filenames, margin=margin
+
+  ; extra margin in pixel to remove from the edges
+  if ~keyword_set(margin) then margin = 0
 
   ; loop through science frames
   for i_frame=0, n_elements(science_filenames)-1 do begin
@@ -28,7 +31,7 @@ PRO flame_cutout_slits_extract, slit_structure, science_filenames, output_filena
     bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_x)
 
     ; select pixels belonging to this slit
-    w_slit = where( pixel_y LT top_y AND pixel_y GT bottom_y, /null, complement=w_outside_slit)
+    w_slit = where( pixel_y LT top_y - margin AND pixel_y GT bottom_y + margin, /null, complement=w_outside_slit)
     if w_slit eq !NULL then message, slit_structure.name + ': slit not valid!'
 
     ; Set to NaN all pixels outside the slit
@@ -86,9 +89,12 @@ PRO flame_cutout_slits, fuel
       output_filenames[i_frame] = flame_util_replace_string( slitdir + naked_filename, '.fits', '_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'  )
     endfor
 
+    ; if we are not applying the illumination correction, then we need to be more generous in cutting the margin
+    if ~fuel.util.illumination_correction then margin = 2
+
     ; extract slit
     print,'*** Cutting out slit ', slits[i_slit].name
-    flame_cutout_slits_extract, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames
+    flame_cutout_slits_extract, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames, margin=margin
 
     ; add the cutout filenames
     fuel.slits[i_slit].cutouts.filename = output_filenames
