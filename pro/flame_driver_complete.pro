@@ -97,8 +97,8 @@
   ; identify cosmic rays using L.A.Cosmic in each science frame
   ; fuel.util.clean_individual_frames = 1
 
-  ; subtract sky continuum before wavecal_rough. This specifies the polynomial degree
-  ; fuel.util.wavecal_rough_continuum_degree = 5
+  ; subtract sky continuum before wavecal_rough. This specifies the smoothing window
+  ; fuel.util.wavecal_rough_smooth_window = 20
 
   ; change the minimum number of emission lines required for a valid wavelength
   ; solution in one pixel row during identify_lines

@@ -461,14 +461,28 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
 	; extract the spectrum from the sky region
 	sky = median(sky_region, dimension=2)
 
-	; subtract the continuum
-	if fuel.util.wavecal_rough_continuum_degree GT 0 then begin
-		win = n_elements(sky)/20	; smoothing window: 5% of the full range
-		smooth_x = indgen(n_elements(sky))
-		smooth_y = median(sky, win)
-		poly_coeff = poly_fit( smooth_x[win:-1-win], smooth_y[win:-1-win], fuel.util.wavecal_rough_continuum_degree)
-		sky -= poly(smooth_x, poly_coeff)
+
+	; filter the sky spectrum: find the running minimum pixel value
+	;--------------------------------------------------------------
+	if fuel.util.wavecal_rough_smooth_window GT 0 then begin
+
+		; make a 2D matrix where at each value of x-pixel you have a column with all the neighhboring pixel values
+		matrix = []
+		for i_shift = -fuel.util.wavecal_rough_smooth_window/2, fuel.util.wavecal_rough_smooth_window/2 do $
+		 	matrix = [ [matrix], [shift(sky, i_shift)]]
+
+		; for each x-pixel take the minimum of all the neighboring pixel values
+		sky_minfilter = min(matrix, /nan, dimension=2)
+
+		; subtract the continuum
+		sky -= sky_minfilter
+
+		; crop the edges
+		sky[0:fuel.util.wavecal_rough_smooth_window/2] = 0
+		sky[-fuel.util.wavecal_rough_smooth_window/2-1:*] = 0
+
 	endif
+
 
   ; load the model sky spectrum
 	;---------------------
