@@ -465,6 +465,12 @@ PRO flame_correct, fuel
     ; name for the corrected frame (i.e. the output)
     filename_corr = fuel.util.corrscience_filenames[i_frame]
 
+    ; check if the corrected frame already exist
+    if file_test(filename_corr) then begin
+      print, 'file already exists; skipping frame correction'
+      continue
+    endif
+
     ; apply corrections and create "corrected" file
     flame_correct_oneframe, fuel, filename_raw, filename_corr, $
       master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
