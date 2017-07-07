@@ -28,11 +28,15 @@
 \BOOKMARK [2][-]{subsection.4.9}{flame\137skysub}{section.4}% 28
 \BOOKMARK [2][-]{subsection.4.10}{flame\137rectify}{section.4}% 29
 \BOOKMARK [2][-]{subsection.4.11}{flame\137combine}{section.4}% 30
-\BOOKMARK [1][-]{section.5}{Troubleshooting}{}% 31
-\BOOKMARK [2][-]{subsection.5.1}{Bad fit to sky lines}{section.5}% 32
-\BOOKMARK [2][-]{subsection.5.2}{Slit identification}{section.5}% 33
-\BOOKMARK [3][-]{subsubsection.5.2.1}{Detection of slit edges with sky background}{subsection.5.2}% 34
-\BOOKMARK [3][-]{subsubsection.5.2.2}{Detection of slit edges with slit flat field}{subsection.5.2}% 35
-\BOOKMARK [2][-]{subsection.5.3}{Specify the x coordinates for the reference star}{section.5}% 36
-\BOOKMARK [1][-]{section.6}{Other instruments}{}% 37
-\BOOKMARK [2][-]{subsection.6.1}{Keck LRIS}{section.6}% 38
+\BOOKMARK [2][-]{subsection.4.12}{flame\137checkdata}{section.4}% 31
+\BOOKMARK [1][-]{section.5}{Troubleshooting}{}% 32
+\BOOKMARK [2][-]{subsection.5.1}{Bad fit to sky lines}{section.5}% 33
+\BOOKMARK [2][-]{subsection.5.2}{Slit identification}{section.5}% 34
+\BOOKMARK [3][-]{subsubsection.5.2.1}{Manual identification of slit edges}{subsection.5.2}% 35
+\BOOKMARK [3][-]{subsubsection.5.2.2}{Detection of slit edges with sky background}{subsection.5.2}% 36
+\BOOKMARK [3][-]{subsubsection.5.2.3}{Detection of slit edges with slit flat field}{subsection.5.2}% 37
+\BOOKMARK [2][-]{subsection.5.3}{Specify the x coordinates for the reference star}{section.5}% 38
+\BOOKMARK [2][-]{subsection.5.4}{Skip slits}{section.5}% 39
+\BOOKMARK [2][-]{subsection.5.5}{Line identification issues}{section.5}% 40
+\BOOKMARK [1][-]{section.6}{Other instruments}{}% 41
+\BOOKMARK [2][-]{subsection.6.1}{Keck LRIS}{section.6}% 42

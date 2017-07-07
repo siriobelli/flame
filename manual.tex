@@ -432,9 +432,16 @@ Using the 2D rectification coefficients calculated in \texttt{flame\_wavecal\_ac
 % ---------------------------------------------------
 \subsection{\texttt{flame\_combine}}
 
-The last step consists in the stacking (after sigma-clipping) of all the A and B frames. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved. Also, an ABcombined FITS file is produced by summing A-B to the shifted B-A images, so that one positive central trace, corresponding to the total observing time, can be extracted for the science analysis.
+This step consists in the stacking (after sigma-clipping) of all the A and B frames. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved. Also, an ABcombined FITS file is produced by summing A-B to the shifted B-A images, so that one positive central trace, corresponding to the total observing time, can be extracted for the science analysis.
 
 Sometimes the dithering is such that one object spends half of the time in one slit and half of the time in another slit. This is particularly useful when the slits need to be tilted in directions that are different from the dithering direction (as is the case when different objects in the mask require different position angles). If the dithering length, as calculated from the star traces, matches the distance between any two slits, then these are assumed to be matching slits and their A-B stacks are combined together. It is worth pointing out that this assumption breaks down if the star traces for the A and B positions actually belong to different stars.
+
+
+% ---------------------------------------------------
+\subsection{\texttt{flame\_checkdata}}
+
+Finally, this optional module performs a quality check on the reduced data set. If present, the reference star spectrum is analyzed and the effective seeing calculated. The file reference\_star.ps is written, showing the spatial profile, the width and position of the stellar track as a function of wavelength, and the xtracted 1D spectrum of the star. Then, a ps file is written for each slit. The first plot shows the stacked sky spectrum, from which the sky lines are identified and fit, and the wavelength residuals and spectral resolution R are shown. Stats on the wavelength solution and the velocity resolution are shown at the bottom. The remaining two plots show respectively the line width and the wavelength residuals for each of the science frames reduced. The gray points are individual measurements for one pixel row of one sky line; the red points show the median value for each frame and the error bars include the central 68\% of points. Looking at these figures it is easy to see if one of more of the frames do not have a good wavelength solution. In such cases the user can decide to run the reduction again excluding those frames, or trying to improve the wavelength solution by tweaking the settings in \texttt{fuel.util}.
+
 
 
 % ***********************************************************************************************
@@ -462,7 +469,14 @@ Another possibility is to manually exclude those sky lines that are clearly prob
 
 If the slit identification fails or is not accurate, one alternative is to use the longslit option to manually select the region within one slit to reduce. By default the longslit option assumes that the slit is spatially centered on the mask. If this assumption causes a wildly wrong initial guess for the wavelength range, it is possible to override this value by changing the \texttt{fuel.slits.range\_lambda0} variable, which is a 2-element array containing the minimum and maximum values to be considered for the wavelength of the first pixel.
 
-Sometimes using a different science frame gives a better slit identification. The default frame used for the slit identification is the one in the middle; this file name is stored in \texttt{fuel.util.master\_getslit} and can be changed.
+Sometimes using a different science frame gives a better slit identification. The default frame used for the slit identification is the one in the middle; this file name is stored in \texttt{fuel.util.master\_getslit}. This can be manually changed after initialization; or a different science frame can be specified via the \texttt{input.slitflat\_filelist}, see below.
+
+
+\subsubsection{Manual identification of slit edges}
+
+Description of the manual input for the slit edges
+
+When using curved slit with LUCI at LBT, the header keywords are not sufficient to correctly predict the position and size of the slits, and it is often necessary to specify the slit edges manually.
 
 
 \subsubsection{Detection of slit edges with sky background}
@@ -509,6 +523,24 @@ trace\_slit\_with\_skylines			& 1 				& if set, the slit detection is based on t
 %\tablecomments{Some comment here.}
 \end{deluxetable}
 
+
+\subsection{Skip slits}
+
+It is possible to specify which slits to skip during the data reduction by setting the \texttt{skip} flag in the \texttt{fuel.slits} structures. When this flag is set, the slit is ignored by the pipeline.
+
+Setting the \texttt{input.reduce\_only\_oneslit} parameter is equivalent to setting the \texttt{skip} flag in each slit except one.
+
+The \texttt{skip} flag is automatically set whenever an error is encountered, so that the subsequent steps can be regularly carried on for the remaining slits.
+
+
+\subsection{Line identification issues}
+
+When fitting the wavelength solution row by row, there is a minimum number of sky lines that must be identified, otherwise that pixel row will be skipped.
+In some cases, it is possible that there are very few lines available in the observed wavelength range (for example in part of the K band), and all or most of the pixel rows will be skipped. In such cases it is possible to lower the minimum number of required line identification by changing the parameter \texttt{fuel.util.identify\_lines\_nmin\_lines}.
+
+Explain also \texttt{fuel.util.identify\_lines\_poly\_degree}
+
+and \texttt{fuel.util.identify\_lines\_linefit\_window}.
 
 
 % ***********************************************************************************************
