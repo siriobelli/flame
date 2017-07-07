@@ -193,7 +193,8 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	endif
 
 	; fit a polynomial to the skyline positions
-	wavesol_coeff = poly_fit( speclines.x, speclines.lambda, poly_degree )
+	;wavesol_coeff = poly_fit( speclines.x, speclines.lambda, poly_degree )
+  wavesol_coeff = robust_poly_fit( speclines.x, speclines.lambda, poly_degree, /DOUBLE )
 
   ; ; calculate residuals
   ; residuals = speclines.lambda-poly(speclines.x, wavesol_coeff)
