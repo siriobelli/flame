@@ -88,7 +88,7 @@ PRO flame_checkdata_refstar, fuel
 	binsize = 100
 	starting_pixel = 0
 
-	; total number of pixels along the wavelength direction
+	; dimensions
 	N_pixel_x = (size(ref_spec))[1]
 
 	; empty arrays for seeing and position measurement
@@ -165,7 +165,7 @@ PRO flame_checkdata_refstar, fuel
 
 	; extract spectrum from +/- 2 sigma around the center
 	window_min = ( ref_coeff[1] - 2.0*ref_coeff[2] ) > 0
-	window_max = ref_coeff[1] + 2.0*ref_coeff[2] < N_pixel_x-1
+	window_max = ref_coeff[1] + 2.0*ref_coeff[2] < N_pixel_y-1
 
 	; extract boxcar spectrum
 	spectrum = total(ref_spec[ * , window_min:window_max ], 2, /nan)
