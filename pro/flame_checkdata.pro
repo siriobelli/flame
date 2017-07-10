@@ -90,6 +90,7 @@ PRO flame_checkdata_refstar, fuel
 
 	; dimensions
 	N_pixel_x = (size(ref_spec))[1]
+	N_pixel_y = (size(ref_spec))[2]
 
 	; empty arrays for seeing and position measurement
 	coord_x = []
