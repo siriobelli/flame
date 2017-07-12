@@ -289,17 +289,23 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 	i0_bottom = row_number[N_spatial_pix/2-1]
 
   ; extract the sky spectrum from a bunch of central pixel rows
-  central_skyspec = median( im[*, sorted_rows[0]:sorted_rows[5]], dimension=2 )
-  central_skyspec[ where(~finite(central_skyspec), /null) ] = 0.0
+  central_skyspec = median( im[*, sorted_rows[0]:sorted_rows[2]], dimension=2 )
+
+  ; median smooth it to make sure the lines look like Gaussians (especially for very tilted slits)
+  central_skyspec = median(central_skyspec, 5)
+
+  ; clean from NaNs because they don't work with the cross correlation
+  central_skyspec_clean = central_skyspec
+  central_skyspec_clean[ where(~finite(central_skyspec), /null) ] = 0.0
 
   ; take the reference spectrum from the rough wavecal
-  ref_skyspec = *slit.rough_skyspec
+  ref_skyspec = median(*slit.rough_skyspec, 3)
   ref_skyspec[ where(~finite(ref_skyspec), /null) ] = 0.0
 
   ; measure the overall shift since the rough wavecal may have
   ; been obtained on different spatial positions or different frames
   lag = indgen(100)-50 ; up to 50 pixels each direction
-  crosscorr = c_correlate( median(central_skyspec, 3), median(ref_skyspec, 3), lag)
+  crosscorr = c_correlate( central_skyspec_clean, ref_skyspec, lag)
   max_crosscorr = max( crosscorr, max_ind, /nan)
   delta = -lag[max_ind]
   print, 'shifting the central pixel row by ' + strtrim(delta, 2) + ' pixels'
@@ -310,12 +316,8 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   if delta LT 0 then approx_lambda_axis[-1-abs(delta):-1] = !values.d_nan
 
 
-  ; fit all the pixel rows
+  ; identify the spectral lines
 	;--------------------------------------------------------------------------------------------------------------
-
-	; create the 2D array that will contain the wavelength value for each pixel
-	wavelength_solution = im
-	wavelength_solution[*] = !values.d_nan
 
   ; load line list
 	readcol, fuel.util.linelist_filename, line_list, format='D', /silent
@@ -325,13 +327,54 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 
   ; approximate sky line width (assuming one arcsec slit width)
 	approximate_linewidth_um = median(approx_lambda_axis) / (2.36 * fuel.instrument.resolution_slit1arcsec)
-	linewidth = approximate_linewidth_um / lambda_step
+	linewidth = approximate_linewidth_um / lambda_step ; in pixel
 
   ; start with a larger linewidth, for a generous range where the line could be
   linewidth *= 2.0
 
-	; as initial guess for the wavelength axis, use what found during the rough wavecal
-	wavelength_axis_guess = approx_lambda_axis
+  ; use the shifted rough wavelength calibration as starting solution
+  lambda_axis = approx_lambda_axis
+
+  ; number of identified lines
+  Nlines = 0
+  delta_Nlines = 1
+
+  ; loop number
+  i_loop = 0
+
+  print, 'Identifying the spectral lines in the central rows...'
+
+  ; re-iteratively identify lines and improve wavelength solution
+  while delta_Nlines GT 0 and i_loop LT 10 do begin
+
+    ; fit the emission lines and find the wavelength solution
+  	flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=central_skyspec, $
+  		approx_wavecal=lambda_axis, linewidth=linewidth, $
+  		line_list=line_list, $
+  		speclines=speclines_thisloop, wavecal=lambda_axis_output, plot_title='central rows / ' + strtrim(i_loop,2)
+
+    ; update the wavelength solution
+    lambda_axis = lambda_axis_output
+
+    ; compare the number of identified lines to previous loop
+    delta_Nlines = n_elements(speclines_thisloop) - Nlines
+    Nlines = n_elements(speclines_thisloop)
+    i_loop++
+
+  endwhile
+
+  w_l = where(line_list GT lambda_axis[4] and line_list LT lambda_axis[-5], /null)
+  print, 'Identified ', strtrim(Nlines, 2), ' out of ', strtrim(n_elements(w_l), 2), ' lines present in the line list.'
+
+  ; fit all the pixel rows
+	;--------------------------------------------------------------------------------------------------------------
+
+	; create the 2D array that will contain the wavelength value for each pixel
+	wavelength_solution = im
+	wavelength_solution[*] = !values.d_nan
+
+	; as initial guess for the wavelength axis, use what we just found
+	wavelength_axis_guess = lambda_axis
 
 	; create the empty array of speclines structures
 	speclines = []
