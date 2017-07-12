@@ -325,32 +325,33 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 	   R_smooth = rough_wavecal_R[1], plot_title='step 2: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
 
-		;
-		; print, ''
-		; print, 'STEP 3: refine wavelength solution by using non-uniform wavelength axis'
-		;
-		; ; set the size of the grid
-		; N1 = 41
-		; N2 = 61
-		;
-		; ; make the grid
-	  ; ; for the pixel scale, bracket the value found in the previous fit, +/- 20% of its value
-		; pix_scale_grid = wavecal_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
-		;
-		; ; for the a2 grid, bracket the value found in the previous fit, +/- a factor of 5
-	  ; a2_grid =  wavecal_coefficients[2] *( 0.2 + 4.8*dindgen(N1)/double(N1-1) )
-		;
-	  ; ; there should not be a large shift in wavelength now
-		; fullrange = wavecal_coefficients[1]*n_elements(sky)
-	  ; lambda0_range = wavecal_coefficients[0] + fullrange*[-0.05,0.05]
-		;
-	  ; flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
-		;  lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	  ;  R_smooth = rough_wavecal_R[2], plot_title='step 3: use second-order polynomial', $
-		;  wavecal_coefficients=wavecal_coefficients
-		;
 
 		if ~fuel.util.wavecal_rough_split then begin
+
+
+			print, ''
+			print, 'STEP 3: refine wavelength solution by using non-uniform wavelength axis'
+
+			; set the size of the grid
+			N1 = 41
+			N2 = 61
+
+			; make the grid
+		  ; for the pixel scale, bracket the value found in the previous fit, +/- 20% of its value
+			pix_scale_grid = wavecal_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
+
+			; for the a2 grid, bracket the value found in the previous fit, +/- a factor of 5
+		  a2_grid =  wavecal_coefficients[2] *( 0.2 + 4.8*dindgen(N1)/double(N1-1) )
+
+		  ; there should not be a large shift in wavelength now
+			fullrange = wavecal_coefficients[1]*n_elements(sky)
+		  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.05,0.05]
+
+		  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
+			 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
+		   R_smooth = rough_wavecal_R[2], plot_title='step 3: use second-order polynomial', $
+			 wavecal_coefficients=wavecal_coefficients
+
 
 			wavecal_solution = poly(dindgen(n_elements(sky)), wavecal_coefficients)
 			return, wavecal_solution
@@ -359,7 +360,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 
 
 		print, ''
-		print, 'STEP 4: find wavelength solution for the two halves separately'
+		print, 'STEP 3: find wavelength solution for the two halves separately'
 
 
 		; set the size of the grid
@@ -393,13 +394,13 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		; cross-correlate the first half
 	  flame_wavecal_crosscorr, observed_sky=sky_1, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = rough_wavecal_R[2], plot_title='step 4: first half', $
+	   R_smooth = rough_wavecal_R[2], plot_title='step 3: first half', $
 		 wavecal_coefficients=wavecal_coefficients_1
 
 		 ; cross-correlate the second half
  	  flame_wavecal_crosscorr, observed_sky=sky_2, model_lambda=model_lambda, model_flux=model_flux, $
  		 lambda0_range=lambda0_range_2, pix_scale_grid=pix_scale_grid_2, a2_grid=a2_grid, $
- 	   R_smooth = rough_wavecal_R[2], plot_title='step 4: second half', $
+ 	   R_smooth = rough_wavecal_R[2], plot_title='step 3: second half', $
  		 wavecal_coefficients=wavecal_coefficients_2
 
 		 ; calculate the two wavelength solutions for the two chunks
