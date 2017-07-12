@@ -121,6 +121,7 @@ FUNCTION flame_util_create_fuel, input
     clean_individual_frames : 0, $
     illumination_correction : 1, $
     wavecal_rough_smooth_window: 20, $
+    wavecal_rough_split: 1, $
     identify_lines_poly_degree: 5, $
     identify_lines_Nmin_lines: 8, $
     identify_lines_linefit_window: 6.0, $       ; in units of expected linewidth

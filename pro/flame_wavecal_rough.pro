@@ -350,6 +350,13 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		;  wavecal_coefficients=wavecal_coefficients
 		;
 
+		if ~fuel.util.wavecal_rough_split then begin
+
+			wavecal_solution = poly(dindgen(n_elements(sky)), wavecal_coefficients)
+			return, wavecal_solution
+
+		endif
+
 
 		print, ''
 		print, 'STEP 4: find wavelength solution for the two halves separately'
