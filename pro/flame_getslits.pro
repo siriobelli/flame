@@ -525,9 +525,10 @@ PRO flame_getslits_multislit, fuel=fuel
 
     ; split slit into three chunks and use cross-correlation to find slit edges
     N_pixel_x = (size(image))[1]
-    edges_left = flame_getslits_crosscorr( image[0:N_pixel_x/3-1, *], approx_edges[0], approx_edges[1])
-    edges_center = flame_getslits_crosscorr( image[N_pixel_x/3 : N_pixel_x*2/3-1, *], approx_edges[0], approx_edges[1])
-    edges_right = flame_getslits_crosscorr( image[N_pixel_x*2/3 : -1, *], approx_edges[0], approx_edges[1])
+    ; edges_left = flame_getslits_crosscorr( image[0:N_pixel_x/3-1, *], approx_edges[0], approx_edges[1])
+    ; edges_center = flame_getslits_crosscorr( image[N_pixel_x/3 : N_pixel_x*2/3-1, *], approx_edges[0], approx_edges[1])
+    ; edges_right = flame_getslits_crosscorr( image[N_pixel_x*2/3 : -1, *], approx_edges[0], approx_edges[1])
+    edges_center = approx_edges 
 
     if fuel.util.trace_slit_with_skylines eq 0 then begin
       ; identify top and bottom edge using sky background or flat lamp
