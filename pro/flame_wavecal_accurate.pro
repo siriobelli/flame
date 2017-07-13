@@ -91,9 +91,11 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 
 		discrepancy = OH_lambda - lambda_model
 		w_outliers = where( abs(discrepancy) GT 3.0*stddev(discrepancy), complement=w_goodpix, /null)
-		print, 'Outliers found: ', n_elements(w_outliers)
+		print, strtrim( n_elements(w_outliers), 2) + ' outliers rejected. ', format='(a,$)'
 
 	ENDWHILE
+
+	print, ''
 
 	; now find the inverse transformation, using only the good pixels
 	; calculate transformation Kx,Ky from (lambda, gamma) to (x,y)
