@@ -6,6 +6,193 @@
 ; the emission line measurements from flame_identify_lines
 ;
 
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+;
+; The following two functions are used for finding the best-fit coefficients
+; describing the 2D transformation from observed to rectified frame
+;
+
+FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax
+
+	; the coefficients are: [P00, P01, P02, P03, P10, P11, P12, P13, P20, ..... PNN]
+	; and the lambdax calibration is of the form SUM(Pij*x^i*y^j)
+
+	; given the coefficients, calculate the predicted normalized lambda for each specline
+	predicted_lambdax = dblarr(n_elements(speclines))*0.0
+	for i=0,3 do for j=0,3 do predicted_lambdax += coefficients[4*i+j] * (speclines.x)^i * (speclines.y)^j
+
+	; use the output grid parameters to transform from normalized to true lambda
+	;predicted_lambda = lambda_min + lambda_delta*predicted_lambda_norm
+
+	; return deviation of true lambdax from predicted value
+	return, lambdax - predicted_lambdax
+
+END
+
+
+FUNCTION gamma_calibration, coefficients, speclines=speclines, gamma=gamma
+
+	; the coefficients are: [P00, P01, P02, P03, P10, P11, P12, P13, P20, ..... PNN]
+	; and the gamma calibration is of the form SUM(Pij*x^i*y^j)
+
+	; given the coefficients, calculate the predicted gamma coordinate for each specline
+	predicted_gamma = dblarr(n_elements(speclines))*0.0
+	for i=0,3 do for j=0,3 do predicted_gamma += coefficients[4*i+j] * (speclines.x)^i * (speclines.y)^j
+
+	; return deviation of true gamma from predicted value
+	return, gamma - predicted_gamma
+
+END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
+		diagnostics=diagnostics, this_diagnostics=this_diagnostics
+
+;
+; This routine calculates the 2D wavelength solution and y-rectification.
+; These are two mappings from the observed pixel coordinates to the rectified grid
+; lambdax, gamma, where lambdax is a pixel grid linear in lambda and gamma is the
+; vertical distance to the edge of the slit (taking into account warping and also vertical drift)
+; The result of this routine is a pair of coefficient sets, lambda_coeff and gamma_coeff, saved in fuel.slits,
+; that can be used to rectify the image
+;
+
+	print, ''
+	print, 'Accurate 2D wavelength solution for ', cutout.filename
+
+	; polynomial degree for image warping
+	degree = fuel.util.wavesolution_degree
+
+	; read in file to calibrate
+	im = mrdfits(cutout.filename, 0, header, /silent)
+
+	; read dimensions of the image
+	N_imx = (size(im))[1]
+	N_imy = (size(im))[2]
+
+	; find the minimum y value for the bottom edge of the slit
+	bottom_edge = poly(indgen(N_imx), slit.bottom_poly)
+	ymin_edge = min(bottom_edge)
+
+	; this is the y-coordinate of the bottom pixel row in the cutout
+	first_pixel = ceil(ymin_edge)
+
+	; specline coordinates
+	speclines = *cutout.speclines
+	OH_lambda = speclines.lambda
+	OH_x = speclines.x
+	OH_y = speclines.y
+
+	; output lambda axis
+	lambda_0 = slit.outlambda_min
+	delta_lambda = slit.outlambda_delta
+
+	; calculate vertical offset
+	w_this_offset = where(diagnostics.offset_pos eq this_diagnostics.offset_pos)
+	ref_diagnostics = diagnostics[w_this_offset[0]]
+	vertical_offset = this_diagnostics.position - floor(ref_diagnostics.position)
+
+	; translate every OH detection into the new coordinate system
+	OH_lambdax = (OH_lambda - lambda_0)/delta_lambda
+	OH_gamma = OH_y + first_pixel - poly(OH_x, slit.bottom_poly) - vertical_offset
+
+
+	; guess the lambda coefficients -------------------------------------------------------
+
+	; guess starting coefficients by fitting a polynomial to the lines at the bottom of the slit
+	sorted_y = speclines[sort(speclines.y)].y
+	y_threshold = sorted_y[0.1*n_elements(sorted_y)]
+	w_tofit = where(speclines.y LE y_threshold, /null)
+	guess_coeff1d = robust_poly_fit(speclines[w_tofit].x, (speclines[w_tofit].lambda-slit.outlambda_min)/slit.outlambda_delta, 3)
+
+	; scale by orders of magnitude for the higher order terms
+	starting_coefficients_l = (guess_coeff1d # [1,1d-3, 1d-6, 1d-9])[*]
+
+	; guess the gamma coefficients -------------------------------------------------------
+
+	; guess the order-of-magntidude of the starting coefficients
+	starting_coefficients_g = ([1d, 1d-3, 1d-6, 1d-9] # [1, 1d-6, 1d-9, 1d-12])[*]
+
+	; by definition, dgamma/dy = 1
+	starting_coefficients_g[1] = 1.0
+
+
+	; fit the observed speclines and find the best-fit coefficients --------------------------------------------
+
+	; number of speclines we are using
+	Ngoodpix = n_elements(speclines)+1
+
+	; check that we have enough points to calculate warping polynomial
+	if n_elements(speclines) LT (degree+1.0)^2 then message, 'not enough data points for polywarp'
+
+	; loops are used to throw away outliers and make polywarp more robust
+	WHILE n_elements(speclines) LT Ngoodpix AND n_elements(speclines) GE (degree+1.0)^2  DO BEGIN
+
+		; save old number of good speclines
+		Ngoodpix = n_elements(speclines)
+
+		args_l = {speclines:speclines, lambdax:OH_lambdax}
+		args_g = {speclines:speclines, gamma:OH_gamma}
+
+		; fit the data and find the coefficients for the lambda calibration
+		lambda_coeff = MPFIT('lambda_calibration', starting_coefficients_l, functargs=args_l, $
+			bestnorm=bestnorm_l, best_resid=best_resid_l, /quiet, status=status_l)
+
+		; fit the data and find the coefficients for the gamma calibration
+		gamma_coeff = MPFIT('gamma_calibration', starting_coefficients_g, functargs=args_g, $
+			bestnorm=bestnorm_g, best_resid=best_resid_g, /quiet, status=status_g)
+
+		; check that mpfit worked
+		if status_l LT 0 or status_g LT 0 then message, 'mpfit did not find a good solution'
+
+		w_outliers = where( abs(best_resid_l) GT 3.0*stddev(best_resid_l), complement=w_goodpix, /null)
+		print, strtrim( n_elements(w_outliers), 2) + ' outliers rejected. ', format='(a,$)'
+
+		; keep only the non-outliers
+		speclines = speclines[w_goodpix]
+		OH_lambdax = OH_lambdax[w_goodpix]
+		OH_gamma = OH_gamma[w_goodpix]
+
+	ENDWHILE
+
+	print, ''
+
+	; convert the coefficients to 2D matrices that can then be used with poly_2D
+	Klambda = reform(lambda_coeff, 4, 4)
+	Kgamma = reform(gamma_coeff, 4, 4)
+
+	; save into slit structure - copy also the lambda_min and lambda_step parameters
+	*cutout.rectification = {Klambda:Klambda, Kgamma:Kgamma, $
+		lambda_min:slit.outlambda_min, lambda_delta:slit.outlambda_delta}
+
+	; finally, output the actual wavelength calibration as a 2D array
+
+	; create empty frame that will contain the wavelength solution
+	wavelength_solution = im * 0.0
+
+	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
+	for ix=0, N_imx-1 do $
+		for iy=0, N_imy-1 do begin
+			flame_util_transform_direct, *cutout.rectification, x=ix, y=iy, lambda=lambda, gamma=gamma
+			wavelength_solution[ix, iy] = lambda
+		endfor
+
+	; write the accurate solution to a FITS file
+	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
+
+
+END
+
+
+
 
 
 
@@ -361,16 +548,16 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	; -------------------------------------------------------
 	; show the predicted position from the accurate 2D wavelength solution
 
-	; generate the locus of points with fixed lambda and variable gamma
-	gamma_array = dindgen(max(y1))
-
-	; apply the inverse transformation to obtain the (x, y) coordinates
-	flame_util_transform_inverse, (*cutout.rectification), lambda=gamma_array*0.0+lambda1, gamma=gamma_array, x=x1_model, y=y1_model
-	flame_util_transform_inverse, (*cutout.rectification), lambda=gamma_array*0.0+lambda2, gamma=gamma_array, x=x2_model, y=y2_model
-
-	; plot the theoretical lines of fixed wavelength
-	cgplot, x1_model-x1_model[ (sort(abs(y1_model-y_ref)))[0] ], y1_model, /overplot, color='blu7', thick=5
-	cgplot, x2_model-x2_model[ (sort(abs(y2_model-y_ref)))[0] ] + offset, y2_model, /overplot, color='red7', thick=5
+	; ; generate the locus of points with fixed lambda and variable gamma
+	; gamma_array = dindgen(max(y1))
+	;
+	; ; apply the inverse transformation to obtain the (x, y) coordinates
+	; flame_util_transform_inverse, (*cutout.rectification), lambda=gamma_array*0.0+lambda1, gamma=gamma_array, x=x1_model, y=y1_model
+	; flame_util_transform_inverse, (*cutout.rectification), lambda=gamma_array*0.0+lambda2, gamma=gamma_array, x=x2_model, y=y2_model
+	;
+	; ; plot the theoretical lines of fixed wavelength
+	; cgplot, x1_model-x1_model[ (sort(abs(y1_model-y_ref)))[0] ], y1_model, /overplot, color='blu7', thick=5
+	; cgplot, x2_model-x2_model[ (sort(abs(y2_model-y_ref)))[0] ] + offset, y2_model, /overplot, color='red7', thick=5
 
 
 END
