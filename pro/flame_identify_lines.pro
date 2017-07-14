@@ -236,7 +236,7 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 		/noerase, position = [0.15, 0.10, 0.95, 0.30]
 
 	; show median value of line width
-	cgplot, [-1, 2*max(speclines.x)], [0,0]+median(speclines.sigma), /overplot, thick=3, linestyle=2
+	cgplot, [x[0], x[-1]], [0,0]+median(speclines.sigma), /overplot, thick=3, linestyle=2
 
 	; update value of linewidth
 	linewidth = median(speclines.sigma)
@@ -281,12 +281,25 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 	;--------------------------------------------------------------------------------------------------------------
 
   ; setup the order to use for the pixel rows:
-	; start from the central row and go up until the top, then start from center and go down
+  ; vertical coordinate of each row
 	row_number = indgen(N_spatial_pix)
-	sorted_rows = [ row_number[N_spatial_pix/2: N_spatial_pix-1] , reverse(row_number[0:N_spatial_pix/2-1]) ]
+
+  ; check if we are stacking more than one pixel row
+  if fuel.util.identify_lines_stack_rows LT 0 then message, 'fuel.util.identify_lines_stack_rows can only be positive!'
+  N_stack = fuel.util.identify_lines_stack_rows
+
+  ; if stacking more than one pixel row, then cut the edges
+  if N_stack ne 0 then $
+    row_number = row_number[N_stack:-1-N_stack]
+
+  ; number of rows that will be extracted
+  N_rows = n_elements(row_number)
+
+  ; start from the central row and go up until the top, then start from center and go down
+	sorted_rows = [ row_number[N_rows/2: N_rows-1] , reverse(row_number[0:N_rows/2-1]) ]
 
 	; identify first row of bottom half
-	i0_bottom = row_number[N_spatial_pix/2-1]
+	i0_bottom = row_number[N_rows/2-1]
 
   ; extract the sky spectrum from a bunch of central pixel rows
   central_skyspec = median( im[*, sorted_rows[0]:sorted_rows[2]], dimension=2 )
@@ -366,6 +379,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   w_l = where(line_list GT lambda_axis[4] and line_list LT lambda_axis[-5], /null)
   print, 'Identified ', strtrim(Nlines, 2), ' out of ', strtrim(n_elements(w_l), 2), ' lines present in the line list.'
 
+
   ; fit all the pixel rows
 	;--------------------------------------------------------------------------------------------------------------
 
@@ -382,7 +396,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 	print, 'Fitting individual sky lines for every pixel row...'
 
 	; loop through all the pixel rows
-	for counter=0, N_spatial_pix-1 do begin
+	for counter=0, N_rows-1 do begin
 
 		; index of the row we are considering now
 		i_row = sorted_rows[counter]
@@ -390,8 +404,10 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 		; print info on the row
 		print, 'row ' + strtrim(i_row, 2) + ' ', format='(a,$)'
 
-		; extract this pixel row from the slit
-		this_row = im[*, i_row]
+		; extract this pixel row from the slit (if needed, stack more than one row to increase SNR)
+		if N_stack eq 0 then $
+      this_row = im[*, i_row] else $
+      this_row = median(im[*, i_row-N_stack:i_row+N_stack], dimension=2)
 
 		; if this is the first row of the bottom half, then use the wavelength solution found for the first row
 		if i_row eq i0_bottom then wavelength_axis_guess = wavelength_solution_0

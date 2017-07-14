@@ -100,6 +100,12 @@
   ; subtract sky continuum before wavecal_rough. This specifies the smoothing window
   ; fuel.util.wavecal_rough_smooth_window = 20
 
+  ; if the sky lines are weak, stack more than one pixel row when identifying lines
+  ;fuel.util.identify_lines_stack_rows = 2
+
+  ; change the window used to look for a spectral line, in units of expected line width
+  ;fuel.util.identify_lines_linefit_window = 6.0
+
   ; change the minimum number of emission lines required for a valid wavelength
   ; solution in one pixel row during identify_lines
   ; fuel.util.identify_lines_Nmin_lines = 4
