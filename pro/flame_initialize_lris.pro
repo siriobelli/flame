@@ -196,21 +196,29 @@ FUNCTION flame_initialize_lris, input
   ; LRIS-specific routine that initializes the fuel structure
   ;
 
-    print, ''
-    print, 'Initializing LRIS data reduction'
-    print, ''
+  print, ''
+  print, 'Initializing LRIS data reduction'
+  print, ''
 
 
   ; first, create the fuel structure
   fuel = flame_util_create_fuel(input)
 
-  ; -----------------------------------------------------------------
+
+  ; ---------------------   INSTRUMENT structure   --------------------------------------
+
+  ; read FITS header of first science frame
+  science_header = headfits(fuel.util.science_filenames[0])
+
+  ; read the instrument settings from the header
+  instrument = flame_initialize_lris_settings(science_header)
+
+
+  ; ---------------------   UTIL SETTINGS   --------------------------------------
+
   ; need to use the optical sky spectrum
-  ; HANDLE THIS IN A BETTER WAY PLEASE
   fuel.util.sky_emission_filename = $
     fuel.util.flame_data_dir + 'sky_emission_model_optical.dat'
-
-  ; -----------------------------------------------------------------
 
   ; use the sky background to trace the slit edges
   fuel.util.trace_slit_with_skylines = 0
@@ -221,13 +229,8 @@ FUNCTION flame_initialize_lris, input
   ; do not apply illumination correction
   fuel.util.illumination_correction = 0
 
-  ; -----------------------------------------------------------------
-
-  ; read FITS header of first science frame
-  science_header = headfits(fuel.util.science_filenames[0])
-
-  ; read the instrument settings from the header
-  instrument = flame_initialize_lris_settings(science_header)
+  ; split the spectrum into two when doing the rough wavecal
+  fuel.util.wavecal_rough_split = 1
 
   ; -----------------------------------------------------------------
   ; we need to convert the LRIS frames into the "normal" format

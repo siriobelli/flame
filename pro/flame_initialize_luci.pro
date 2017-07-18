@@ -426,11 +426,21 @@ FUNCTION flame_initialize_luci, input
   ; first, create the fuel structure
   fuel = flame_util_create_fuel(input)
 
+
+  ; ---------------------   INSTRUMENT structure   --------------------------------------
+
   ; read FITS header of first science frame
   science_header = headfits(fuel.util.science_filenames[0])
 
   ; read the instrument settings from the header
   instrument = flame_initialize_luci_settings(science_header)
+
+
+  ; ---------------------   UTIL SETTINGS   --------------------------------------
+
+  ; do not split the spectrum into two when doing the rough wavecal
+  fuel.util.wavecal_rough_split = 0
+
 
   ; now read in the slits parameters from the FITS header
 
