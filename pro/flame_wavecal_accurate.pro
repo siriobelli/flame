@@ -607,7 +607,7 @@ PRO flame_wavecal_accurate, fuel
 				speclines = *this_slit.cutouts[i_frame].speclines
 
 				; calculate the polynomial transformation between observed and rectified frame
-				flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
+				flame_wavecal_2D_calibration_new, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
 					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
 
 				; show plots of the wavelength calibration and specline identification

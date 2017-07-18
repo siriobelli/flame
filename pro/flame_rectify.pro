@@ -13,19 +13,34 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	im = mrdfits(filename, 0, header, /silent)
 	if Next GT 1 then im_sigma = mrdfits(filename, 1, /silent)
 
-	; read dimensions of the image
+	; read dimensions of the observed frame
 	N_imx = (size(im))[1]
 	N_imy = (size(im))[2]
 
-	; make the new, regular pixel grid
+	; get the parameters for the output grid
 	lambda_0 = slit.outlambda_min
 	delta_lambda = slit.outlambda_delta
 	Nx = slit.outlambda_Npix
 	Ny = N_imy
 
-	; resample image onto new grid
-	new_im = poly_2D(im, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
-	if Next GT 1 then new_im_sigma = poly_2D(im_sigma, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
+	; ; resample image onto new grid using poly_2d
+	; new_im = poly_2D(im, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
+	; if Next GT 1 then new_im_sigma = poly_2D(im_sigma, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
+
+	; create 2D arrays containing the observed coordinates of each pixel
+	x_2d = indgen(N_imx) # replicate(1, N_imy)
+	y_2d = replicate(1, N_imx) # indgen(N_imy)
+
+	; create 2D arrays containing the rectified coordinates of each pixel
+	flame_util_transform_direct, rectification, x=x_2d, y=y_2d, lambda=lambda_2d, gamma=gamma_2d
+
+	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
+	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
+
+	; resample image onto new grid using griddata
+	triangulate, lambdax_2d, gamma_2d, triangles
+	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
+	if Next GT 1 then new_im_sigma = griddata(lambdax_2d, gamma_2d, im_sigma, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
 
 	; add the wavelength calibration to the FITS header
 	SXADDPAR, Header, 'CTYPE1', 'AWAV    '
@@ -71,18 +86,18 @@ PRO flame_rectify, fuel
 
 		print, 'Rectifying slit ', this_slit.number, ' - ', this_slit.name
 
-		; handle errors by ignoring that slit
-		catch, error_status
-		if error_status ne 0 then begin
-			print, ''
-	    print, '**************************'
-	    print, '***       WARNING      ***'
-	    print, '**************************'
-	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-			fuel.slits[i_slit].skip = 1
-			catch, /cancel
-			continue
-		endif
+		; ; handle errors by ignoring that slit
+		; catch, error_status
+		; if error_status ne 0 then begin
+		; 	print, ''
+	  ;   print, '**************************'
+	  ;   print, '***       WARNING      ***'
+	  ;   print, '**************************'
+	  ;   print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+		; 	fuel.slits[i_slit].skip = 1
+		; 	catch, /cancel
+		; 	continue
+		; endif
 
 		for i_frame=0, n_elements(this_slit.cutouts)-1 do begin
 
