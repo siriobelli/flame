@@ -39,7 +39,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 
 	; resample image onto new grid using griddata
 	triangulate, lambdax_2d, gamma_2d, triangles
-	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
+	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
 	if Next GT 1 then new_im_sigma = griddata(lambdax_2d, gamma_2d, im_sigma, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
 
 	; add the wavelength calibration to the FITS header

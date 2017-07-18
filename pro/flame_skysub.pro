@@ -18,12 +18,12 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; create empty frame that will contain the wavelength solution
 	wavelength_solution = dblarr(N_lambda_pix, N_spatial_pix)
 
-	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
-	for ix=0,N_lambda_pix-1 do $
-		for iy=0,N_spatial_pix-1 do begin
-			flame_util_transform_direct, *(cutout.rectification), x=ix, y=iy, lambda=lambda, gamma=gamma
-			wavelength_solution[ix, iy] = lambda
-		endfor
+	; create 2D arrays containing the observed coordinates of each pixel
+	x_2d = indgen(N_lambda_pix) # replicate(1, N_spatial_pix)
+	y_2d = replicate(1, N_lambda_pix) # indgen(N_spatial_pix)
+
+	; create 2D array containing wavelength at each pixel
+	flame_util_transform_direct, *(cutout.rectification), x=x_2d, y=y_2d, lambda=wavelength_solution
 
 
 	;**************
@@ -96,6 +96,16 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; generate sky model for the whole slit
 	;sky_model = bspline_valu(wavelength_solution, sset, x2=pixel_ycoord_2d)
 	sky_model = bspline_valu(wavelength_solution, sset)
+
+	; avoid extrapolating the sky model outside the observed wavelength range
+	w_extrap = where(wavelength_solution LT min(pixel_wavelength) or wavelength_solution GT max(pixel_wavelength), /null)
+	if w_extrap NE !NULL then sky_model[w_extrap] = !values.d_nan
+
+	; add a frame of NaNs to avoid extrapolation when rectifying
+	sky_model[0,*] = !values.d_nan
+	sky_model[-1,*] = !values.d_nan
+	sky_model[*,0] = !values.d_nan
+	sky_model[*,-1] = !values.d_nan
 
 	; save sky model
 	writefits, flame_util_replace_string(slit_filename, '.fits', '_skymodel.fits'), sky_model
