@@ -64,12 +64,11 @@ END
 PRO flame_cutout_slits, fuel
 
 	flame_util_module_start, fuel, 'flame_cutout_slits'
-
+  
 
   ; extract slits structure
   slits = fuel.slits
 
-  print,'Slits: ', n_elements(slits)
   for i_slit=0, n_elements(slits)-1 do begin
 
     if slits[i_slit].skip then continue
