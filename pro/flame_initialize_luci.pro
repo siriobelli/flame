@@ -180,6 +180,7 @@ FUNCTION flame_initialize_luci_settings, science_header
     gain: gain, $
     resolution_slit1arcsec: 0.0, $
     linearity_correction: linearity_correction, $
+    trim_edges: 4, $
     default_badpixel_mask: default_badpixel_mask, $
     default_dark: default_dark, $
     default_pixelflat: default_pixelflat, $

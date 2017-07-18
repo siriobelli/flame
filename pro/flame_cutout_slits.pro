@@ -4,10 +4,10 @@
 ;
 ;******************************************************************
 
-PRO flame_cutout_slits_extract, slit_structure, science_filenames, output_filenames, margin=margin
+PRO flame_cutout_slits_extract, fuel, slit_structure, science_filenames, output_filenames
 
-  ; extra margin in pixel to remove from the edges
-  if ~keyword_set(margin) then margin = 0
+  ; if we are not applying the illumination correction, then we need to be more generous in cutting the margin
+  if ~fuel.util.illumination_correction then margin = 3 else margin = 1
 
   ; loop through science frames
   for i_frame=0, n_elements(science_filenames)-1 do begin
@@ -49,6 +49,12 @@ PRO flame_cutout_slits_extract, slit_structure, science_filenames, output_filena
     this_slit = im[ * , min_y:max_y]
     this_slit_sigma = im_sigma[ * , min_y:max_y]
 
+    ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
+    this_slit[*, 0] = !values.d_nan
+    this_slit[*,-1] = !values.d_nan
+    this_slit_sigma[*, 0] = !values.d_nan
+    this_slit_sigma[*,-1] = !values.d_nan
+
     ; write this out
     writefits, output_filenames[i_frame], this_slit, header
     writefits, output_filenames[i_frame], this_slit_sigma, /append
@@ -64,7 +70,7 @@ END
 PRO flame_cutout_slits, fuel
 
 	flame_util_module_start, fuel, 'flame_cutout_slits'
-  
+
 
   ; extract slits structure
   slits = fuel.slits
@@ -88,12 +94,9 @@ PRO flame_cutout_slits, fuel
       output_filenames[i_frame] = flame_util_replace_string( slitdir + naked_filename, '.fits', '_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'  )
     endfor
 
-    ; if we are not applying the illumination correction, then we need to be more generous in cutting the margin
-    if ~fuel.util.illumination_correction then margin = 2
-
     ; extract slit
     print,'*** Cutting out slit ', slits[i_slit].name
-    flame_cutout_slits_extract, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames, margin=margin
+    flame_cutout_slits_extract, fuel, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames
 
     ; add the cutout filenames
     fuel.slits[i_slit].cutouts.filename = output_filenames

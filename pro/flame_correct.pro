@@ -380,6 +380,20 @@ PRO flame_correct_oneframe, fuel, filename_raw, filename_corr, $
   if badpixel_mask NE !NULL then $
     frame_corr3[where(badpixel_mask, /null)] = !values.d_nan
 
+  ; CORRECTION 3b: trim the edges of the detector
+
+  ; set the size of the margin to trim (default is 1)
+  if tag_exist(fuel.instrument, 'trim_edges') then $
+    trim = fuel.instrument.trim_edges else $
+    trim = 1
+
+  ; set to NaN the pixels at the edge of the detector
+  frame_corr3[0:trim-1,*] = !values.d_nan
+  frame_corr3[-trim:-1,*] = !values.d_nan
+  frame_corr3[*,0:trim-1] = !values.d_nan
+  frame_corr3[*,-trim:-1] = !values.d_nan
+
+
   ; CORRECTION 4: convert to electrons per second
 
   ; first convert from ADU to electrons
