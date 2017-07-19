@@ -115,7 +115,22 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 
 	; translate every OH detection into the new coordinate system
 	OH_lambdax = (OH_lambda - lambda_0)/delta_lambda
-	OH_gamma = OH_y + first_pixel - poly(OH_x, slit.bottom_poly) - vertical_offset
+	;OH_gamma = OH_y + first_pixel - poly(OH_x, slit.bottom_poly) - vertical_offset
+
+
+	; find the gamma coefficients analytically -------------------------------------------------------
+
+	; make the 4x4 matrix
+	Kgamma = dblarr(4, 4)
+
+	; by definition, dgamma/dy = 1
+	Kgamma[1,0] = 1.0
+
+	; use the definition of the bottom edge of the slit to build the gamma matrix
+	Kgamma[0,*] = -slit.bottom_poly
+
+	; but the zero is now at the edge of the cutout, and is corrected for the drift
+	Kgamma[0,0] += first_pixel - vertical_offset
 
 
 	; guess the lambda coefficients -------------------------------------------------------
@@ -129,16 +144,8 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 	; scale by orders of magnitude for the higher order terms
 	starting_coefficients_l = (guess_coeff1d # [1,1d-3, 1d-6, 1d-9])[*]
 
-	; guess the gamma coefficients -------------------------------------------------------
 
-	; guess the order-of-magntidude of the starting coefficients
-	starting_coefficients_g = ([1d, 1d-3, 1d-6, 1d-9] # [1, 1d-6, 1d-9, 1d-12])[*]
-
-	; by definition, dgamma/dy = 1
-	starting_coefficients_g[1] = 1.0
-
-
-	; fit the observed speclines and find the best-fit coefficients --------------------------------------------
+	; fit the observed speclines and find the best-fit lambda coefficients --------------------------------------------
 
 	; number of speclines we are using
 	Ngoodpix = n_elements(speclines)+1
@@ -152,19 +159,14 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 		; save old number of good speclines
 		Ngoodpix = n_elements(speclines)
 
-		args_l = {speclines:speclines, lambdax:OH_lambdax}
-		args_g = {speclines:speclines, gamma:OH_gamma}
+		args = {speclines:speclines, lambdax:OH_lambdax}
 
 		; fit the data and find the coefficients for the lambda calibration
-		lambda_coeff = mpfit('lambda_calibration', starting_coefficients_l, functargs=args_l, $
+		lambda_coeff = mpfit('lambda_calibration', starting_coefficients_l, functargs=args, $
 			bestnorm=bestnorm_l, best_resid=best_resid_l, /quiet, status=status_l)
 
-		; fit the data and find the coefficients for the gamma calibration
-		gamma_coeff = mpfit('gamma_calibration', starting_coefficients_g, functargs=args_g, $
-			bestnorm=bestnorm_g, best_resid=best_resid_g, /quiet, status=status_g)
-
 		; check that mpfit worked
-		if status_l LT 0 or status_g LT 0 then message, 'mpfit did not find a good solution'
+		if status_l LT 0 then message, 'mpfit did not find a good solution'
 
 		w_outliers = where( abs(best_resid_l) GT 3.0*stddev(best_resid_l), complement=w_goodpix, /null)
 		print, strtrim( n_elements(w_outliers), 2) + ' outliers rejected. ', format='(a,$)'
@@ -172,15 +174,15 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 		; keep only the non-outliers
 		speclines = speclines[w_goodpix]
 		OH_lambdax = OH_lambdax[w_goodpix]
-		OH_gamma = OH_gamma[w_goodpix]
 
 	ENDWHILE
 
 	print, ''
 
-	; convert the coefficients to 2D matrices that can then be used with poly_2D
+	; convert the coefficients to a 2D matrix
 	Klambda = reform(lambda_coeff, 4, 4)
-	Kgamma = reform(gamma_coeff, 4, 4)
+
+; ---------------------------------------------------------------------------------------
 
 	; save into slit structure - copy also the lambda_min and lambda_step parameters
 	*cutout.rectification = {Klambda:Klambda, Kgamma:Kgamma, $
@@ -595,18 +597,18 @@ PRO flame_wavecal_accurate, fuel
 	  print, 'Accurate wavelength calibration for slit ', strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
 		print, ' '
 
-		; handle errors by ignoring that slit
-		catch, error_status
-		if error_status ne 0 then begin
-			print, ''
-	    print, '**************************'
-	    print, '***       WARNING      ***'
-	    print, '**************************'
-	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-			fuel.slits[i_slit].skip = 1
-			catch, /cancel
-			continue
-		endif
+		; ; handle errors by ignoring that slit
+		; catch, error_status
+		; if error_status ne 0 then begin
+		; 	print, ''
+	  ;   print, '**************************'
+	  ;   print, '***       WARNING      ***'
+	  ;   print, '**************************'
+	  ;   print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+		; 	fuel.slits[i_slit].skip = 1
+		; 	catch, /cancel
+		; 	continue
+		; endif
 
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
