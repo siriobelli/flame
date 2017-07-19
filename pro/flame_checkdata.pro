@@ -224,7 +224,10 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	;-------------------------------------
 
 	; load line list
-	readcol, fuel.util.linelist_filename, line_list, format='D', /silent
+	readcol, fuel.util.linelist_filename, line_list, line_trust, format='D,I', /silent
+
+	; keep only the ones that can be used for the wavelength solution
+	line_list = line_list[where(line_trust eq 1, /null)]
 
   ; calculate approximate sky line width
 	linewidth_um = median(lambda_axis) / (2.36 * fuel.instrument.resolution_slit1arcsec)

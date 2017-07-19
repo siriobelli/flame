@@ -27,7 +27,7 @@ PRO flame_identify_writeds9, speclines, filename=filename
 
   ; write header
   printf, lun, '# Region file format: DS9 version 4.1'
-  printf, lun, 'global color=red dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
+  printf, lun, 'global dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
   printf, lun, 'image'
 
   for i_line=0, n_elements(uniq_lambdas)-1 do begin
@@ -40,10 +40,10 @@ PRO flame_identify_writeds9, speclines, filename=filename
   	this_x = speclines[w_thisline].x
  		this_y = speclines[w_thisline].y
 
- 	; sort points by y coordinate
- 	wsort = sort(this_y)
- 	this_x = this_x[wsort]
- 	this_y = this_y[wsort]
+   	; sort points by y coordinate
+   	wsort = sort(this_y)
+   	this_x = this_x[wsort]
+   	this_y = this_y[wsort]
 
     ; concatenate points
     all_x = [ this_x, reverse(this_x) ]
@@ -59,8 +59,12 @@ PRO flame_identify_writeds9, speclines, filename=filename
     ; add the last two points without the final comma
     all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
 
-    ; write the line corresponding to this slit
-    printf, lun, 'polygon(' + all_points + ') # text={' + cgnumber_formatter(this_lambda, decimals=5) + '}'
+    ; the color for this line (red if we are using it for wavecal, otherwise black)
+    if speclines[w_thisline[0]].trust_lambda eq 1 then color ='red' $
+      else color='black'
+
+    ; write the region corresponding to this line
+    printf, lun, 'polygon(' + all_points + ') # text={' + cgnumber_formatter(this_lambda, decimals=5) + '} color = ' + color
 
   endfor
 
@@ -80,7 +84,7 @@ END
 
 PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	approx_wavecal=approx_wavecal, linewidth=linewidth, $
-	line_list=line_list_in, $
+	line_list=line_list_in, line_trust=line_trust_in, $
 	speclines=speclines, wavecal=wavecal, plot_title=plot_title
 
 	;
@@ -95,10 +99,15 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	; approx_wavecal: (input) array with the approximate wavelength for each x
 	; linewidth: (input and output) approximate sigma of unresolved sky lines, which will be updated. NB:in pixels
 	; line_list: (input) array of expected wavelengths of usable OH lines
+  ; line_trust: (input) array of flags: 1 if the line can be used for the wavelength calibration. If not specified, use all lines
 	; speclines: (output) array of structures with parameters for each OH line
 	; wavecal: (output) array with the wavelength solution
 	; plot_title : (input) string to print as title of the plot
 	;
+
+  ; if line_trust is not provided, then trust all lines
+  if ~keyword_set(line_trust_in) then $
+    line_trust_in = replicate(1, n_elements(line_list_in))
 
 	; convert linewidth to micron
 	linewidth_um = linewidth * median( approx_wavecal - shift(approx_wavecal, 1) )
@@ -117,6 +126,11 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 
 	; keep only the OH lines of interest
 	line_list = line_list_in[w_lines]
+  line_trust = line_trust_in[w_lines]
+
+  ; check that there are at least three trustable lines
+  if n_elements(where(line_trust eq 1, /null)) LT 3 then $
+    message, 'linelist contains less than three lines that can be used for wavelength calibration'
 
 	; make the array that will contain the result of the fitting
 	speclines = []
@@ -172,26 +186,33 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 			y: -1.0, $
 			sigma: gauss_param[2], $
 			peak: gauss_param[0], $
-			chisq: chisq }
+			chisq: chisq, $
+      trust_lambda:line_trust[i_line] }
 
 		; add to the stack
 		speclines = [speclines, this_OHline]
 
 	endfor
 
+  ; did we find any speclines at all?
+  if n_elements(speclines) eq 0 then return
+
+  ; select only the lines we can use for the wavelength calibration
+  speclines_trust = speclines[where(speclines.trust_lambda eq 1, /null)]
+  speclines_donttrust = speclines[where(speclines.trust_lambda eq 0, /null)]
+
 	; if too few lines were found, then no reliable wavelength solution exists
-	if n_elements(speclines) LT fuel.util.identify_lines_Nmin_lines then begin
+	if n_elements(speclines_trust) LT fuel.util.identify_lines_Nmin_lines then begin
 		speclines = !NULL
 		return
 	endif
 
   ; set the degree for the polynomial fit - if there are few lines, decrease the degree
   poly_degree = fuel.util.identify_lines_poly_degree
-  if poly_degree GT (n_elements(speclines)+1)/3 then poly_degree = (n_elements(speclines)+1)/3
+  if poly_degree GT (n_elements(speclines_trust)+1)/3 then poly_degree = (n_elements(speclines_trust)+1)/3
 
-	; fit a polynomial to the skyline positions
-	;wavesol_coeff = poly_fit( speclines.x, speclines.lambda, poly_degree )
-  wavesol_coeff = robust_poly_fit( speclines.x, speclines.lambda, poly_degree, /DOUBLE )
+  ; fit a polynomial to the skyline positions using only the lines we can trust
+  wavesol_coeff = robust_poly_fit( speclines_trust.x, speclines_trust.lambda, poly_degree, /DOUBLE )
 
   ; ; calculate residuals
   ; residuals = speclines.lambda-poly(speclines.x, wavesol_coeff)
@@ -211,29 +232,41 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 		position = [0.15, 0.70, 0.95, 0.96], xtickformat="(A1)", xra=[x[0], x[-1]], /nodata
 
 	; show the OH lines that were identified
-	for i_line=0, n_elements(speclines)-1 do cgplot, speclines[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='red'
+	for i_line=0, n_elements(speclines_trust)-1 do cgplot, speclines_trust[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='red'
+  for i_line=0, n_elements(speclines_donttrust)-1 do cgplot, speclines_donttrust[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='blk4'
 
 	; show the spectrum on top, for clarity
 	cgplot, x, y, /overplot
 
 	; panel 2: show the wavelength solution
-	cgplot, speclines.x, speclines.lambda, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+	cgplot, speclines_trust.x, speclines_trust.lambda, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
 		xtit='', ytit='expected wavelength', charsize=ch, $
 		/noerase, position = [0.15, 0.50, 0.95, 0.70], xtickformat="(A1)"
+
+  if n_elements(speclines_donttrust) GT 0 then $
+    cgplot, speclines_donttrust.x, speclines_donttrust.lambda, /overplot, psym=16, color='blk4', symsize=0.7
 
 	; show the polynomial fit
 	cgplot, x, poly_wl, color='blue', /overplot
 
 	; panel 3: show the residuals
-	cgplot, speclines.x, 1d4 * (speclines.lambda-poly(speclines.x, wavesol_coeff)), /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+	cgplot, speclines_trust.x, 1d4 * (speclines_trust.lambda-poly(speclines_trust.x, wavesol_coeff)), /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
 		ytit='residuals (angstrom)', charsize=ch, $
 		/noerase, position = [0.15, 0.30, 0.95, 0.50], xtickformat="(A1)"
-	cgplot, [x[0], x[-1]], [0,0], /overplot, thick=3, linestyle=2
+
+  if n_elements(speclines_donttrust) GT 0 then $
+    cgplot, speclines_donttrust.x, 1d4 * (speclines_donttrust.lambda-poly(speclines_donttrust.x, wavesol_coeff)), /overplot, psym=16, color='blk4', symsize=0.7
+
+  cgplot, [x[0], x[-1]], [0,0], /overplot, thick=3, linestyle=2
+
 
 	; panel 4: plot the line widths
-	cgplot, speclines.x, speclines.sigma, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+	cgplot, speclines_trust.x, speclines_trust.sigma, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
 		xtit='pixel coordinate', ytit='line width (pixel)', charsize=ch, $
 		/noerase, position = [0.15, 0.10, 0.95, 0.30]
+
+  if n_elements(speclines_donttrust) GT 0 then $
+    cgplot, speclines_donttrust.x, speclines_donttrust.sigma, /overplot, psym=16, color='blk4', symsize=0.7
 
 	; show median value of line width
 	cgplot, [x[0], x[-1]], [0,0]+median(speclines.sigma), /overplot, thick=3, linestyle=2
@@ -333,7 +366,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 	;--------------------------------------------------------------------------------------------------------------
 
   ; load line list
-	readcol, fuel.util.linelist_filename, line_list, format='D', /silent
+	readcol, fuel.util.linelist_filename, line_list, line_trust, format='D,I', /silent
 
   ; calcolate typical wavelength step of one pixel
   lambda_step = median( approx_lambda_axis - shift(approx_lambda_axis, 1) )
@@ -360,10 +393,13 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   ; re-iteratively identify lines and improve wavelength solution
   while delta_Nlines GT 0 and i_loop LT 10 do begin
 
+    ; for this initial fits, use only the lines that we can trust
+    line_list_trust = line_list[where(line_trust eq 1, /null)]
+
     ; fit the emission lines and find the wavelength solution
   	flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=central_skyspec, $
   		approx_wavecal=lambda_axis, linewidth=linewidth, $
-  		line_list=line_list, $
+  		line_list=line_list_trust, $
   		speclines=speclines_thisloop, wavecal=lambda_axis_output, plot_title='central rows / ' + strtrim(i_loop,2)
 
     ; update the wavelength solution
@@ -376,7 +412,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 
   endwhile
 
-  w_l = where(line_list GT lambda_axis[4] and line_list LT lambda_axis[-5], /null)
+  w_l = where(line_list_trust GT lambda_axis[4] and line_list_trust LT lambda_axis[-5], /null)
   print, 'Identified ', strtrim(Nlines, 2), ' out of ', strtrim(n_elements(w_l), 2), ' lines present in the line list.'
 
 
@@ -415,7 +451,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 		; fit the emission lines and find the wavelength solution
 		flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=this_row, $
 			approx_wavecal=wavelength_axis_guess, linewidth=linewidth, $
-			line_list=line_list, $
+			line_list=line_list, line_trust=line_trust, $
 			speclines=speclines_thisrow, wavecal=wavelength_axis_for_this_row, plot_title='row '+strtrim(i_row,2)
 
 		; if sky lines were not found, then skip to next row
@@ -528,20 +564,20 @@ PRO flame_identify_lines, fuel
 	  print, 'Finding emission lines for calibration for slit ', strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
 		print, ' '
 
-		; handle errors by ignoring that slit
-		catch, error_status
-		if error_status ne 0 then begin
-			print, ''
-      print, ''
-	    print, '**************************'
-	    print, '***       WARNING      ***'
-	    print, '**************************'
-      print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-      print, ''
-      fuel.slits[i_slit].skip = 1
-			catch, /cancel
-			continue
-		endif
+		; ; handle errors by ignoring that slit
+		; catch, error_status
+		; if error_status ne 0 then begin
+		; 	print, ''
+    ;   print, ''
+	  ;   print, '**************************'
+	  ;   print, '***       WARNING      ***'
+	  ;   print, '**************************'
+    ;   print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+    ;   print, ''
+    ;   fuel.slits[i_slit].skip = 1
+		; 	catch, /cancel
+		; 	continue
+		; endif
 
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 

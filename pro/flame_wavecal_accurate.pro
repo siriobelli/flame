@@ -24,8 +24,21 @@ FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax
 	predicted_lambdax = dblarr(n_elements(speclines))*0.0
 	for i=0,3 do for j=0,3 do predicted_lambdax += coefficients[4*i+j] * (speclines.x)^i * (speclines.y)^j
 
-	; use the output grid parameters to transform from normalized to true lambda
-	;predicted_lambda = lambda_min + lambda_delta*predicted_lambda_norm
+	; construct array with deviation in lambda for each line
+	dev = dblarr(n_elements(speclines))
+
+	; different way to calculate dev for the two types of lines
+	w_trust = where(speclines.trust_lambda eq 1, /null, compl=w_donttrust)
+
+	; for the lines that can be used for the wavelength calibration,
+	; calculate the deviation from the theoretical lambda
+	dev[w_trust] = lambdax[w_trust] - predicted_lambdax[w_trust]
+
+	; for the lines with unreliable lambda, calculate the deviation from the median
+	; value of all the other detections of the same line (this helps with the rectification)
+	if n_elements(w_donttrust) GT 0 then $
+		for i_line=0, n_elements(w_donttrust)-1 do $
+			dev[i_line] = predicted_lambdax[i_line] - median(predicted_lambdax[where(speclines.lambda eq speclines[i_line].lambda, /null)])
 
 	; return deviation of true lambdax from predicted value
 	return, lambdax - predicted_lambdax
@@ -131,9 +144,9 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 	Ngoodpix = n_elements(speclines)+1
 
 	; check that we have enough points to calculate warping polynomial
-	if n_elements(speclines) LT (degree+1.0)^2 then message, 'not enough data points for polywarp'
+	if n_elements(speclines) LT (degree+1.0)^2 then message, 'not enough data points for a wavelength solution'
 
-	; loops are used to throw away outliers and make polywarp more robust
+	; loops are used to throw away outliers and make the fit more robust
 	WHILE n_elements(speclines) LT Ngoodpix AND n_elements(speclines) GE (degree+1.0)^2  DO BEGIN
 
 		; save old number of good speclines
@@ -143,11 +156,11 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 		args_g = {speclines:speclines, gamma:OH_gamma}
 
 		; fit the data and find the coefficients for the lambda calibration
-		lambda_coeff = MPFIT('lambda_calibration', starting_coefficients_l, functargs=args_l, $
+		lambda_coeff = mpfit('lambda_calibration', starting_coefficients_l, functargs=args_l, $
 			bestnorm=bestnorm_l, best_resid=best_resid_l, /quiet, status=status_l)
 
 		; fit the data and find the coefficients for the gamma calibration
-		gamma_coeff = MPFIT('gamma_calibration', starting_coefficients_g, functargs=args_g, $
+		gamma_coeff = mpfit('gamma_calibration', starting_coefficients_g, functargs=args_g, $
 			bestnorm=bestnorm_g, best_resid=best_resid_g, /quiet, status=status_g)
 
 		; check that mpfit worked
