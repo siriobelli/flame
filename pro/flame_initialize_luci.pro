@@ -462,9 +462,9 @@ FUNCTION flame_initialize_luci, input
 
   ; if high resolution (ARGOS) observations, the use the R6000 list
   if median(slits.approx_r) GT 4500.0 then $
-    fuel.util.linelist_filename = fuel.util.data_dir + 'line_list_R6000.dat' $
+    fuel.util.linelist_filename = fuel.util.flame_data_dir + 'line_list_R6000.dat' $
   else $
-    fuel.util.linelist_filename = fuel.util.data_dir + 'line_list_R3000.dat' $
+    fuel.util.linelist_filename = fuel.util.flame_data_dir + 'line_list_R3000.dat'
 
 
   ; scale the wavecal_rough_R to the spectral resolution - useful for argos
