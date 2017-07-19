@@ -443,16 +443,18 @@ PRO flame_combine, fuel
 		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name
 
 		; handle errors by ignoring that slit
-		catch, error_status
-		if error_status ne 0 then begin
-			print, ''
-	    print, '**************************'
-	    print, '***       WARNING      ***'
-	    print, '**************************'
-	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-			fuel.slits[i_slit].skip = 1
-			catch, /cancel
-			continue
+		if fuel.util.debugging eq 0 then begin
+			catch, error_status
+			if error_status ne 0 then begin
+				print, ''
+		    print, '**************************'
+		    print, '***       WARNING      ***'
+		    print, '**************************'
+		    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+				fuel.slits[i_slit].skip = 1
+				catch, /cancel
+				continue
+			endif
 		endif
 
 		flame_combine_oneslit, i_slit=i_slit, fuel=fuel

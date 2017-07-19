@@ -129,6 +129,7 @@ FUNCTION flame_util_create_fuel, input
     wavesolution_degree: 3, $
     skysub_plot_range: [0.4, 0.6], $
     combine_sigma_clip : 2.0, $
+    debugging:0, $
     start_time: systime(/seconds), $
     last_routine_time: systime(/seconds), $
     last_routine_name: 'flame_util_create_fuel' $

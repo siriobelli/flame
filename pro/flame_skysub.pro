@@ -135,16 +135,18 @@ PRO flame_skysub, fuel
 		if fuel.slits[i_slit].skip then continue
 
 		; handle errors by ignoring that slit
-		catch, error_status
-		if error_status ne 0 then begin
-			print, ''
-	    print, '**************************'
-	    print, '***       WARNING      ***'
-	    print, '**************************'
-	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-			fuel.slits[i_slit].skip = 1
-			catch, /cancel
-			continue
+		if fuel.util.debugging eq 0 then begin
+			catch, error_status
+			if error_status ne 0 then begin
+				print, ''
+		    print, '**************************'
+		    print, '***       WARNING      ***'
+		    print, '**************************'
+		    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+				fuel.slits[i_slit].skip = 1
+				catch, /cancel
+				continue
+			endif
 		endif
 
 		for i_frame=0, fuel.util.N_frames-1 do $

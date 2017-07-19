@@ -536,18 +536,20 @@ PRO flame_checkdata, fuel
 			'-' + fuel.slits[i_slit].name +  '_datacheck.ps', /nomatch
 
 		; handle errors by ignoring that slit
-		catch, error_status
-		if error_status ne 0 then begin
-			print, ''
-	    print, '**************************'
-	    print, '***       WARNING      ***'
-	    print, '**************************'
-	    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-			fuel.slits[i_slit].skip = 1
-			cgPS_close
-			catch, /cancel
-			continue
-		endif
+		if fuel.util.debugging eq 0 then begin
+			catch, error_status
+			if error_status ne 0 then begin
+				print, ''
+		    print, '**************************'
+		    print, '***       WARNING      ***'
+		    print, '**************************'
+		    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+				fuel.slits[i_slit].skip = 1
+				cgPS_close
+				catch, /cancel
+				continue
+			endif
+		endif 
 
 		; calculate diagnostics from the sky spectrum
 		flame_checkdata_sky, fuel, i_slit=i_slit

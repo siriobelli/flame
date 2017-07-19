@@ -86,18 +86,20 @@ PRO flame_rectify, fuel
 
 		print, 'Rectifying slit ', this_slit.number, ' - ', this_slit.name
 
-		; ; handle errors by ignoring that slit
-		; catch, error_status
-		; if error_status ne 0 then begin
-		; 	print, ''
-	  ;   print, '**************************'
-	  ;   print, '***       WARNING      ***'
-	  ;   print, '**************************'
-	  ;   print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-		; 	fuel.slits[i_slit].skip = 1
-		; 	catch, /cancel
-		; 	continue
-		; endif
+		; handle errors by ignoring that slit
+		if fuel.util.debugging eq 0 then begin
+			catch, error_status
+			if error_status ne 0 then begin
+				print, ''
+		    print, '**************************'
+		    print, '***       WARNING      ***'
+		    print, '**************************'
+		    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+				fuel.slits[i_slit].skip = 1
+				catch, /cancel
+				continue
+			endif
+		endif
 
 		for i_frame=0, n_elements(this_slit.cutouts)-1 do begin
 

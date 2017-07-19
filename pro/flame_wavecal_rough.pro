@@ -553,17 +553,19 @@ PRO flame_wavecal_rough, fuel
 		print, ''
 
 		; handle errors by ignoring that slit
-		; catch, error_status
-		; if error_status ne 0 then begin
-		; 	print, ''
-	  ;   print, '**************************'
-	  ;   print, '***       WARNING      ***'
-	  ;   print, '**************************'
-	  ;   print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
-		; 	fuel.slits[i_slit].skip = 1
-		; 	catch, /cancel
-		; 	continue
-		; endif
+		if fuel.util.debugging eq 0 then begin
+			catch, error_status
+			if error_status ne 0 then begin
+				print, ''
+		    print, '**************************'
+		    print, '***       WARNING      ***'
+		    print, '**************************'
+		    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+				fuel.slits[i_slit].skip = 1
+				catch, /cancel
+				continue
+			endif
+		endif
 
 		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyspec=rough_skyspec)
     *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
