@@ -2,7 +2,7 @@
 
 PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 
-	slit_filename = cutout.filename
+	slit_filename = cutout.filename_step2
 	print, 'Sky subtraction for ', slit_filename
 
 	; read in the slit image

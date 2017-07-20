@@ -435,7 +435,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
 	;---------------------
 
   ; take the first frame
-  slit_filename = (this_slit.cutouts.filename)[0]
+  slit_filename = (this_slit.cutouts.filename_step1)[0]
   print, 'Using the central pixel rows of ', slit_filename
 
 	; read in slit

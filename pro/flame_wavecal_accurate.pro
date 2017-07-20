@@ -79,13 +79,13 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 ;
 
 	print, ''
-	print, 'Accurate 2D wavelength solution for ', cutout.filename
+	print, 'Accurate 2D wavelength solution for ', cutout.filename_step1
 
 	; polynomial degree for image warping
 	degree = fuel.util.wavesolution_degree
 
 	; read in file to calibrate
-	im = mrdfits(cutout.filename, 0, header, /silent)
+	im = mrdfits(cutout.filename_step1, 0, header, /silent)
 
 	; read dimensions of the image
 	N_imx = (size(im))[1]
@@ -201,7 +201,7 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 		endfor
 
 	; write the accurate solution to a FITS file
-	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
+	writefits, flame_util_replace_string(cutout.filename_step1, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
 
 
 END
@@ -228,13 +228,13 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 ;
 
 	print, ''
-	print, 'Accurate 2D wavelength solution for ', cutout.filename
+	print, 'Accurate 2D wavelength solution for ', cutout.filename_step1
 
 	; polynomial degree for image warping
 	degree = fuel.util.wavesolution_degree
 
 	; read in file to calibrate
-	im = mrdfits(cutout.filename, 0, header, /silent)
+	im = mrdfits(cutout.filename_step1, 0, header, /silent)
 
 	; read dimensions of the image
 	N_imx = (size(im))[1]
@@ -321,7 +321,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		endfor
 
 	; write the accurate solution to a FITS file
-	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
+	writefits, flame_util_replace_string(cutout.filename_step1, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
 
 END
 
@@ -342,8 +342,8 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	speclines = *cutout.speclines
 
 	; read in slit
-	im = mrdfits(cutout.filename, 0, hdr, /silent)
-	im_sigma = mrdfits(cutout.filename, 1, /silent)
+	im = mrdfits(cutout.filename_step1, 0, hdr, /silent)
+	im_sigma = mrdfits(cutout.filename_step1, 1, /silent)
 
 	; cutout dimensions
 	N_pixel_x = (size(im))[1]
@@ -425,12 +425,15 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	im /= illumination_correction
 	im_sigma /= illumination_correction
 
-	; write out the illumination-corrected cutout
-  writefits, flame_util_replace_string(cutout.filename, '_corr', '_illcorr'), im, hdr
-	writefits, flame_util_replace_string(cutout.filename, '_corr', '_illcorr'), im_sigma, /append
+	; filename for the illumination-corrected cutout
+	illcorr_filename = flame_util_replace_string(cutout.filename_step1, '_corr', '_illcorr')
 
-	; save the filename of the illumination-corrected frame in the cutout structure
-	fuel.slits[i_slit].cutouts[i_frame].filename = flame_util_replace_string(cutout.filename, '_corr', '_illcorr')
+	; write out the illumination-corrected cutout
+  writefits, illcorr_filename, im, hdr
+	writefits, illcorr_filename, im_sigma, /append
+
+	; save the filename of the illumination-corrected frame in the cutout structure as the step2 frame
+	fuel.slits[i_slit].cutouts[i_frame].filename_step2 = illcorr_filename
 
 
 END
@@ -615,9 +618,6 @@ PRO flame_wavecal_accurate, fuel
 
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
-				; filename of the cutout
-				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename
-
 				; this slit
 				this_slit = fuel.slits[i_slit]
 
@@ -629,7 +629,7 @@ PRO flame_wavecal_accurate, fuel
 					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
 
 				; show plots of the wavelength calibration and specline identification
-				cgPS_open, flame_util_replace_string(slit_filename, '.fits', '_plots.ps'), /nomatch
+				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename_step1, '.fits', '_plots.ps'), /nomatch
 				flame_wavecal_plots, slit=this_slit, cutout=this_slit.cutouts[i_frame]
 
 				; calculate and apply the illumination correction

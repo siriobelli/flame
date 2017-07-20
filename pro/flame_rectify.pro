@@ -105,7 +105,7 @@ PRO flame_rectify, fuel
 
 			this_cutout = this_slit.cutouts[i_frame]
 
-			filename = this_cutout.filename
+			filename = this_cutout.filename_step2
 
 			; rectify observed frame
 			flame_rectify_one, filename=filename, rectification=(*this_cutout.rectification), $

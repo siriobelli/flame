@@ -99,7 +99,7 @@ PRO flame_cutout_slits, fuel
     flame_cutout_slits_extract, fuel, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames
 
     ; add the cutout filenames
-    fuel.slits[i_slit].cutouts.filename = output_filenames
+    fuel.slits[i_slit].cutouts.filename_step1 = output_filenames
 
   endfor
 

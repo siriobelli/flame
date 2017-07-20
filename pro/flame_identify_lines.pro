@@ -585,7 +585,7 @@ PRO flame_identify_lines, fuel
 
 
 				; filename of the cutout
-				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename
+				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename_step1
 
 				; this slit
 				this_slit = fuel.slits[i_slit]
