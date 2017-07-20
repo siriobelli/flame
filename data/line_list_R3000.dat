@@ -1,7 +1,8 @@
 # OH line wavelengths in micron, extracted from Rousselot et al., 2000, A & A, 354, 1134
 # plus a few atomic lines from Osterbrock et al. (1996)
-# wavelengths in vacuum
+# wavelengths are in in micron and in vacuum
 #
+# lambda trust_lambda?
   0.55788889        1
  #0.58915852        1
  #0.58975568        1
