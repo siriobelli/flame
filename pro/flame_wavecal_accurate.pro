@@ -10,16 +10,15 @@
 ;*******************************************************************************
 ;*******************************************************************************
 
-;
-; The following two functions are used for finding the best-fit coefficients
-; describing the 2D transformation from observed to rectified frame
-;
-
 FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax
-
-	; the coefficients are: [P00, P01, P02, P03, P10, P11, P12, P13, P20, ..... PNN]
+	;
+	; This function is used for finding the best-fit coefficients
+	; describing the wavelength of each pixek in the observed frame
+	;
+	; The coefficients are: [P00, P01, P02, P03, P10, P11, P12, P13, P20, ..... PNN]
 	; and the lambdax calibration is of the form SUM(Pij*x^i*y^j)
-
+	;
+	
 	; given the coefficients, calculate the predicted normalized lambda for each specline
 	predicted_lambdax = dblarr(n_elements(speclines))*0.0
 	for i=0,3 do for j=0,3 do predicted_lambdax += coefficients[4*i+j] * (speclines.x)^i * (speclines.y)^j
@@ -45,20 +44,6 @@ FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax
 
 END
 
-
-FUNCTION gamma_calibration, coefficients, speclines=speclines, gamma=gamma
-
-	; the coefficients are: [P00, P01, P02, P03, P10, P11, P12, P13, P20, ..... PNN]
-	; and the gamma calibration is of the form SUM(Pij*x^i*y^j)
-
-	; given the coefficients, calculate the predicted gamma coordinate for each specline
-	predicted_gamma = dblarr(n_elements(speclines))*0.0
-	for i=0,3 do for j=0,3 do predicted_gamma += coefficients[4*i+j] * (speclines.x)^i * (speclines.y)^j
-
-	; return deviation of true gamma from predicted value
-	return, gamma - predicted_gamma
-
-END
 
 
 ;*******************************************************************************
