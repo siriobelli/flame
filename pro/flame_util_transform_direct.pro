@@ -12,14 +12,14 @@ PRO flame_util_transform_direct, rectification, x=x, y=y, lambda=lambda, gamma=g
   ; calculate lambda -----------------------------------------------------------
 
 	; order of polynomials
-	Nordx = (size(rectification.Klambda))[1]
-  Nordy = (size(rectification.Klambda))[2]
+	Nordx = (size(rectification.Klambda))[2]
+  Nordy = (size(rectification.Klambda))[1]
 
   ; make empty array with all zeros
   lambdax = double(x)*0.0
 
   ; calculate normalized lambda
-	for i=0,Nordx-1 do for j=0,Nordy-1 do lambdax += double(rectification.Klambda[i,j]) * double(x)^j * double(y)^i
+	for i=0,Nordx-1 do for j=0,Nordy-1 do lambdax += double(rectification.Klambda[j,i]) * double(x)^i * double(y)^j
 
   ; transform into lambda
   lambda = rectification.lambda_min + rectification.lambda_delta * lambdax
@@ -28,14 +28,14 @@ PRO flame_util_transform_direct, rectification, x=x, y=y, lambda=lambda, gamma=g
   ; calculate gamma  -----------------------------------------------------------
 
   ; order of polynomials
-	Nordx = (size(rectification.Kgamma))[1]
-  Nordy = (size(rectification.Kgamma))[2]
+	Nordx = (size(rectification.Kgamma))[2]
+  Nordy = (size(rectification.Kgamma))[1]
 
   ; make empty array with all zeros
   gamma = double(x)*0.0
 
   ; calculate gamma
-	for i=0,Nordx-1 do for j=0,Nordy-1 do gamma += double(rectification.Kgamma[i,j]) * double(x)^j * double(y)^i
+	for i=0,Nordx-1 do for j=0,Nordy-1 do gamma += double(rectification.Kgamma[j,i]) * double(x)^i * double(y)^j
 
 
 END
