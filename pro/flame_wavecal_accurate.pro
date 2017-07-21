@@ -400,7 +400,10 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], 1.25+[0,0], /overplot, linestyle=2, thick=1
 
 	; if we do not have to apply the illumination correction, then we are done
-	if ~fuel.util.illumination_correction then return
+	if ~fuel.util.illumination_correction then begin
+		fuel.slits[i_slit].cutouts[i_frame].filename_step2 = fuel.slits[i_slit].cutouts[i_frame].filename_step1
+		return
+	endif
 
 	; calculate the gamma coordinate for each observed pixel, row by row
 	gamma_coordinate = im * 0.0
