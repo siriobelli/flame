@@ -447,20 +447,6 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	cgtext, 0.85, 0.20, 'line at ' + strtrim(lambda2, 2) + ' um', /normal, alignment=1.0, color=color2, charsize=1
 	cgtext, 0.85, 0.15, '(offset by ' + cgnumber_formatter(offset, decimals=2) + ' pixels)', /normal, alignment=1.0, color=color2, charsize=1
 
-	; -------------------------------------------------------
-	; show the predicted position from the accurate 2D wavelength solution
-
-	; ; generate the locus of points with fixed lambda and variable gamma
-	; gamma_array = dindgen(max(y1))
-	;
-	; ; apply the inverse transformation to obtain the (x, y) coordinates
-	; flame_util_transform_inverse, (*cutout.rectification), lambda=gamma_array*0.0+lambda1, gamma=gamma_array, x=x1_model, y=y1_model
-	; flame_util_transform_inverse, (*cutout.rectification), lambda=gamma_array*0.0+lambda2, gamma=gamma_array, x=x2_model, y=y2_model
-	;
-	; ; plot the theoretical lines of fixed wavelength
-	; cgplot, x1_model-x1_model[ (sort(abs(y1_model-y_ref)))[0] ], y1_model, /overplot, color='blu7', thick=5
-	; cgplot, x2_model-x2_model[ (sort(abs(y2_model-y_ref)))[0] ] + offset, y2_model, /overplot, color='red7', thick=5
-
 
 END
 
