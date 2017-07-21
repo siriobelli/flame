@@ -66,7 +66,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
+PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		diagnostics=diagnostics, this_diagnostics=this_diagnostics
 
 ;
@@ -203,125 +203,6 @@ PRO flame_wavecal_2D_calibration_new, fuel=fuel, slit=slit, cutout=cutout, $
 	; write the accurate solution to a FITS file
 	writefits, flame_util_replace_string(cutout.filename_step1, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
 
-
-END
-
-
-
-
-
-
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
-
-
-PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
-		diagnostics=diagnostics, this_diagnostics=this_diagnostics
-
-; This routine calculates the 2D wavelength solution and y-rectification.
-; These are two mappings from the observed pixel coordinates to the rectified grid
-; lambdax, gamma, where lambdax is a pixel grid linear in lambda and gamma is the
-; vertical distance to the edge of the slit (taking into account warping and also vertical drift)
-; The result of this routine is a pair of matrices, Klambda and Kgamma, saved in fuel.slits,
-; that can be used to rectify the image via poly_2D()
-;
-
-	print, ''
-	print, 'Accurate 2D wavelength solution for ', cutout.filename_step1
-
-	; polynomial degree for image warping
-	degree = fuel.util.wavesolution_degree
-
-	; read in file to calibrate
-	im = mrdfits(cutout.filename_step1, 0, header, /silent)
-
-	; read dimensions of the image
-	N_imx = (size(im))[1]
-	N_imy = (size(im))[2]
-
-	; find the minimum y value for the bottom edge of the slit
-	bottom_edge = poly(indgen(N_imx), slit.bottom_poly)
-	ymin_edge = min(bottom_edge)
-
-	; this is the y-coordinate of the bottom pixel row in the cutout
-	first_pixel = ceil(ymin_edge)
-
-	; specline coordinates
-	speclines = *cutout.speclines
-	OH_lambda = speclines.lambda
-	OH_x = speclines.x
-	OH_y = speclines.y
-
-	; output lambda axis
-	lambda_0 = slit.outlambda_min
-	delta_lambda = slit.outlambda_delta
-
-	; calculate vertical offset
-	w_this_offset = where(diagnostics.offset_pos eq this_diagnostics.offset_pos)
-	ref_diagnostics = diagnostics[w_this_offset[0]]
-	vertical_offset = this_diagnostics.position - floor(ref_diagnostics.position)
-
-	; translate every OH detection into the new coordinate system
-	OH_lambdax = (OH_lambda - lambda_0)/delta_lambda
-	OH_gamma = OH_y + first_pixel - poly(OH_x, slit.bottom_poly) - vertical_offset
-
-	; indices of the pixels we want to use - start with using all of them
-	w_goodpix = lindgen(n_elements(OH_x))
-	Ngoodpix = n_elements(w_goodpix)+1
-
-	; check that we have enough points to calculate warping polynomial
-	if n_elements(w_goodpix) LT (degree+1.0)^2 then message, 'not enough data points for polywarp'
-
-	; loops are used to throw away outliers and make polywarp more robust
-	WHILE n_elements(w_goodpix) LT Ngoodpix AND n_elements(w_goodpix) GE (degree+1.0)^2  DO BEGIN
-
-		; save old number of good pixels
-		Ngoodpix = n_elements(w_goodpix)
-
-		; calculate transformation Klambda,Kgamma from (x,y) to (lambda, gamma)
-		polywarp, OH_lambdax[w_goodpix], OH_gamma[w_goodpix], $
-			OH_x[w_goodpix], OH_Y[w_goodpix], degree, Klambda, Kgamma, /double, status=status
-
-		; check that polywarp worked
-		if status NE 0 then message, 'polywarp did not find a good solution'
-
-		; calculate the model lambda given x,y where x,y are arrays
-		lambda_modelx = fltarr(n_elements(OH_x))
-		for i=0,degree do for j=0,degree do lambda_modelx +=  Klambda[i,j] * OH_x^j * OH_y^i
-		lambda_model = lambda_0 + lambda_modelx*delta_lambda
-
-		discrepancy = OH_lambda - lambda_model
-		w_outliers = where( abs(discrepancy) GT 3.0*stddev(discrepancy), complement=w_goodpix, /null)
-		print, strtrim( n_elements(w_outliers), 2) + ' outliers rejected. ', format='(a,$)'
-
-	ENDWHILE
-
-	print, ''
-
-	; now find the inverse transformation, using only the good pixels
-	; calculate transformation Kx,Ky from (lambda, gamma) to (x,y)
-	polywarp, OH_x[w_goodpix], OH_y[w_goodpix], $
-		OH_lambdax[w_goodpix], OH_gamma[w_goodpix], degree, Kx, Ky, /double, status=status
-
-	; save into slit structure - copy also the lambda_min and lambda_step parameters
-	*cutout.rectification = {Klambda:Klambda, Kgamma:Kgamma, Kx:Kx, Ky:Ky, $
-		lambda_min:slit.outlambda_min, lambda_delta:slit.outlambda_delta}
-
-	; finally, output the actual wavelength calibration as a 2D array
-
-	; create empty frame that will contain the wavelength solution
-	wavelength_solution = im * 0.0
-
-	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
-	for ix=0, N_imx-1 do $
-		for iy=0, N_imy-1 do begin
-			flame_util_transform_direct, *cutout.rectification, x=ix, y=iy, lambda=lambda, gamma=gamma
-			wavelength_solution[ix, iy] = lambda
-		endfor
-
-	; write the accurate solution to a FITS file
-	writefits, flame_util_replace_string(cutout.filename_step1, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
 
 END
 
@@ -628,7 +509,7 @@ PRO flame_wavecal_accurate, fuel
 				speclines = *this_slit.cutouts[i_frame].speclines
 
 				; calculate the polynomial transformation between observed and rectified frame
-				flame_wavecal_2D_calibration_new, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
+				flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
 					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
 
 				; show plots of the wavelength calibration and specline identification
