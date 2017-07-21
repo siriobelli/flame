@@ -10,7 +10,7 @@
 ;*******************************************************************************
 ;*******************************************************************************
 
-FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax
+FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax, lambda_polyorder=lambda_polyorder
 	;
 	; This function is used for finding the best-fit coefficients
 	; describing the wavelength of each pixek in the observed frame
@@ -18,10 +18,16 @@ FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax
 	; The coefficients are: [P00, P01, P02, P03, P10, P11, P12, P13, P20, ..... PNN]
 	; and the lambdax calibration is of the form SUM(Pij*x^i*y^j)
 	;
-	
+
+	; check that the total dimension of the coefficients matches the polynomial order
+	if n_elements(coefficients) NE (lambda_polyorder[0]+1)*(lambda_polyorder[1]+1) then message, 'dimension of coefficients is wrong!'
+
+	; transform the coefficients from 1D to 2D
+	Klambda = reform(coefficients, lambda_polyorder[1]+1, lambda_polyorder[0]+1)
+
 	; given the coefficients, calculate the predicted normalized lambda for each specline
 	predicted_lambdax = dblarr(n_elements(speclines))*0.0
-	for i=0,3 do for j=0,3 do predicted_lambdax += coefficients[4*i+j] * (speclines.x)^i * (speclines.y)^j
+	for i=0,lambda_polyorder[0] do for j=0,lambda_polyorder[1] do predicted_lambdax += double(Klambda[j,i]) * double(speclines.x)^i * double(speclines.y)^j
 
 	; construct array with deviation in lambda for each line
 	dev = dblarr(n_elements(speclines))
@@ -65,9 +71,6 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 
 	print, ''
 	print, 'Accurate 2D wavelength solution for ', cutout.filename_step1
-
-	; polynomial degree for image warping
-	degree = fuel.util.wavesolution_degree
 
 	; read in file to calibrate
 	im = mrdfits(cutout.filename_step1, 0, header, /silent)
@@ -120,14 +123,22 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 
 	; guess the lambda coefficients -------------------------------------------------------
 
+	; the degrees of the 2D polynomial that describes lambda as a function of (x,y) (plus 1)
+	polyorder_x = flame.util.wavesolution_order_x
+	polyorder_y = flame.util.wavesolution_order_y
+	if polyorder_x LT 1 or polyorder_x GT 10 then message, 'lambda_polyorder_x is out of range'
+	if polyorder_y LT 1 or polyorder_y GT 10 then message, 'lambda_polyorder_y is out of range'
+
 	; guess starting coefficients by fitting a polynomial to the lines at the bottom of the slit
 	sorted_y = speclines[sort(speclines.y)].y
 	y_threshold = sorted_y[0.1*n_elements(sorted_y)]
 	w_tofit = where(speclines.y LE y_threshold, /null)
-	guess_coeff1d = robust_poly_fit(speclines[w_tofit].x, (speclines[w_tofit].lambda-slit.outlambda_min)/slit.outlambda_delta, 3)
+	guess_coeff1d = robust_poly_fit(speclines[w_tofit].x, (speclines[w_tofit].lambda-slit.outlambda_min)/slit.outlambda_delta, polyorder_x)
 
 	; scale by orders of magnitude for the higher order terms
-	starting_coefficients_l = (guess_coeff1d # [1,1d-3, 1d-6, 1d-9])[*]
+	starting_coefficients_l = dblarr( polyorder_y+1, polyorder_x+1 )
+	for i=0,polyorder_y do starting_coefficients_l[i,*] = guess_coeff1d * (1d-3)^i
+	starting_coefficients_l = starting_coefficients_l[*]
 
 
 	; fit the observed speclines and find the best-fit lambda coefficients --------------------------------------------
@@ -136,22 +147,22 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	Ngoodpix = n_elements(speclines)+1
 
 	; check that we have enough points to calculate warping polynomial
-	if n_elements(speclines) LT (degree+1.0)^2 then message, 'not enough data points for a wavelength solution'
+	if n_elements(speclines) LT 5 then message, 'not enough data points for a wavelength solution'
 
 	; loops are used to throw away outliers and make the fit more robust
-	WHILE n_elements(speclines) LT Ngoodpix AND n_elements(speclines) GE (degree+1.0)^2  DO BEGIN
+	WHILE n_elements(speclines) LT Ngoodpix AND n_elements(speclines) GE 5 DO BEGIN
 
 		; save old number of good speclines
 		Ngoodpix = n_elements(speclines)
 
-		args = {speclines:speclines, lambdax:OH_lambdax}
+		args = {speclines:speclines, lambdax:OH_lambdax, lambda_polyorder:[polyorder_x, polyorder_y] }
 
 		; fit the data and find the coefficients for the lambda calibration
 		lambda_coeff = mpfit('lambda_calibration', starting_coefficients_l, functargs=args, $
 			bestnorm=bestnorm_l, best_resid=best_resid_l, /quiet, status=status_l)
 
 		; check that mpfit worked
-		if status_l LT 0 then message, 'mpfit did not find a good solution'
+		if status_l LE 0 then message, 'mpfit did not find a good solution'
 
 		w_outliers = where( abs(best_resid_l) GT 3.0*stddev(best_resid_l), complement=w_goodpix, /null)
 		print, strtrim( n_elements(w_outliers), 2) + ' outliers rejected. ', format='(a,$)'
@@ -165,7 +176,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	print, ''
 
 	; convert the coefficients to a 2D matrix
-	Klambda = reform(lambda_coeff, 4, 4)
+	Klambda = reform(lambda_coeff, polyorder_y+1, polyorder_x+1)
 
 ; ---------------------------------------------------------------------------------------
 

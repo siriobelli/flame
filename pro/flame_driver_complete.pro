@@ -115,7 +115,8 @@
   ; fuel.util.identify_lines_poly_degree = 2
 
   ; change the degree of the 2D wavelength solution describing one entire cutout
-  ; fuel.util.wavesolution_degree = 3
+  ; fuel.util.wavesolution_order_x = 3
+  ; fuel.util.wavesolution_order_y = 2
 
   ; change the threshold for sigma-clipping of each pixel when combining all the frames
   ; fuel.util.combine_sigma_clip = 2.0
