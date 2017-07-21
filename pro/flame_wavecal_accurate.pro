@@ -124,8 +124,8 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; guess the lambda coefficients -------------------------------------------------------
 
 	; the degrees of the 2D polynomial that describes lambda as a function of (x,y) (plus 1)
-	polyorder_x = flame.util.wavesolution_order_x
-	polyorder_y = flame.util.wavesolution_order_y
+	polyorder_x = fuel.util.wavesolution_order_x
+	polyorder_y = fuel.util.wavesolution_order_y
 	if polyorder_x LT 1 or polyorder_x GT 10 then message, 'lambda_polyorder_x is out of range'
 	if polyorder_y LT 1 or polyorder_y GT 10 then message, 'lambda_polyorder_y is out of range'
 
