@@ -124,8 +124,8 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; guess the lambda coefficients -------------------------------------------------------
 
 	; the degrees of the 2D polynomial that describes lambda as a function of (x,y) (plus 1)
-	polyorder_x = fuel.util.wavesolution_order_x
-	polyorder_y = fuel.util.wavesolution_order_y
+	polyorder_x = fuel.settings.wavesolution_order_x
+	polyorder_y = fuel.settings.wavesolution_order_y
 	if polyorder_x LT 1 or polyorder_x GT 10 then message, 'lambda_polyorder_x is out of range'
 	if polyorder_y LT 1 or polyorder_y GT 10 then message, 'lambda_polyorder_y is out of range'
 
@@ -277,7 +277,7 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], 1.25+[0,0], /overplot, linestyle=2, thick=1
 
 	; if we do not have to apply the illumination correction, then we are done
-	if ~fuel.util.illumination_correction then begin
+	if ~fuel.settings.illumination_correction then begin
 		fuel.slits[i_slit].cutouts[i_frame].filename_step2 = fuel.slits[i_slit].cutouts[i_frame].filename_step1
 		return
 	endif
@@ -467,7 +467,7 @@ PRO flame_wavecal_accurate, fuel
 		print, ' '
 
 		; handle errors by ignoring that slit
-		if fuel.util.debugging eq 0 then begin
+		if fuel.settings.debugging eq 0 then begin
 			catch, error_status
 			if error_status ne 0 then begin
 				print, ''

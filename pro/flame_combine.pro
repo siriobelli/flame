@@ -146,7 +146,7 @@ END
 PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	; parameter for sigma-clipping when combining the frames
-	sigma_clip = fuel.util.combine_sigma_clip
+	sigma_clip = fuel.settings.combine_sigma_clip
 
 	; prefix for output file names
 	filename_prefix = fuel.input.output_dir + 'slit' + $
@@ -443,7 +443,7 @@ PRO flame_combine, fuel
 		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name
 
 		; handle errors by ignoring that slit
-		if fuel.util.debugging eq 0 then begin
+		if fuel.settings.debugging eq 0 then begin
 			catch, error_status
 			if error_status ne 0 then begin
 				print, ''

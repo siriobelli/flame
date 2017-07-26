@@ -10,7 +10,7 @@ PRO flame_checkdata_refstar, fuel
 	if fuel.input.star_y_A eq 0.0 then return
 
 	; x coordinate where the star trace is certainly visible
-	star_x = mean(fuel.util.star_x_range)
+	star_x = mean(fuel.settings.star_x_range)
 
 	; identify the slit with the reference star
 	i_ref = -1
@@ -224,7 +224,7 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	;-------------------------------------
 
 	; load line list
-	readcol, fuel.util.linelist_filename, line_list, line_trust, format='D,I', /silent
+	readcol, fuel.settings.linelist_filename, line_list, line_trust, format='D,I', /silent
 
 	; keep only the ones that can be used for the wavelength solution
 	line_list = line_list[where(line_trust eq 1, /null)]
@@ -536,7 +536,7 @@ PRO flame_checkdata, fuel
 			'-' + fuel.slits[i_slit].name +  '_datacheck.ps', /nomatch
 
 		; handle errors by ignoring that slit
-		if fuel.util.debugging eq 0 then begin
+		if fuel.settings.debugging eq 0 then begin
 			catch, error_status
 			if error_status ne 0 then begin
 				print, ''
@@ -549,7 +549,7 @@ PRO flame_checkdata, fuel
 				catch, /cancel
 				continue
 			endif
-		endif 
+		endif
 
 		; calculate diagnostics from the sky spectrum
 		flame_checkdata_sky, fuel, i_slit=i_slit

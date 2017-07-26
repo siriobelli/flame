@@ -529,9 +529,9 @@ PRO flame_getslits_multislit, fuel=fuel
     ; edges_left = flame_getslits_crosscorr( image[0:N_pixel_x/3-1, *], approx_edges[0], approx_edges[1])
     ; edges_center = flame_getslits_crosscorr( image[N_pixel_x/3 : N_pixel_x*2/3-1, *], approx_edges[0], approx_edges[1])
     ; edges_right = flame_getslits_crosscorr( image[N_pixel_x*2/3 : -1, *], approx_edges[0], approx_edges[1])
-    edges_center = approx_edges 
+    edges_center = approx_edges
 
-    if fuel.util.trace_slit_with_skylines eq 0 then begin
+    if fuel.settings.trace_slit_with_skylines eq 0 then begin
       ; identify top and bottom edge using sky background or flat lamp
       slitid_top = flame_getslits_trace_continuum(image, edges_center[1], /top )
       slitid_bottom = flame_getslits_trace_continuum(image, edges_center[0], /bottom )
@@ -562,7 +562,7 @@ PRO flame_getslits_multislit, fuel=fuel
   endfor
 
   ; save the slit structures in fuel
-  new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:slits }
+  new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:slits }
   fuel=new_fuel
 
 END
@@ -589,7 +589,7 @@ PRO flame_getslits_longslit, fuel=fuel
   this_slit = flame_getslits_update_slit( fuel, old_slits_struc, !values.d_nan, !values.d_nan, !values.d_nan, slit_height, old_slits_struc.approx_bottom)
 
   ; save the slit structures in fuel
-  new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:this_slit }
+  new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:this_slit }
   fuel=new_fuel
 
 

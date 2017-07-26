@@ -72,16 +72,16 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
   frame = readfits(frame_filename, /silent)
 
   ; x range in which to fit a Gaussian to the star trace
-  xrange=fuel.util.star_x_range
+  xrange=fuel.settings.star_x_range
 
   ; estimate width of trace in pixels: starting guess is 0.8 arcsec
   est_seeing = 0.8  ; FWHM in arcsec
   est_width = (est_seeing / 2.355) / fuel.instrument.pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
-  if fuel.util.star_y_window eq 0 then $
+  if fuel.settings.star_y_window eq 0 then $
     half_range = 6.0 * est_width else $
-    half_range = fuel.util.star_y_window / 2
+    half_range = fuel.settings.star_y_window / 2
 
   ; let's see if there is a star in the A position
   if fuel.input.star_y_A ne 0 then begin
@@ -193,7 +193,7 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   endif else frame = frame_star
 
   ; x range in which to fit a Gaussian to the star trace
-  xrange=fuel.util.star_x_range
+  xrange=fuel.settings.star_x_range
 
   ; estimate width of trace in pixels: 0.8 arcsec (compromise between seeing-limited and ARGOS)
   est_seeing = 0.8  ; FWHM in arcsec
@@ -496,7 +496,7 @@ PRO flame_diagnostics, fuel
   ; 4 - add diagnostics to the fuel structure
   ;----------------------------------------
 
-  new_fuel = { input:fuel.input, util:fuel.util, instrument:fuel.instrument, diagnostics:diagnostics, slits:fuel.slits }
+  new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:fuel.instrument, diagnostics:diagnostics, slits:fuel.slits }
   fuel=new_fuel
 
 

@@ -139,7 +139,7 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	for i_line=0,n_elements(line_list)-1 do begin
 
 		; select the region to fit
-		w_fit = where( abs(approx_wavecal-line_list[i_line]) LT 0.5*fuel.util.identify_lines_linefit_window*linewidth_um, /null )
+		w_fit = where( abs(approx_wavecal-line_list[i_line]) LT 0.5*fuel.settings.identify_lines_linefit_window*linewidth_um, /null )
 
 		; check that the region is within the observed range
 		if w_fit eq !NULL then continue
@@ -202,13 +202,13 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
   speclines_donttrust = speclines[where(speclines.trust_lambda eq 0, /null)]
 
 	; if too few lines were found, then no reliable wavelength solution exists
-	if n_elements(speclines_trust) LT fuel.util.identify_lines_Nmin_lines then begin
+	if n_elements(speclines_trust) LT fuel.settings.identify_lines_Nmin_lines then begin
 		speclines = !NULL
 		return
 	endif
 
   ; set the degree for the polynomial fit - if there are few lines, decrease the degree
-  poly_degree = fuel.util.identify_lines_poly_degree
+  poly_degree = fuel.settings.identify_lines_poly_degree
   if poly_degree GT (n_elements(speclines_trust)+1)/3 then poly_degree = (n_elements(speclines_trust)+1)/3
 
   ; fit a polynomial to the skyline positions using only the lines we can trust
@@ -318,8 +318,8 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 	row_number = indgen(N_spatial_pix)
 
   ; check if we are stacking more than one pixel row
-  if fuel.util.identify_lines_stack_rows LT 0 then message, 'fuel.util.identify_lines_stack_rows can only be positive!'
-  N_stack = fuel.util.identify_lines_stack_rows
+  if fuel.settings.identify_lines_stack_rows LT 0 then message, 'fuel.settings.identify_lines_stack_rows can only be positive!'
+  N_stack = fuel.settings.identify_lines_stack_rows
 
   ; if stacking more than one pixel row, then cut the edges
   if N_stack ne 0 then $
@@ -366,7 +366,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 	;--------------------------------------------------------------------------------------------------------------
 
   ; load line list
-	readcol, fuel.util.linelist_filename, line_list, line_trust, format='D,I', /silent
+	readcol, fuel.settings.linelist_filename, line_list, line_trust, format='D,I', /silent
 
   ; calcolate typical wavelength step of one pixel
   lambda_step = median( approx_lambda_axis - shift(approx_lambda_axis, 1) )
@@ -565,7 +565,7 @@ PRO flame_identify_lines, fuel
 		print, ' '
 
 		; handle errors by ignoring that slit
-		if fuel.util.debugging eq 0 then begin
+		if fuel.settings.debugging eq 0 then begin
   		catch, error_status
   		if error_status ne 0 then begin
   			print, ''

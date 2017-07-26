@@ -214,23 +214,23 @@ FUNCTION flame_initialize_lris, input
   instrument = flame_initialize_lris_settings(science_header)
 
 
-  ; ---------------------   UTIL SETTINGS   --------------------------------------
+  ; ---------------------   SETTINGS   --------------------------------------
 
   ; need to use the optical sky spectrum
-  fuel.util.sky_emission_filename = $
+  fuel.settings.sky_emission_filename = $
     fuel.util.flame_data_dir + 'sky_emission_model_optical.dat'
 
   ; use the sky background to trace the slit edges
-  fuel.util.trace_slit_with_skylines = 0
+  fuel.settings.trace_slit_with_skylines = 0
 
   ; identify cosmic rays using L.A.Cosmic in each science frame
-  fuel.util.clean_individual_frames = 1
+  fuel.settings.clean_individual_frames = 1
 
   ; do not apply illumination correction
-  fuel.util.illumination_correction = 0
+  fuel.settings.illumination_correction = 0
 
   ; split the spectrum into two when doing the rough wavecal
-  fuel.util.wavecal_rough_split = 1
+  fuel.settings.wavecal_rough_split = 1
 
   ; -----------------------------------------------------------------
   ; we need to convert the LRIS frames into the "normal" format
@@ -308,7 +308,7 @@ FUNCTION flame_initialize_lris, input
   endelse
 
   ; save both instrument and slits in the fuel structure
-  new_fuel = { input:fuel.input, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
+  new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
   fuel=new_fuel
 
   ; return the fuel structure

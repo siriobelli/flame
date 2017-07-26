@@ -265,7 +265,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 
 	range_pixel_scale = this_slit.range_pixel_scale
   range_start_lambda = this_slit.range_lambda0
-	rough_wavecal_R = fuel.util.wavecal_rough_R
+	rough_wavecal_R = fuel.settings.wavecal_rough_R
 
 	  ; first step: smoothed spectrum, find zero-point and pixel scale
 		;---------------------
@@ -326,7 +326,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		 wavecal_coefficients=wavecal_coefficients
 
 
-		if ~fuel.util.wavecal_rough_split then begin
+		if ~fuel.settings.wavecal_rough_split then begin
 
 
 			print, ''
@@ -472,11 +472,11 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
 
 	; filter the sky spectrum: find the running minimum pixel value
 	;--------------------------------------------------------------
-	if fuel.util.wavecal_rough_smooth_window GT 0 then begin
+	if fuel.settings.wavecal_rough_smooth_window GT 0 then begin
 
 		; make a 2D matrix where at each value of x-pixel you have a column with all the neighhboring pixel values
 		matrix = []
-		for i_shift = -fuel.util.wavecal_rough_smooth_window/2, fuel.util.wavecal_rough_smooth_window/2 do $
+		for i_shift = -fuel.settings.wavecal_rough_smooth_window/2, fuel.settings.wavecal_rough_smooth_window/2 do $
 		 	matrix = [ [matrix], [shift(sky, i_shift)]]
 
 		; for each x-pixel take the minimum of all the neighboring pixel values
@@ -486,15 +486,15 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
 		sky -= sky_minfilter
 
 		; crop the edges
-		sky[0:fuel.util.wavecal_rough_smooth_window/2] = 0
-		sky[-fuel.util.wavecal_rough_smooth_window/2-1:*] = 0
+		sky[0:fuel.settings.wavecal_rough_smooth_window/2] = 0
+		sky[-fuel.settings.wavecal_rough_smooth_window/2-1:*] = 0
 
 	endif
 
 
   ; load the model sky spectrum
 	;---------------------
-  readcol, fuel.util.sky_emission_filename, model_lambda, model_flux	; lambda in micron
+  readcol, fuel.settings.sky_emission_filename, model_lambda, model_flux	; lambda in micron
 
   ; cut out a reasonable range
   wide_range = [ this_slit.range_lambda0[0], this_slit.range_lambda0[1] + this_slit.range_pixel_scale[1]*n_elements(sky) ]
@@ -553,7 +553,7 @@ PRO flame_wavecal_rough, fuel
 		print, ''
 
 		; handle errors by ignoring that slit
-		if fuel.util.debugging eq 0 then begin
+		if fuel.settings.debugging eq 0 then begin
 			catch, error_status
 			if error_status ne 0 then begin
 				print, ''

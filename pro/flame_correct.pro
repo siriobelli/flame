@@ -352,7 +352,7 @@ PRO flame_correct_oneframe, fuel, filename_raw, filename_corr, $
   frame = readfits(filename_raw, header)
 
   ; CORRECTION 0: cosmic rays
-  if fuel.util.clean_individual_frames then begin
+  if fuel.settings.clean_individual_frames then begin
 
     ; identify cosmic rays using L.A. Cosmic
     la_cosmic, filename_raw, gain=fuel.instrument.gain, readn=fuel.instrument.readnoise, niter=5, $
@@ -455,7 +455,7 @@ PRO flame_correct, fuel
   ; apply corrections to each frame ----------------------------------------------------------
 
   ; L.A. Cosmic notice
-  if fuel.util.clean_individual_frames then begin
+  if fuel.settings.clean_individual_frames then begin
     print, '----------------------------------------------------'
     print, ''
     print, ' L.A. Cosmic: Laplacian cosmic ray removal'

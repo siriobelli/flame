@@ -7,7 +7,7 @@
 PRO flame_cutout_slits_extract, fuel, slit_structure, science_filenames, output_filenames
 
   ; if we are not applying the illumination correction, then we need to be more generous in cutting the margin
-  if ~fuel.util.illumination_correction then margin = 3 else margin = 1
+  if ~fuel.settings.illumination_correction then margin = 3 else margin = 1
 
   ; loop through science frames
   for i_frame=0, n_elements(science_filenames)-1 do begin

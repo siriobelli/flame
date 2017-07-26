@@ -65,7 +65,7 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	breakpoints = wavelength_solution[*,N_spatial_pix/2]
 
 	; set the range for the plot
-	rel_range = fuel.util.skysub_plot_range
+	rel_range = fuel.settings.skysub_plot_range
 	xrange=breakpoints[ [n_elements(breakpoints)*rel_range[0], n_elements(breakpoints)*rel_range[1]] ]
 
 	; plot all pixels in a small wavelength range
@@ -135,7 +135,7 @@ PRO flame_skysub, fuel
 		if fuel.slits[i_slit].skip then continue
 
 		; handle errors by ignoring that slit
-		if fuel.util.debugging eq 0 then begin
+		if fuel.settings.debugging eq 0 then begin
 			catch, error_status
 			if error_status ne 0 then begin
 				print, ''

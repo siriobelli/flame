@@ -455,20 +455,20 @@ FUNCTION flame_initialize_luci, input
   endelse
 
 
-  ; ---------------------   UTIL SETTINGS   --------------------------------------
+  ; ---------------------   SETTINGS   --------------------------------------
 
   ; do not split the spectrum into two when doing the rough wavecal
-  fuel.util.wavecal_rough_split = 0
+  fuel.settings.wavecal_rough_split = 0
 
   ; if high resolution (ARGOS) observations, the use the R6000 list
   if median(slits.approx_r) GT 4500.0 then $
-    fuel.util.linelist_filename = fuel.util.flame_data_dir + 'line_list_R6000.dat' $
+    fuel.settings.linelist_filename = fuel.util.flame_data_dir + 'line_list_R6000.dat' $
   else $
-    fuel.util.linelist_filename = fuel.util.flame_data_dir + 'line_list_R3000.dat'
+    fuel.settings.linelist_filename = fuel.util.flame_data_dir + 'line_list_R3000.dat'
 
 
   ; scale the wavecal_rough_R to the spectral resolution - useful for argos
-  fuel.util.wavecal_rough_R = [ 0.05*slits[0].approx_R > 500.0 , $
+  fuel.settings.wavecal_rough_R = [ 0.05*slits[0].approx_R > 500.0 , $
 		0.15*slits[0].approx_R > 1000.0 , slits[0].approx_R < 5000.0 ]
 
 
@@ -476,7 +476,7 @@ FUNCTION flame_initialize_luci, input
 
 
   ; save both instrument and slits in the fuel structure
-  new_fuel = { input:fuel.input, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
+  new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
 
   ; return the fuel structure
   return, new_fuel

@@ -87,7 +87,7 @@ PRO flame_rectify, fuel
 		print, 'Rectifying slit ', this_slit.number, ' - ', this_slit.name
 
 		; handle errors by ignoring that slit
-		if fuel.util.debugging eq 0 then begin
+		if fuel.settings.debugging eq 0 then begin
 			catch, error_status
 			if error_status ne 0 then begin
 				print, ''

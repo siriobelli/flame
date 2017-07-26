@@ -79,53 +79,54 @@
   ;fuel = flame_initialize_lris(input)
 
   ; Here are further options for special cases or troubleshooting.
-  ; Usually the settings in fuel.util should be left to their default values
+  ; Most times the settings in fuel.settings should be left to their default values
 
   ; change the range in x-coordinates used to extract the star traces:
-  ; fuel.util.star_x_range = [100, 500]
+  ; fuel.settings.star_x_range = [100, 500]
 
   ; change the extension of the range in y-coordinates used to fit the star traces:
-  ; fuel.util.star_y_window = 40
+  ; fuel.settings.star_y_window = 40
 
   ; set this to zero if you want to use the sky background to trace the slit edges
   ; instead of the OH lines (e.g. in the K band or in the optical or with slit flats)
-  ; fuel.util.trace_slit_with_skylines = 0
+  ; fuel.settings.trace_slit_with_skylines = 0
 
   ; change the spectral resolution used in the successive steps during wavecal_rough
-  ; fuel.util.wavecal_rough_R = [500, 1000, 3000]
+  ; fuel.settings.wavecal_rough_R = [500, 1000, 3000]
 
   ; identify cosmic rays using L.A.Cosmic in each science frame
-  ; fuel.util.clean_individual_frames = 1
+  ; fuel.settings.clean_individual_frames = 1
 
   ; subtract sky continuum before wavecal_rough. This specifies the smoothing window
-  ; fuel.util.wavecal_rough_smooth_window = 20
+  ; fuel.settings.wavecal_rough_smooth_window = 20
 
   ; if the sky lines are weak, stack more than one pixel row when identifying lines
-  ;fuel.util.identify_lines_stack_rows = 2
+  ;fuel.settings.identify_lines_stack_rows = 2
 
   ; change the window used to look for a spectral line, in units of expected line width
-  ;fuel.util.identify_lines_linefit_window = 6.0
+  ;fuel.settings.identify_lines_linefit_window = 6.0
 
   ; change the minimum number of emission lines required for a valid wavelength
   ; solution in one pixel row during identify_lines
-  ; fuel.util.identify_lines_Nmin_lines = 4
+  ; fuel.settings.identify_lines_Nmin_lines = 4
 
   ; change the polynomial degree of the wavelength solution for one pixel row
   ; during identify_lines
-  ; fuel.util.identify_lines_poly_degree = 2
+  ; fuel.settings.identify_lines_poly_degree = 2
 
   ; change the degree of the 2D wavelength solution describing one entire cutout
-  ; fuel.util.wavesolution_order_x = 3
-  ; fuel.util.wavesolution_order_y = 2
+  ; fuel.settings.wavesolution_order_x = 3
+  ; fuel.settings.wavesolution_order_y = 2
 
   ; change the threshold for sigma-clipping of each pixel when combining all the frames
-  ; fuel.util.combine_sigma_clip = 2.0
+  ; fuel.settings.combine_sigma_clip = 2.0
 
 
 
   ; check that everything is good
   ;help, fuel.input
   ;help, fuel.util
+  ;help, fuel.settings
   ;help, fuel.instrument
   ;help, fuel.slits
 
