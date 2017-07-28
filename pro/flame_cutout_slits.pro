@@ -1,65 +1,82 @@
 ;
-; make cutout for each and for each frame and save them in
+; make cutout for each slit and for each frame and save them in
 ; slitXX/ directories
 ;
 ;******************************************************************
 
-PRO flame_cutout_slits_extract, fuel, slit_structure, science_filenames, output_filenames
+PRO flame_cutout_slits_extract, fuel, slit_structure, input_filename, output_filename
 
   ; if we are not applying the illumination correction, then we need to be more generous in cutting the margin
   if ~fuel.settings.illumination_correction then margin = 3 else margin = 1
 
-  ; loop through science frames
-  for i_frame=0, n_elements(science_filenames)-1 do begin
+  ; read in science frame
+  im = mrdfits(input_filename, 0, header, /silent)
 
-    ; read in science frame
-    im = mrdfits(science_filenames[i_frame], 0, header, /silent)
+  ; construct the coordinates for the pixels in the image
+  N_pix_x = (size(im))[1]
+  N_pix_y = (size(im))[2]
+  x_axis = indgen(N_pix_x)
+  y_axis = indgen(N_pix_y)
+  pixel_x = x_axis # replicate(1, N_pix_y)
+  pixel_y = transpose(y_axis # replicate(1, N_pix_x))
+
+  ; calculate slit edges
+  top_y = (poly(x_axis, slit_structure.bottom_poly) + slit_structure.height) # replicate(1, N_pix_x)
+  bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_x)
+
+  ; select pixels belonging to this slit
+  w_slit = where( pixel_y LT top_y - margin AND pixel_y GT bottom_y + margin, /null, complement=w_outside_slit)
+  if w_slit eq !NULL then message, slit_structure.name + ': slit not valid!'
+
+  ; Set to NaN all pixels outside the slit
+  im[w_outside_slit] = !values.d_nan
+
+  ; convert indices to 2D
+  w_slit2d = array_indices(im, w_slit)
+
+  ; calculate upper and lower limits
+  max_y = max(w_slit2d[1,*])
+  min_y = min(w_slit2d[1,*])
+
+  ; extract the slit as a rectangle
+  this_slit = im[ * , min_y:max_y]
+
+  ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
+  this_slit[*, 0] = !values.d_nan
+  this_slit[*,-1] = !values.d_nan
+
+  ; write this out
+  writefits, output_filename, this_slit, header
+
+
+  ; cutout the error spectrum
+  ; -------------------------
+
+	; check whether there is an extension in the input file (containing the error spectrum)
+	rdfits_struct, input_filename, struct, /silent, /header_only
+	Next = n_tags(struct)
+
+
+  if Next GT 1 then begin
 
     ; read in error frame
-    im_sigma = mrdfits(science_filenames[i_frame], 1, /silent)
-
-    ; construct the coordinates for the pixels in the image
-    N_pix_x = (size(im))[1]
-    N_pix_y = (size(im))[2]
-    x_axis = indgen(N_pix_x)
-    y_axis = indgen(N_pix_y)
-    pixel_x = x_axis # replicate(1, N_pix_y)
-    pixel_y = transpose(y_axis # replicate(1, N_pix_x))
-
-    ; calculate slit edges
-    top_y = (poly(x_axis, slit_structure.bottom_poly) + slit_structure.height) # replicate(1, N_pix_x)
-    bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_x)
-
-    ; select pixels belonging to this slit
-    w_slit = where( pixel_y LT top_y - margin AND pixel_y GT bottom_y + margin, /null, complement=w_outside_slit)
-    if w_slit eq !NULL then message, slit_structure.name + ': slit not valid!'
+    im_sigma = mrdfits(input_filename, 1, /silent)
 
     ; Set to NaN all pixels outside the slit
-    im[w_outside_slit] = !values.d_nan
     im_sigma[w_outside_slit] = !values.d_nan
 
-    ; convert indices to 2D
-    w_slit2d = array_indices(im, w_slit)
-
-    ; calculate upper and lower limits
-    max_y = max(w_slit2d[1,*])
-    min_y = min(w_slit2d[1,*])
-
     ; extract the slit as a rectangle
-    this_slit = im[ * , min_y:max_y]
     this_slit_sigma = im_sigma[ * , min_y:max_y]
 
     ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
-    this_slit[*, 0] = !values.d_nan
-    this_slit[*,-1] = !values.d_nan
     this_slit_sigma[*, 0] = !values.d_nan
     this_slit_sigma[*,-1] = !values.d_nan
 
     ; write this out
-    writefits, output_filenames[i_frame], this_slit, header
-    writefits, output_filenames[i_frame], this_slit_sigma, /append
+    writefits, output_filename, this_slit_sigma, /append
 
-  endfor
+  endif
+
 
 END
 
@@ -96,10 +113,25 @@ PRO flame_cutout_slits, fuel
 
     ; extract slit
     print,'*** Cutting out slit ', slits[i_slit].name
-    flame_cutout_slits_extract, fuel, slits[i_slit], (fuel.util.science.corr_files), output_filenames
+
+    ; loop through science frames
+    for i_frame=0, n_elements(output_filenames)-1 do $
+      flame_cutout_slits_extract, fuel, slits[i_slit], fuel.util.science.corr_files[i_frame], output_filenames[i_frame]
 
     ; add the cutout filenames
     fuel.slits[i_slit].cutouts.filename_step1 = output_filenames
+
+    ; cutout the corresponding arc
+    if fuel.util.arc.n_frames gt 0 then begin
+
+      print,'*** Cutting out slit from master arc frame'
+
+      output_filename = slitdir + 'arc_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'
+      flame_cutout_slits_extract, fuel, slits[i_slit], fuel.util.arc.master_file, output_filename
+
+    endif
+
+
 
   endfor
 
