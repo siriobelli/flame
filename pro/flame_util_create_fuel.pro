@@ -11,7 +11,11 @@ FUNCTION flame_create_fuel_loadfiles_new, filelist, corr_dir=corr_dir
   ; if the input is empty or 'none' or 'default', then return 'zero' 'structure
   filelist_norm = strlowcase(strtrim( filelist, 2 ))
   if filelist_norm eq '' or filelist_norm eq 'none' or filelist_norm eq 'default' then $
-    return, {n_frames:0}
+    return, { $
+      n_frames:0, $
+      raw_files:'', $
+      corr_files:'', $
+      master_file:''}
 
   ; check that the input file exists
   if ~file_test(filelist) then message, 'file ' + filelist + ' not found!''
@@ -36,15 +40,12 @@ FUNCTION flame_create_fuel_loadfiles_new, filelist, corr_dir=corr_dir
   if keyword_set(corr_dir) then corr_filenames = corr_dir + corr_basenames $
     else corr_filenames = strarr(n_elements(filenames))
 
-  ; make a structure containing the filenames
-  structure = { $
+    ; output a structure containing the filenames
+  return, { $
     n_frames:n_elements(filenames), $
     raw_files:filenames, $
     corr_files:corr_filenames, $
     master_file:''}
-
-  ; output the structure
-  return, structure
 
 
 END
@@ -94,35 +95,35 @@ FUNCTION flame_util_create_fuel, input
   print, 'Dark frames'
   calib_dark = flame_create_fuel_loadfiles_new(input.dark_filelist, corr_dir=frames_dir)
   print, calib_dark.n_frames, ' files read.'
-  if calib_dark.n_frames GT 0 then calib_dark.master_file = intermediate_dir + 'master_dark.fits'
+  calib_dark.master_file = intermediate_dir + 'master_dark.fits'
 
   ; read arc filenames
   print, ''
   print, 'Arc frames'
   calib_arc = flame_create_fuel_loadfiles_new(input.arc_filelist, corr_dir=frames_dir)
   print, calib_arc.n_frames, ' files read.'
-  if calib_arc.n_frames GT 0 then calib_arc.master_file = intermediate_dir + 'master_arc.fits'
+  calib_arc.master_file = intermediate_dir + 'master_arc.fits'
 
   ; read pixelflat filenames
   print, ''
   print, 'Pixel flat frames'
   calib_pixelflat = flame_create_fuel_loadfiles_new(input.pixelflat_filelist, corr_dir=frames_dir)
   print, calib_pixelflat.n_frames, ' files read.'
-  if calib_pixelflat.n_frames GT 0 then calib_pixelflat.master_file = intermediate_dir + 'master_pixelflat.fits'
+  calib_pixelflat.master_file = intermediate_dir + 'master_pixelflat.fits'
 
   ; read illumflat filenames
   print, ''
   print, 'Illumination flat frames'
   calib_illumflat = flame_create_fuel_loadfiles_new(input.illumflat_filelist, corr_dir=frames_dir)
   print, calib_illumflat.n_frames, ' files read.'
-  if calib_illumflat.n_frames GT 0 then calib_illumflat.master_file = intermediate_dir + 'master_illumflat.fits'
+  calib_illumflat.master_file = intermediate_dir + 'master_illumflat.fits'
 
   ; read slitflat filenames
   print, ''
   print, 'Slit flat frames'
   calib_slitflat = flame_create_fuel_loadfiles_new(input.slitflat_filelist, corr_dir=frames_dir)
   print, calib_slitflat.n_frames, ' files read.'
-  if calib_slitflat.n_frames GT 0 then calib_slitflat.master_file = intermediate_dir + 'master_slitflat.fits'
+  calib_slitflat.master_file = intermediate_dir + 'master_slitflat.fits'
 
 
   ; read in dither file ----------------------------------------------------------
