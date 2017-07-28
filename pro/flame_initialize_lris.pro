@@ -246,13 +246,53 @@ FUNCTION flame_initialize_lris, input
   if file_test(lris_dir) then file_delete, lris_dir, /recursive
   file_mkdir, lris_dir
 
-  ; create new file names for the science frames
+  ; store and update file names for the science frames
+  old_filenames = fuel.util.science.raw_files
   new_filenames = lris_dir + file_basename(fuel.util.science.raw_files)
+  fuel.util.science.raw_files = lris_dir + file_basename(fuel.util.science.raw_files)
 
-  for i=0, fuel.util.science.n_frames-1 do begin
+  ; same thing for dark frames, if provided
+  if fuel.util.dark.n_frames gt 0 then begin
+    old_filenames = [old_filenames, fuel.util.dark.raw_files]
+    new_filenames = [new_filenames, lris_dir + file_basename(fuel.util.dark.raw_files)]
+    fuel.util.dark.raw_files =  lris_dir + file_basename(fuel.util.dark.raw_files)
+  endif
+
+  ; same thing for arc frames, if provided
+  if fuel.util.arc.n_frames gt 0 then begin
+    old_filenames = [old_filenames, fuel.util.arc.raw_files]
+    new_filenames = [new_filenames, lris_dir + file_basename(fuel.util.arc.raw_files)]
+    fuel.util.arc.raw_files =  lris_dir + file_basename(fuel.util.arc.raw_files)
+  endif
+
+  ; same thing for pixelflat frames, if provided
+  if fuel.util.pixelflat.n_frames gt 0 then begin
+    old_filenames = [old_filenames, fuel.util.pixelflat.raw_files]
+    new_filenames = [new_filenames, lris_dir + file_basename(fuel.util.pixelflat.raw_files)]
+    fuel.util.pixelflat.raw_files =  lris_dir + file_basename(fuel.util.pixelflat.raw_files)
+  endif
+
+  ; same thing for illumflat frames, if provided
+  if fuel.util.illumflat.n_frames gt 0 then begin
+    old_filenames = [old_filenames, fuel.util.illumflat.raw_files]
+    new_filenames = [new_filenames, lris_dir + file_basename(fuel.util.illumflat.raw_files)]
+    fuel.util.illumflat.raw_files =  lris_dir + file_basename(fuel.util.illumflat.raw_files)
+  endif
+
+  ; same thing for slitflat frames, if provided
+  if fuel.util.slitflat.n_frames gt 0 then begin
+    old_filenames = [old_filenames, fuel.util.slitflat.raw_files]
+    new_filenames = [new_filenames, lris_dir + file_basename(fuel.util.slitflat.raw_files)]
+    fuel.util.slitflat.raw_files =  lris_dir + file_basename(fuel.util.slitflat.raw_files)
+  endif
+
+
+  ; now apply conversion to all frames
+  print, 'Converting LRIS frames to standard format'
+  for i=0, n_elements(old_filenames)-1 do begin
 
     ; use the readmhdufits.pro routine provided by Keck
-    image = readmhdufits(fuel.util.science.raw_files[i], header=header, gaindata=gaindata)
+    image = readmhdufits(old_filenames[i], header=header, gaindata=gaindata)
 
     ; make wavelength axis horizontal
     image = transpose(image)
@@ -263,26 +303,10 @@ FUNCTION flame_initialize_lris, input
 
     ; write the new FITS file
     writefits, new_filenames[i], image, header
+    print, new_filenames[i]
 
   endfor
 
-  ; update the file names in the fuel structure
-  fuel.util.science.raw_files = new_filenames
-
-  ; if provided, do the same to the slit flats
-  if fuel.util.slitflat.n_frames ne 0 then $
-    for i=0, fuel.util.slitflat.n_frames-1 do begin
-
-      if ~file_test(fuel.util.slitflat.raw_files[i]) then $
-        message, fuel.util.slitflat.raw_files[i] + ' does not exist!'
-
-      image = readmhdufits(fuel.util.slitflat.raw_files[i], header=header, gaindata=gaindata)
-      image = transpose(image)
-      new_filename = lris_dir + file_basename(fuel.util.slitflat.raw_files[i])
-      writefits, new_filename, image, header
-      fuel.util.slitflat.raw_files[i] = new_filename
-
-    endfor
 
   ; -----------------------------------------------------------------
 
@@ -309,6 +333,7 @@ FUNCTION flame_initialize_lris, input
     slits = flame_initialize_lris_slits( science_header, instrument=instrument, slit_y=slit_y )
 
   endelse
+
 
   ; save both instrument and slits in the fuel structure
   new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
