@@ -1,13 +1,11 @@
 ;
-; reads the raw science frames and writes out the "corrected" science frames, which are:
+; reads the raw frames and writes out the "corrected" frames, which are:
 ; - cleaned from cosmic rays (if needed)
 ; - corrected for non-linearity of the detector
 ; - corrected for variations in the pixel flat field
 ; - corrected for bad pixels (replaced by NaNs)
 ;  (generate the bad pixel mask from the darks and flats, if needed)
 ; - converted from ADU to electrons
-;
-; TO-DO: illumflat (for when OH lines are not enough) and arcs
 ;
 
 ;*******************************************************************************
@@ -454,8 +452,44 @@ PRO flame_correct, fuel
 
   ; apply corrections to each frame ----------------------------------------------------------
 
+  ; science frames
+  raw_filenames = fuel.util.science.raw_files
+  corr_filenames = fuel.util.science.corr_files
+
+  ; dark frames
+  if fuel.util.dark.n_frames gt 0 then begin
+    raw_filenames = [raw_filenames, fuel.util.dark.raw_files]
+    corr_filenames = [corr_filenames, fuel.util.dark.corr_files]
+  endif
+
+  ; arc frames
+  if fuel.util.arc.n_frames gt 0 then begin
+    raw_filenames = [raw_filenames, fuel.util.arc.raw_files]
+    corr_filenames = [corr_filenames, fuel.util.arc.corr_files]
+  endif
+
+  ; pixelflat frames
+  if fuel.util.pixelflat.n_frames gt 0 then begin
+    raw_filenames = [raw_filenames, fuel.util.pixelflat.raw_files]
+    corr_filenames = [corr_filenames, fuel.util.pixelflat.corr_files]
+  endif
+
+  ; illumflat frames
+  if fuel.util.illumflat.n_frames gt 0 then begin
+    raw_filenames = [raw_filenames, fuel.util.illumflat.raw_files]
+    corr_filenames = [corr_filenames, fuel.util.illumflat.corr_files]
+  endif
+
+  ; slitflat frames
+  if fuel.util.slitflat.n_frames gt 0 then begin
+    raw_filenames = [raw_filenames, fuel.util.slitflat.raw_files]
+    corr_filenames = [corr_filenames, fuel.util.slitflat.corr_files]
+  endif
+
+
   ; L.A. Cosmic notice
   if fuel.settings.clean_individual_frames then begin
+    print, ''
     print, '----------------------------------------------------'
     print, ''
     print, ' L.A. Cosmic: Laplacian cosmic ray removal'
@@ -468,25 +502,19 @@ PRO flame_correct, fuel
   endif
 
   print, ''
+  for i_frame=0, n_elements(raw_filenames)-1 do begin
 
-  for i_frame=0,N_frames-1 do begin
-
-    print, 'Correcting frame ', fuel.util.science.raw_files[i_frame]
-
-    ; name for the raw frame (i.e. the input)
-    filename_raw = fuel.util.science.raw_files[i_frame]
-
-    ; name for the corrected frame (i.e. the output)
-    filename_corr = fuel.util.science.corr_files[i_frame]
+    print, ''
+    print, 'Correcting frame ', raw_filenames[i_frame]
 
     ; check if the corrected frame already exist
-    if file_test(filename_corr) then begin
+    if file_test(corr_filenames[i_frame]) then begin
       print, 'file already exists; skipping frame correction'
       continue
     endif
 
     ; apply corrections and create "corrected" file
-    flame_correct_oneframe, fuel, filename_raw, filename_corr, $
+    flame_correct_oneframe, fuel, raw_filenames[i_frame], corr_filenames[i_frame], $
       master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
 
   endfor
@@ -497,32 +525,20 @@ PRO flame_correct, fuel
   ; if not specified by user, then use the three center-most science frames
   if fuel.util.slitflat.n_frames eq 0 then begin
 
-    if N_frames GE 3 then filenames_slitflat = fuel.util.science.raw_files[fix(N_frames/2)-1:fix(N_frames/2)+1] $
-      else filenames_slitflat = fuel.util.science.raw_files[N_frames/2]
+    if N_frames GE 3 then filenames_slitflat = fuel.util.science.corr_files[fix(N_frames/2)-1:fix(N_frames/2)+1] $
+      else filenames_slitflat = fuel.util.science.corr_files[N_frames/2]
 
   endif else $
     filenames_slitflat = fuel.util.slitflat.corr_files
 
-  filenames_slitflat_corr = strarr(n_elements(filenames_slitflat))
-
-  ; loop through slitflat frames
-  for i=0, n_elements(filenames_slitflat)-1 do begin
-
-    filename_raw = filenames_slitflat[i]
-
-    ; if this slitflat is NOT also a science frame, then apply correction
-    if array_equal(filename_raw, fuel.util.science.raw_files, /not_equal) eq 1 then begin
-      filenames_slitflat_corr[i] = flame_util_replace_string( filename_raw, '.fits', '_corr.fits')
-      flame_correct_oneframe, fuel, filename_raw, filenames_slitflat_corr[i], $
-        master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
-    endif else $
-      filenames_slitflat_corr[i] = (fuel.util.science.corr_files)[where(fuel.util.science.raw_files eq filename_raw, /null)]
-
-  endfor
-
-
   ; median-combine the frames to make the master slit flat
-  flame_correct_median_combine, filenames_slitflat_corr, fuel.util.slitflat.master_file
+  flame_correct_median_combine, filenames_slitflat, fuel.util.slitflat.master_file
+
+
+  ; create the master arc frame ----------------------------------------------
+
+  if fuel.util.arc.n_frames gt 0 then $
+    flame_correct_median_combine, fuel.util.arc.corr_files, fuel.util.arc.master_file
 
 
 
