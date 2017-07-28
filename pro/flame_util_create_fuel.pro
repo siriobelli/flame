@@ -1,14 +1,17 @@
 
-FUNCTION flame_create_fuel_loadfiles, filelist
+
+FUNCTION flame_create_fuel_loadfiles_new, filelist, corr_dir=corr_dir
 ;
 ; Load file names from the text file "filelist"
 ; Check for the existence of all files and expand the paths
+; Create the filenames for the corrected frames
+; output structure with raw filenames, corrected filenames, and master file name
 ;
 
-  ; if the input is a meaningful string, then return empty string
+  ; if the input is empty or 'none' or 'default', then return 'zero' 'structure
   filelist_norm = strlowcase(strtrim( filelist, 2 ))
   if filelist_norm eq '' or filelist_norm eq 'none' or filelist_norm eq 'default' then $
-    return, ptr_new()
+    return, {n_frames:0}
 
   ; check that the input file exists
   if ~file_test(filelist) then message, 'file ' + filelist + ' not found!''
@@ -20,11 +23,28 @@ FUNCTION flame_create_fuel_loadfiles, filelist
   filenames = file_expand_path(filenames)
 
   ; check that all the frames exist
-  if ~array_equal(file_test(filenames), 1+intarr(n_elements(filenames))) then $
+  print, 'Testing that files exist: ', filenames
+  if ~array_equal(1, file_test(filenames)) then $
     message, filelist + ': not all frames exist!'
 
-  ; output the list of file names
-  return, filenames
+  ; make filenames for the corrected frames
+  if strmatch(filenames[0], '*.fits.gz') then $
+    corr_basenames = file_basename(filenames, '.fits.gz') + '_corr.fits' else $
+    corr_basenames = file_basename(filenames, '.fits') + '_corr.fits'
+
+  ; put them in the directory for corrected frames
+  if keyword_set(corr_dir) then corr_filenames = corr_dir + corr_basenames $
+    else corr_filenames = strarr(n_elements(filenames))
+
+  ; make a structure containing the filenames
+  structure = { $
+    n_frames:n_elements(filenames), $
+    raw_files:filenames, $
+    corr_files:corr_filenames, $
+    master_file:''}
+
+  ; output the structure
+  return, structure
 
 
 END
@@ -35,56 +55,77 @@ END
 ;*******************************************************************************
 
 
-
 FUNCTION flame_util_create_fuel, input
 ;
 ; initialize flame and output the fuel structure. The only input is the input structure.
 ;
 
-  ; find the Flame data directory and check that it exists
+
+  ; set up directories ---------------------------------------------------------
+
+  ; find the flame data directory and check that it exists
   path_to_thisfile = file_which('flame_util_create_fuel.pro', /include_current_dir)
   data_dir = flame_util_replace_string(path_to_thisfile, 'pro/flame_util_create_fuel.pro', 'data/')
   if ~file_test(data_dir, /directory) then message, 'data directory not found! Check the flame directory structure.'
 
-  ; setup directory structure
+  ; intermediate directory
   if file_test(input.intermediate_dir) eq 0 then file_mkdir, input.intermediate_dir
-  if file_test(input.intermediate_dir + '/frames/') eq 0 then file_mkdir, input.intermediate_dir + '/frames/'
+  intermediate_dir = file_expand_path(input.intermediate_dir) + '/'
+
+  ; frames directory
+  if file_test(intermediate_dir + 'frames/') eq 0 then file_mkdir, intermediate_dir + 'frames/'
+  frames_dir = intermediate_dir + 'frames/'
+
+  ; output directory
   if file_test(input.output_dir) eq 0 then file_mkdir, input.output_dir
+  output_dir = file_expand_path(input.output_dir) + '/'
 
-  ; read the science filenames
-  science_filenames = flame_create_fuel_loadfiles(input.science_filelist)
-  if ~keyword_set(science_filenames) then message, 'list of science frames is required!'
-  forprint, science_filenames
 
-  ; read the number of science frames
-  N_frames = n_elements(science_filenames)
-  print, strtrim(N_frames, 2) + ' science frames found'
+  ; read in filenames ----------------------------------------------------------
 
-  ; make filenames for the corrected science frames
-  if strmatch(science_filenames[0], '*.fits.gz') then $
-    corrscience_basenames = file_basename(science_filenames, '.fits.gz') + '_corr.fits' else $
-    corrscience_basenames = file_basename(science_filenames, '.fits') + '_corr.fits'
-  corrscience_filenames = file_expand_path(input.intermediate_dir + '/frames/' + corrscience_basenames)
+  ; read science filenames
+  print, ''
+  print, 'Science frames'
+  science = flame_create_fuel_loadfiles_new(input.science_filelist, corr_dir=frames_dir)
+  print, science.n_frames, ' files read.'
 
   ; read dark filenames
-  filenames_dark = flame_create_fuel_loadfiles(input.dark_filelist)
-  if keyword_set(filenames_dark) then print, 'Reading dark frames: ', filenames_dark
-
-  ; read pixel-flat filenames
-  filenames_pixelflat = flame_create_fuel_loadfiles(input.pixelflat_filelist)
-  if keyword_set(filenames_pixelflat) then print, 'Reading pixel flat frames: ', filenames_pixelflat
-
-  ; read illumination-flat filenames
-  filenames_illumflat = flame_create_fuel_loadfiles(input.illumflat_filelist)
-  if keyword_set(filenames_illumflat) then print, 'Reading illumination flat frames: ', filenames_illumflat
+  print, ''
+  print, 'Dark frames'
+  calib_dark = flame_create_fuel_loadfiles_new(input.dark_filelist, corr_dir=frames_dir)
+  print, calib_dark.n_frames, ' files read.'
+  if calib_dark.n_frames GT 0 then calib_dark.master_file = intermediate_dir + 'master_dark.fits'
 
   ; read arc filenames
-  filenames_arc = flame_create_fuel_loadfiles(input.arc_filelist)
-  if keyword_set(filenames_arc) then print, 'Reading arc frames: ', filenames_arc
+  print, ''
+  print, 'Arc frames'
+  calib_arc = flame_create_fuel_loadfiles_new(input.arc_filelist, corr_dir=frames_dir)
+  print, calib_arc.n_frames, ' files read.'
+  if calib_arc.n_frames GT 0 then calib_arc.master_file = intermediate_dir + 'master_arc.fits'
 
-  ; read slit-flat filenames
-  filenames_slitflat = flame_create_fuel_loadfiles(input.slitflat_filelist)
-  if keyword_set(filenames_slitflat) then print, 'Reading slit flat frames: ', filenames_slitflat
+  ; read pixelflat filenames
+  print, ''
+  print, 'Pixel flat frames'
+  calib_pixelflat = flame_create_fuel_loadfiles_new(input.pixelflat_filelist, corr_dir=frames_dir)
+  print, calib_pixelflat.n_frames, ' files read.'
+  if calib_pixelflat.n_frames GT 0 then calib_pixelflat.master_file = intermediate_dir + 'master_pixelflat.fits'
+
+  ; read illumflat filenames
+  print, ''
+  print, 'Illumination flat frames'
+  calib_illumflat = flame_create_fuel_loadfiles_new(input.illumflat_filelist, corr_dir=frames_dir)
+  print, calib_illumflat.n_frames, ' files read.'
+  if calib_illumflat.n_frames GT 0 then calib_illumflat.master_file = intermediate_dir + 'master_illumflat.fits'
+
+  ; read slitflat filenames
+  print, ''
+  print, 'Slit flat frames'
+  calib_slitflat = flame_create_fuel_loadfiles_new(input.slitflat_filelist, corr_dir=frames_dir)
+  print, calib_slitflat.n_frames, ' files read.'
+  if calib_slitflat.n_frames GT 0 then calib_slitflat.master_file = intermediate_dir + 'master_slitflat.fits'
+
+
+  ; read in dither file ----------------------------------------------------------
 
   ; check that the dither file exists and read it
   dither_file_norm = strlowcase( strtrim( input.dither_file, 2 ))
@@ -94,28 +135,26 @@ FUNCTION flame_util_create_fuel, input
       readcol, input.dither_file, dither_blind_positions, format='D'
     endelse
 
+
+  ; create the fuel structure ----------------------------------------------------------
+
   ; create the util substructure
   util = { $
-    N_frames: N_frames, $
-    science_filenames: science_filenames, $
-    corrscience_filenames: corrscience_filenames, $
-    filenames_dark: filenames_dark, $
-    filenames_pixelflat: filenames_pixelflat, $
-    filenames_illumflat: filenames_illumflat, $
-    filenames_arc: filenames_arc, $
-    filenames_slitflat: filenames_slitflat, $
-    master_dark: input.intermediate_dir + 'master_dark.fits', $
-    master_pixelflat: input.intermediate_dir + 'master_pixelflat.fits', $
-    master_illumflat: input.intermediate_dir + 'master_illumflat.fits', $
-    master_arc: input.intermediate_dir + 'master_arc.fits', $
-    master_getslit: input.intermediate_dir + 'master_slitflat.fits', $
+    science: science, $
+    dark: calib_dark, $
+    arc: calib_arc, $
+    pixelflat: calib_pixelflat, $
+    illumflat: calib_illumflat, $
+    slitflat: calib_slitflat, $
     dither_blind_positions: dither_blind_positions, $
-    slitim_filename: 'slitim.fits', $
     flame_data_dir: data_dir, $
+    intermediate_dir: intermediate_dir, $
+    output_dir: output_dir, $
     start_time: systime(/seconds), $
     last_routine_time: systime(/seconds), $
     last_routine_name: 'flame_util_create_fuel' $
     }
+
 
   ; create the settings substructure
   settings = { $
@@ -140,6 +179,7 @@ FUNCTION flame_util_create_fuel, input
     debugging:0 $
    }
 
+
   ; create the fuel structure
   fuel = { $
     input: input, $
@@ -149,6 +189,7 @@ FUNCTION flame_util_create_fuel, input
     diagnostics : ptr_new(), $
     slits : ptr_new() $
     }
+
 
   return, fuel
 

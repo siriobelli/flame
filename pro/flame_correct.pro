@@ -70,7 +70,7 @@ FUNCTION flame_correct_master_dark, fuel
   filelist = strlowcase( strtrim(fuel.input.dark_filelist, 2) )
 
   ; this will be the output file name of the master dark
-  master_file = fuel.util.master_dark
+  master_file = fuel.util.dark.master_file
 
   ; case 1: do not use darks ---------------------------------------------
   if filelist eq '' or filelist eq 'none' then begin
@@ -102,7 +102,7 @@ FUNCTION flame_correct_master_dark, fuel
   ; case 3: use the frames provided by the user -------------------------------------
 
   ; median combine the dark frames
-  flame_correct_median_combine, fuel.util.filenames_dark, master_file
+  flame_correct_median_combine, fuel.util.dark.raw_files, master_file
   print, 'master dark file created: ', master_file
 
   ; return the master dark
@@ -132,8 +132,8 @@ FUNCTION flame_correct_master_pixelflat, fuel
   ; read the file list specified by the user
   filelist = strlowcase( strtrim(fuel.input.pixelflat_filelist, 2) )
 
-  ; this will be the output file name of the master dark
-  master_file = fuel.util.master_pixelflat
+  ; this will be the output file name of the master flat
+  master_file = fuel.util.pixelflat.master_file
 
   ; case 1: do not use pixel flat ---------------------------------------------
   if filelist eq '' or filelist eq 'none' then begin
@@ -169,7 +169,7 @@ FUNCTION flame_correct_master_pixelflat, fuel
   median_pixelflat_file = fuel.input.intermediate_dir + 'median_pixelflat.fits'
 
   ; median combine the pixel flat field frames
-  flame_correct_median_combine, fuel.util.filenames_pixelflat, median_pixelflat_file
+  flame_correct_median_combine, fuel.util.pixelflat.raw_files, median_pixelflat_file
 
   ; read the median combined pixel flat
   median_pixelflat = readfits(median_pixelflat_file, hdr)
@@ -440,7 +440,7 @@ PRO flame_correct, fuel
 
 	flame_util_module_start, fuel, 'flame_correct'
 
-  N_frames = fuel.util.N_frames
+  N_frames = fuel.util.science.n_frames
 
   ; create the master dark
   master_dark = flame_correct_master_dark( fuel )
@@ -471,13 +471,13 @@ PRO flame_correct, fuel
 
   for i_frame=0,N_frames-1 do begin
 
-    print, 'Correcting frame ', fuel.util.science_filenames[i_frame]
+    print, 'Correcting frame ', fuel.util.science.raw_files[i_frame]
 
     ; name for the raw frame (i.e. the input)
-    filename_raw = fuel.util.science_filenames[i_frame]
+    filename_raw = fuel.util.science.raw_files[i_frame]
 
     ; name for the corrected frame (i.e. the output)
-    filename_corr = fuel.util.corrscience_filenames[i_frame]
+    filename_corr = fuel.util.science.corr_files[i_frame]
 
     ; check if the corrected frame already exist
     if file_test(filename_corr) then begin
@@ -495,13 +495,13 @@ PRO flame_correct, fuel
   ; create the master slit flat ----------------------------------------------
 
   ; if not specified by user, then use the three center-most science frames
-  if fuel.util.filenames_slitflat eq !NULL then begin
+  if fuel.util.slitflat.n_frames eq 0 then begin
 
-    if N_frames GE 3 then filenames_slitflat = fuel.util.science_filenames[fix(N_frames/2)-1:fix(N_frames/2)+1] $
-      else filenames_slitflat = fuel.util.science_filenames[N_frames/2]
+    if N_frames GE 3 then filenames_slitflat = fuel.util.science.raw_files[fix(N_frames/2)-1:fix(N_frames/2)+1] $
+      else filenames_slitflat = fuel.util.science.raw_files[N_frames/2]
 
   endif else $
-    filenames_slitflat = fuel.util.filenames_slitflat
+    filenames_slitflat = fuel.util.slitflat.corr_files
 
   filenames_slitflat_corr = strarr(n_elements(filenames_slitflat))
 
@@ -511,18 +511,18 @@ PRO flame_correct, fuel
     filename_raw = filenames_slitflat[i]
 
     ; if this slitflat is NOT also a science frame, then apply correction
-    if array_equal(filename_raw, fuel.util.science_filenames, /not_equal) eq 1 then begin
+    if array_equal(filename_raw, fuel.util.science.raw_files, /not_equal) eq 1 then begin
       filenames_slitflat_corr[i] = flame_util_replace_string( filename_raw, '.fits', '_corr.fits')
       flame_correct_oneframe, fuel, filename_raw, filenames_slitflat_corr[i], $
         master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
     endif else $
-      filenames_slitflat_corr[i] = (fuel.util.corrscience_filenames)[where(fuel.util.science_filenames eq filename_raw, /null)]
+      filenames_slitflat_corr[i] = (fuel.util.science.corr_files)[where(fuel.util.science.raw_files eq filename_raw, /null)]
 
   endfor
 
 
   ; median-combine the frames to make the master slit flat
-  flame_correct_median_combine, filenames_slitflat_corr, fuel.util.master_getslit
+  flame_correct_median_combine, filenames_slitflat_corr, fuel.util.slitflat.master_file
 
 
 

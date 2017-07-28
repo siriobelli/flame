@@ -149,7 +149,7 @@ PRO flame_skysub, fuel
 			endif
 		endif
 
-		for i_frame=0, fuel.util.N_frames-1 do $
+		for i_frame=0, fuel.util.science.n_frames-1 do $
 			flame_skysub_oneframe, fuel=fuel, cutout=fuel.slits[i_slit].cutouts[i_frame]
 
 	endfor

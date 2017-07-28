@@ -453,11 +453,11 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
       speclines: ptr_new() }
 
     ; replicate for each of the frames
-    cutouts = replicate(cutout, fuel.util.N_frames)
+    cutouts = replicate(cutout, fuel.util.science.n_frames)
 
     ; initialize the pointers
-    cutouts.rectification = ptrarr(fuel.util.N_frames, /allocate_heap)
-    cutouts.speclines = ptrarr(fuel.util.N_frames, /allocate_heap)
+    cutouts.rectification = ptrarr(fuel.util.science.n_frames, /allocate_heap)
+    cutouts.speclines = ptrarr(fuel.util.science.n_frames, /allocate_heap)
 
     ; add new fields to slit structure
     new_slit = create_struct( $
@@ -496,7 +496,7 @@ END
 PRO flame_getslits_multislit, fuel=fuel
 
   ; frame to use to find the edges
-  frame_filename = fuel.util.master_getslit
+  frame_filename = fuel.util.slitflat.master_file
 
   ; read in the frame
   image=readfits(frame_filename, hdr)
@@ -574,7 +574,7 @@ END
 PRO flame_getslits_longslit, fuel=fuel
 
   ; frame to use to find the edges
-  frame_filename = (fuel.util.corrscience_filenames)[0]
+  frame_filename = (fuel.util.science.corr_files)[0]
 
   ; read in the frame
   im=readfits(frame_filename, hdr)
@@ -613,7 +613,7 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
   slits = fuel.slits
 
   ; number of horizontal pixel in one frame
-  N_pix_x = (size( readfits((fuel.util.corrscience_filenames)[0]) ) )[1]
+  N_pix_x = (size( readfits((fuel.util.science.corr_files)[0]) ) )[1]
 
   ; open file
   openw, lun, fuel.input.intermediate_dir + region_filename, /get_lun
@@ -695,7 +695,7 @@ PRO flame_getslits_write_slitim, fuel=fuel
   slits = fuel.slits
 
   ; read in the first science frame to get the right dimensions
-  slitim = fix(0 * readfits((fuel.util.corrscience_filenames)[0], hdr))
+  slitim = fix(0 * readfits((fuel.util.science.corr_files)[0], hdr))
 
   ; construct the coordinates for the pixels in the image
   N_pix_x = (size(slitim))[1]
@@ -715,7 +715,7 @@ PRO flame_getslits_write_slitim, fuel=fuel
 
   endfor
 
-  writefits, fuel.input.intermediate_dir + fuel.util.slitim_filename, slitim
+  writefits, fuel.input.intermediate_dir + 'slitim.fits', slitim
 
 
 END

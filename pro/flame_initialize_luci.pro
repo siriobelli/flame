@@ -431,7 +431,7 @@ FUNCTION flame_initialize_luci, input
   ; ---------------------   INSTRUMENT structure   --------------------------------------
 
   ; read FITS header of first science frame
-  science_header = headfits(fuel.util.science_filenames[0])
+  science_header = headfits(fuel.util.science.raw_files[0])
 
   ; read the instrument settings from the header
   instrument = flame_initialize_luci_settings(science_header)

@@ -208,7 +208,7 @@ FUNCTION flame_initialize_lris, input
   ; ---------------------   INSTRUMENT structure   --------------------------------------
 
   ; read FITS header of first science frame
-  science_header = headfits(fuel.util.science_filenames[0])
+  science_header = headfits(fuel.util.science.raw_files[0])
 
   ; read the instrument settings from the header
   instrument = flame_initialize_lris_settings(science_header)
@@ -244,12 +244,12 @@ FUNCTION flame_initialize_lris, input
   file_mkdir, lris_dir
 
   ; create new file names for the science frames
-  new_filenames = lris_dir + file_basename(fuel.util.science_filenames)
+  new_filenames = lris_dir + file_basename(fuel.util.science.raw_files)
 
-  for i=0, fuel.util.N_frames-1 do begin
+  for i=0, fuel.util.science.n_frames-1 do begin
 
     ; use the readmhdufits.pro routine provided by Keck
-    image = readmhdufits(fuel.util.science_filenames[i], header=header, gaindata=gaindata)
+    image = readmhdufits(fuel.util.science.raw_files[i], header=header, gaindata=gaindata)
 
     ; make wavelength axis horizontal
     image = transpose(image)
@@ -264,20 +264,20 @@ FUNCTION flame_initialize_lris, input
   endfor
 
   ; update the file names in the fuel structure
-  fuel.util.science_filenames = new_filenames
+  fuel.util.science.raw_files = new_filenames
 
   ; if provided, do the same to the slit flats
-  if fuel.util.filenames_slitflat ne !NULL then $
-    for i=0, n_elements(fuel.util.filenames_slitflat)-1 do begin
+  if fuel.util.slitflat.n_frames ne 0 then $
+    for i=0, fuel.util.slitflat.n_frames-1 do begin
 
-      if ~file_test(fuel.util.filenames_slitflat[i]) then $
-        message, fuel.util.filenames_slitflat[i] + ' does not exist!'
+      if ~file_test(fuel.util.slitflat.raw_files[i]) then $
+        message, fuel.util.slitflat.raw_files[i] + ' does not exist!'
 
-      image = readmhdufits(fuel.util.filenames_slitflat[i], header=header, gaindata=gaindata)
+      image = readmhdufits(fuel.util.slitflat.raw_files[i], header=header, gaindata=gaindata)
       image = transpose(image)
-      new_filename = lris_dir + file_basename(fuel.util.filenames_slitflat[i])
+      new_filename = lris_dir + file_basename(fuel.util.slitflat.raw_files[i])
       writefits, new_filename, image, header
-      fuel.util.filenames_slitflat[i] = new_filename
+      fuel.util.slitflat.raw_files[i] = new_filename
 
     endfor
 

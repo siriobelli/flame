@@ -244,13 +244,13 @@ FUNCTION flame_diagnostics_fromdata, fuel
   ;     to contain a star trace
 
   ; this string array will keep track of the 'A' and 'B' position. 'X' means undecided (i.e. sky)
-  offset_pos = strarr(fuel.util.N_frames)
+  offset_pos = strarr(fuel.util.science.n_frames)
 
   ; identify A and B frames
   cgPs_open, fuel.input.intermediate_dir + 'startrace_identify_AB.ps', /nomatch
-    for i_frame=0,fuel.util.N_frames-1 do begin
-       offset_pos[i_frame] = flame_diagnostics_AorB( fuel.util.science_filenames[i_frame], fuel=fuel )
-       print, i_frame, ' ', fuel.util.science_filenames[i_frame], ' offset position: ', offset_pos[i_frame]
+    for i_frame=0,fuel.util.science.n_frames-1 do begin
+       offset_pos[i_frame] = flame_diagnostics_AorB( fuel.util.science.raw_files[i_frame], fuel=fuel )
+       print, i_frame, ' ', fuel.util.science.raw_files[i_frame], ' offset position: ', offset_pos[i_frame]
     endfor
   cgPS_close
 
@@ -266,7 +266,7 @@ FUNCTION flame_diagnostics_fromdata, fuel
 
   print, 'Fitting the star trace for each frame...'
 
-  for i_frame=0, fuel.util.N_frames-1 do begin
+  for i_frame=0, fuel.util.science.n_frames-1 do begin
 
     ; if doing an A-B subtraction, then needs to find the sky frame
     if fuel.input.AB_subtraction then begin
@@ -276,7 +276,7 @@ FUNCTION flame_diagnostics_fromdata, fuel
         message, 'input.AB_subtraction is set, but all frames are taken in the same offset position!'
 
       ; need to find the closest available frame (starting with the next one)
-      distance = abs( i_frame+0.01 - indgen(fuel.util.N_frames) )
+      distance = abs( i_frame+0.01 - indgen(fuel.util.science.n_frames) )
       closest_frames = sort(distance) ; this array contains the frame numbers from the closest to the farthest
       ii = 1
       while offset_pos[closest_frames[ii]] EQ offset_pos[i_frame] do ii++
@@ -286,8 +286,8 @@ FUNCTION flame_diagnostics_fromdata, fuel
     endif else i_frame_background = i_frame
 
     ; fit a Gaussian and obtain diagnostics
-    diagnostics_thisframe = flame_diagnostics_fit( fuel.util.science_filenames[i_frame], $
-      fuel.util.science_filenames[i_frame_background], offset_pos=offset_pos[i_frame], fuel=fuel )
+    diagnostics_thisframe = flame_diagnostics_fit( fuel.util.science.raw_files[i_frame], $
+      fuel.util.science.raw_files[i_frame_background], offset_pos=offset_pos[i_frame], fuel=fuel )
 
     ; add these to the total diagnostics
     diagnostics = [ diagnostics , diagnostics_thisframe ]
@@ -328,12 +328,12 @@ FUNCTION flame_diagnostics_blind, fuel
       airmass: !values.f_NaN}
 
   ; array of diagnostics
-  diagnostics = replicate(diagnostics_tmp, fuel.util.N_frames)
+  diagnostics = replicate(diagnostics_tmp, fuel.util.science.n_frames)
 
   ; read frame numbers from file names
-  frame_num = intarr(fuel.util.N_frames)
-  for i_frame=0, fuel.util.N_frames-1 do $
-    frame_num[i_frame] = (strsplit(fuel.util.science_filenames[i_frame], '.', /extract))[-2]
+  frame_num = intarr(fuel.util.science.n_frames)
+  for i_frame=0, fuel.util.science.n_frames-1 do $
+    frame_num[i_frame] = (strsplit(fuel.util.science.raw_files[i_frame], '.', /extract))[-2]
 
   ; fill the frame_num field
   diagnostics.frame_num = frame_num
@@ -347,8 +347,8 @@ FUNCTION flame_diagnostics_blind, fuel
   diagnostics[w_B].offset_pos = 'B'
 
   ; read the airmass from the headers
-  for i_frame=0, fuel.util.N_frames-1 do $
-    diagnostics[i_frame].airmass = sxpar(headfits(fuel.util.science_filenames[i_frame]), 'AIRMASS')
+  for i_frame=0, fuel.util.science.n_frames-1 do $
+    diagnostics[i_frame].airmass = sxpar(headfits(fuel.util.science.raw_files[i_frame]), 'AIRMASS')
 
   return, diagnostics
 

@@ -88,15 +88,15 @@ PRO flame_cutout_slits, fuel
     file_mkdir, slitdir
 
     ; file names for the cutouts
-    output_filenames = strarr(fuel.util.n_frames)
-    for i_frame=0, fuel.util.n_frames-1 do begin
-      naked_filename = ( strsplit((fuel.util.corrscience_filenames)[i_frame], '/', /extract) )[-1]
+    output_filenames = strarr(fuel.util.science.n_frames)
+    for i_frame=0, fuel.util.science.n_frames-1 do begin
+      naked_filename = ( strsplit((fuel.util.science.corr_files)[i_frame], '/', /extract) )[-1]
       output_filenames[i_frame] = flame_util_replace_string( slitdir + naked_filename, '.fits', '_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'  )
     endfor
 
     ; extract slit
     print,'*** Cutting out slit ', slits[i_slit].name
-    flame_cutout_slits_extract, fuel, slits[i_slit], (fuel.util.corrscience_filenames), output_filenames
+    flame_cutout_slits_extract, fuel, slits[i_slit], (fuel.util.science.corr_files), output_filenames
 
     ; add the cutout filenames
     fuel.slits[i_slit].cutouts.filename_step1 = output_filenames

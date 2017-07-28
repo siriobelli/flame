@@ -32,18 +32,18 @@ PRO flame_quickstack, fuel
 	;*************************************
 
 	; read in first file
-	frame0 = readfits(fuel.util.science_filenames[0], header)
+	frame0 = readfits(fuel.util.science.raw_files[0], header)
 
 	; total stack
-	cube_tot = dblarr( (size(frame0))[1], (size(frame0))[2], fuel.util.N_frames )
-	for i=0, fuel.util.N_frames-1 do cube_tot[*,*,i] = readfits(fuel.util.science_filenames[i])
-	if fuel.util.N_frames eq 1 then stack_tot = cube_tot $
+	cube_tot = dblarr( (size(frame0))[1], (size(frame0))[2], fuel.util.science.n_frames )
+	for i=0, fuel.util.science.n_frames-1 do cube_tot[*,*,i] = readfits(fuel.util.science.raw_files[i])
+	if fuel.util.science.n_frames eq 1 then stack_tot = cube_tot $
 		else stack_tot = median(cube_tot, dimension=3)
 
 	; stack all A frames
 	if w_A ne !NULL then begin
 		cube_A = dblarr( (size(frame0))[1], (size(frame0))[2], n_elements(w_A) )
-		for i=0,n_elements(w_A)-1 do cube_A[*,*,i] = readfits(fuel.util.science_filenames[w_A[i]])
+		for i=0,n_elements(w_A)-1 do cube_A[*,*,i] = readfits(fuel.util.science.raw_files[w_A[i]])
 		if n_elements(w_A) eq 1 then stack_A = cube_A $
 			else stack_A = median(cube_A, dimension=3)
 	endif
@@ -51,7 +51,7 @@ PRO flame_quickstack, fuel
 	; stack all B frames
 	if w_B ne !NULL then begin
 		cube_B = dblarr( (size(frame0))[1], (size(frame0))[2], n_elements(w_B) )
-		for i=0,n_elements(w_B)-1 do cube_B[*,*,i] = readfits(fuel.util.science_filenames[w_B[i]])
+		for i=0,n_elements(w_B)-1 do cube_B[*,*,i] = readfits(fuel.util.science.raw_files[w_B[i]])
 		if n_elements(w_B) eq 1 then stack_B = cube_B $
 			else stack_B = median(cube_B, dimension=3)
 	endif
@@ -59,7 +59,7 @@ PRO flame_quickstack, fuel
 	; stack all X frames
 	if w_X ne !NULL then begin
 		cube_X = dblarr( (size(frame0))[1], (size(frame0))[2], n_elements(w_X) )
-		for i=0,n_elements(w_X)-1 do cube_X[*,*,i] = readfits(fuel.util.science_filenames[w_X[i]])
+		for i=0,n_elements(w_X)-1 do cube_X[*,*,i] = readfits(fuel.util.science.raw_files[w_X[i]])
 		if n_elements(w_X) eq 1 then stack_x = cube_x $
 			else stack_X = median(cube_X, dimension=3)
 	endif
