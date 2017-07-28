@@ -247,7 +247,7 @@ FUNCTION flame_diagnostics_fromdata, fuel
   offset_pos = strarr(fuel.util.science.n_frames)
 
   ; identify A and B frames
-  cgPs_open, fuel.input.intermediate_dir + 'startrace_identify_AB.ps', /nomatch
+  cgPs_open, fuel.util.intermediate_dir + 'startrace_identify_AB.ps', /nomatch
     for i_frame=0,fuel.util.science.n_frames-1 do begin
        offset_pos[i_frame] = flame_diagnostics_AorB( fuel.util.science.raw_files[i_frame], fuel=fuel )
        print, i_frame, ' ', fuel.util.science.raw_files[i_frame], ' offset position: ', offset_pos[i_frame]
@@ -259,7 +259,7 @@ FUNCTION flame_diagnostics_fromdata, fuel
   ;     Need to identify the closest frame with a different offset position
   ;     to use as sky frame
 
-  cgPS_open, fuel.input.intermediate_dir + 'startraces.ps', /nomatch
+  cgPS_open, fuel.util.intermediate_dir + 'startraces.ps', /nomatch
 
   ; array that will contain the diagnostics
   diagnostics = []
@@ -478,7 +478,7 @@ PRO flame_diagnostics, fuel
   ; 2 - plot diagnostics
   ;----------------------------------------
 
-  cgPS_open, fuel.input.intermediate_dir + 'diagnostics.ps', /nomatch
+  cgPS_open, fuel.util.intermediate_dir + 'diagnostics.ps', /nomatch
     flame_diagnostics_plot, diagnostics
   cgPS_close
 
@@ -489,7 +489,7 @@ PRO flame_diagnostics, fuel
   forprint, diagnostics.frame_num, '    ' + '    ' + cgnumber_formatter(diagnostics.offset_pos, decimals=2), $
     '    ' + cgnumber_formatter(diagnostics.seeing, decimals=2), '    ' + cgnumber_formatter(diagnostics.flux, decimals=1), $
     '    ' + cgnumber_formatter(diagnostics.flux/median(diagnostics.flux), decimals=2), '    ' + cgnumber_formatter(diagnostics.position, decimals=1), $
-    textout=fuel.input.intermediate_dir + 'diagnostics.txt', $
+    textout=fuel.util.intermediate_dir + 'diagnostics.txt', $
     comment = '# frame number   offset    seeing    flux    normalized flux    position '
 
 

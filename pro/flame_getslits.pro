@@ -616,7 +616,7 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
   N_pix_x = (size( readfits((fuel.util.science.corr_files)[0]) ) )[1]
 
   ; open file
-  openw, lun, fuel.input.intermediate_dir + region_filename, /get_lun
+  openw, lun, fuel.util.intermediate_dir + region_filename, /get_lun
 
   ; write header
   printf, lun, '# Region file format: DS9 version 4.1'
@@ -715,7 +715,7 @@ PRO flame_getslits_write_slitim, fuel=fuel
 
   endfor
 
-  writefits, fuel.input.intermediate_dir + 'slitim.fits', slitim
+  writefits, fuel.util.intermediate_dir + 'slitim.fits', slitim
 
 
 END

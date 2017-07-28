@@ -72,25 +72,25 @@ PRO flame_quickstack, fuel
 	; if there is no A-B subtraction, then simply output the total stack
 	if fuel.input.AB_subtraction eq 0 then begin
 
-		writefits, fuel.input.intermediate_dir + 'quickstack.fits', stack_tot, header
-		print, 'I wrote ', fuel.input.intermediate_dir + 'quickstack.fits'
+		writefits, fuel.util.intermediate_dir + 'quickstack.fits', stack_tot, header
+		print, 'I wrote ', fuel.util.intermediate_dir + 'quickstack.fits'
 
 	; if doing A-B subtraction, then find theright combination
 	endif else begin
 
 		if w_A NE !NULL and w_B ne !NULL then begin
-			writefits, fuel.input.intermediate_dir + 'quickstack_A-B.fits', stack_A - stack_B, header
-			print, 'I wrote ', fuel.input.intermediate_dir + 'quickstack_A-B.fits'
+			writefits, fuel.util.intermediate_dir + 'quickstack_A-B.fits', stack_A - stack_B, header
+			print, 'I wrote ', fuel.util.intermediate_dir + 'quickstack_A-B.fits'
 		endif
 
 		if w_A NE !NULL and w_X ne !NULL then begin
-			writefits, fuel.input.intermediate_dir + 'quickstack_A-X.fits', stack_A - stack_X, header
-			print, 'I wrote ', fuel.input.intermediate_dir + 'quickstack_A-X.fits'
+			writefits, fuel.util.intermediate_dir + 'quickstack_A-X.fits', stack_A - stack_X, header
+			print, 'I wrote ', fuel.util.intermediate_dir + 'quickstack_A-X.fits'
 		endif
 
 		if w_B NE !NULL and w_X ne !NULL then begin
-			writefits, fuel.input.intermediate_dir + 'quickstack_B-X.fits', stack_B - stack_X, header
-			print, 'I wrote ', fuel.input.intermediate_dir + 'quickstack_B-X.fits'
+			writefits, fuel.util.intermediate_dir + 'quickstack_B-X.fits', stack_B - stack_X, header
+			print, 'I wrote ', fuel.util.intermediate_dir + 'quickstack_B-X.fits'
 		endif
 
 	endelse

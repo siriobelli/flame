@@ -149,7 +149,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	sigma_clip = fuel.settings.combine_sigma_clip
 
 	; prefix for output file names
-	filename_prefix = fuel.input.output_dir + 'slit' + $
+	filename_prefix = fuel.util.output_dir + 'slit' + $
 		string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name
 
 	; input filenames for this slit
@@ -389,9 +389,9 @@ PRO flame_combine_multislit, fuel=fuel
 				' with slit ' + strtrim(fuel.slits[j_slit].number, 2) + ' - ' + fuel.slits[j_slit].name
 
 			; prefix for file names
-			filename_prefix_i = fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+			filename_prefix_i = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
 			 	'-' + fuel.slits[i_slit].name
-			filename_prefix_j = fuel.input.output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
+			filename_prefix_j = fuel.util.output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
 			 	'-' + fuel.slits[j_slit].name
 
 			; calculate the signs so that the stacked A-B has positive signal
@@ -400,14 +400,14 @@ PRO flame_combine_multislit, fuel=fuel
 				signs = [1, -1]
 
 			; combine the A-B stacks
-			outname = fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
+			outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
 				string(fuel.slits[j_slit].number, format='(I02)') + '_A-B.fits'
 			flame_util_combine_slits, [filename_prefix_i + '_A-B.fits', filename_prefix_j + '_A-B.fits'], $
 			 	output = outname, signs = signs, $
 				 sky_filenames=[filename_prefix_i + '_sky.fits', filename_prefix_j + '_sky.fits']
 
 			; combine the skysubtracted A-B stacks
-			outname = fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
+			outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
 			 string(fuel.slits[j_slit].number, format='(I02)') + '_skysub_A-B.fits'
  			flame_util_combine_slits, [filename_prefix_i + '_skysub_A-B.fits', filename_prefix_j + '_skysub_A-B.fits'], $
  			 	output = outname, signs = signs

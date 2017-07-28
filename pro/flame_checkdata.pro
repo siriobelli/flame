@@ -27,7 +27,7 @@ PRO flame_checkdata_refstar, fuel
 	endif
 
 	print, 'Reference star is in slit number ', strtrim(fuel.slits[i_ref].number, 2)
-  cgPS_open, fuel.input.output_dir + 'reference_star.ps', /nomatch
+  cgPS_open, fuel.util.output_dir + 'reference_star.ps', /nomatch
 
 
 	; load output spectrum of reference star
@@ -202,7 +202,7 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	;-------------------------------------
 
 	; filename of the output sky stack
-	skystack_filename = fuel.input.output_dir + 'slit' + $
+	skystack_filename = fuel.util.output_dir + 'slit' + $
 		string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name + '_sky.fits'
 
 	; load the sky spectrum
@@ -532,7 +532,7 @@ PRO flame_checkdata, fuel
 
 		if fuel.slits[i_slit].skip then continue
 
-		cgPS_open, fuel.input.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+		cgPS_open, fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
 			'-' + fuel.slits[i_slit].name +  '_datacheck.ps', /nomatch
 
 		; handle errors by ignoring that slit

@@ -200,8 +200,9 @@ FUNCTION flame_initialize_lris, input
   print, 'Initializing LRIS data reduction'
   print, ''
 
+  ; ---------------------   create fuel structure   --------------------------------------
 
-  ; first, create the fuel structure
+
   fuel = flame_util_create_fuel(input)
 
 
@@ -232,14 +233,16 @@ FUNCTION flame_initialize_lris, input
   ; split the spectrum into two when doing the rough wavecal
   fuel.settings.wavecal_rough_split = 1
 
+
   ; -----------------------------------------------------------------
-  ; we need to convert the LRIS frames into the "normal" format
+  ;        convert the LRIS frames into the "normal" format
+  ; -----------------------------------------------------------------
 
   ; the conversion also applies the gain correction to each amplifier
   gaindata = flame_initialize_lris_gain(instrument)
 
   ; create directory where we will store the new FITS files
-  lris_dir = fuel.input.intermediate_dir + 'data_LRIS/'
+  lris_dir = fuel.util.intermediate_dir + 'data_LRIS/'
   if file_test(lris_dir) then file_delete, lris_dir, /recursive
   file_mkdir, lris_dir
 

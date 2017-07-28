@@ -166,7 +166,7 @@ FUNCTION flame_correct_master_pixelflat, fuel
   ; case 3: use the frames provided by the user -------------------------------------
 
   ; first we need to median combine the pixel flat frames
-  median_pixelflat_file = fuel.input.intermediate_dir + 'median_pixelflat.fits'
+  median_pixelflat_file = fuel.util.intermediate_dir + 'median_pixelflat.fits'
 
   ; median combine the pixel flat field frames
   flame_correct_median_combine, fuel.util.pixelflat.raw_files, median_pixelflat_file
@@ -220,7 +220,7 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
   sig_clip = 7.0
 
   ; output file name
-  badpix_filename = fuel.input.intermediate_dir + 'badpixel_mask.fits'
+  badpix_filename = fuel.util.intermediate_dir + 'badpixel_mask.fits'
 
   ; if there are no inputs, then use the default bad pixel mask ----------------
   if master_dark eq !NULL and master_pixelflat eq !NULL then begin
@@ -266,7 +266,7 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
       print, 'Fraction of bad pixels: ' + cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
       ; plot distribution
-      cgPS_open, fuel.input.intermediate_dir + 'master_dark_histogram.ps', /nomatch
+      cgPS_open, fuel.util.intermediate_dir + 'master_dark_histogram.ps', /nomatch
       cghistoplot, master_dark, /freq, binsize=max([0.1*dark_sigma, 1.0]), $
         xra=dark_bias+[-10.0, 10.0]*dark_sigma, /fillpoly, $
         xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
@@ -312,7 +312,7 @@ FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
       print, 'Fraction of bad pixels: ' + cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
       ; plot distribution
-      cgPS_open, fuel.input.intermediate_dir + 'master_pixelflat_histogram.ps', /nomatch
+      cgPS_open, fuel.util.intermediate_dir + 'master_pixelflat_histogram.ps', /nomatch
       cghistoplot, master_pixelflat, /freq, binsize=max([flat_sigma, 0.005]), $
         xra=flat_bias+[-10.0, 10.0]*flat_sigma, /fillpoly, $
         xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $

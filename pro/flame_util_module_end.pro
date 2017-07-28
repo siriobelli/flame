@@ -1,6 +1,6 @@
 PRO flame_util_module_end, fuel
 
-    filename = fuel.input.intermediate_dir + 'fuel.sav'
+    filename = fuel.util.intermediate_dir + 'fuel.sav'
     save, fuel, filename=filename
 
     print, ''
