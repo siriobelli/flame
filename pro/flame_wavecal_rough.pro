@@ -263,7 +263,7 @@ END
 FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 		 model_lambda=model_lambda, model_flux=model_flux, wavecal_coefficients=wavecal_coefficients
 
-	range_pixel_scale = this_slit.range_pixel_scale
+	range_delta_lambda = this_slit.range_delta_lambda
   range_start_lambda = this_slit.range_lambda0
 	rough_wavecal_R = fuel.settings.wavecal_rough_R
 
@@ -277,8 +277,8 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		N1 = 51
 
 		; first, we assume a constant pixel scale, in micron per pixels:
-	  pix_scale_grid = range_pixel_scale[0] + $
-	    (range_pixel_scale[1]-range_pixel_scale[0])*dindgen(N1)/double(N1-1)
+	  pix_scale_grid = range_delta_lambda[0] + $
+	    (range_delta_lambda[1]-range_delta_lambda[0])*dindgen(N1)/double(N1-1)
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
@@ -497,7 +497,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
   readcol, fuel.settings.sky_emission_filename, model_lambda, model_flux	; lambda in micron
 
   ; cut out a reasonable range
-  wide_range = [ this_slit.range_lambda0[0], this_slit.range_lambda0[1] + this_slit.range_pixel_scale[1]*n_elements(sky) ]
+  wide_range = [ this_slit.range_lambda0[0], this_slit.range_lambda0[1] + this_slit.range_delta_lambda[1]*n_elements(sky) ]
   w_reasonable = where(model_lambda GT wide_range[0] $
     and model_lambda LT wide_range[1], /null)
   if w_reasonable EQ !null then $
@@ -518,6 +518,114 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
 
 	; output the observed sky spectrum used for the wavecal
 	rough_skyspec = sky
+
+	; return the approximate wavelength axis
+	return, wavecal_solution
+
+END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+
+FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, rough_skyspec=rough_skyspec
+	;
+	; Same as above, but use arcs instead of skylines
+	;
+
+	; load the slit image
+	;---------------------
+
+  ; filename for cutout of arc spectrum
+  dirname = file_dirname( (this_slit.cutouts.filename_step1)[0], /mark_directory )
+	arc_filename = dirname + 'arc_slit' + string(this_slit.number,format='(I02)') + '.fits'
+  print, 'Using the central pixel rows of ', arc_filename
+
+	; read in arc spectrum
+	im = readfits(arc_filename, hdr)
+
+	; how many pixels on either directions
+	N_spatial_pix = (size(im))[2]
+	N_spectral_pix = (size(im))[1]
+
+	; extract the spectrum
+	arc_spectrum = median(im[*,N_spatial_pix/2-2:N_spatial_pix/2+2], dimension=2)
+
+	; smooth spectrum
+	arc_spectrum = gauss_smooth(arc_spectrum, 3, /nan)
+
+	;
+	; ; filter the sky spectrum: find the running minimum pixel value
+	; ;--------------------------------------------------------------
+	; if fuel.settings.wavecal_rough_smooth_window GT 0 then begin
+	;
+	; 	; make a 2D matrix where at each value of x-pixel you have a column with all the neighhboring pixel values
+	; 	matrix = []
+	; 	for i_shift = -fuel.settings.wavecal_rough_smooth_window/2, fuel.settings.wavecal_rough_smooth_window/2 do $
+	; 	 	matrix = [ [matrix], [shift(sky, i_shift)]]
+	;
+	; 	; for each x-pixel take the minimum of all the neighboring pixel values
+	; 	sky_minfilter = min(matrix, /nan, dimension=2)
+	;
+	; 	; subtract the continuum
+	; 	sky -= sky_minfilter
+	;
+	; 	; crop the edges
+	; 	sky[0:fuel.settings.wavecal_rough_smooth_window/2] = 0
+	; 	sky[-fuel.settings.wavecal_rough_smooth_window/2-1:*] = 0
+	;
+	; endif
+
+
+  ; load the model spectrum of the arc lamp
+	;---------------------
+	; all lambdas in angstrom, in air
+	dir = '/data/flame/LRIS/line_lists/'
+
+  readcol, dir + 'Hg_air.txt', Hg_lambda
+	readcol, dir + 'Ne_air.txt', Ne_lambda
+	readcol, dir + 'Ar_air.txt', Ar_lambda
+	readcol, dir + 'Cd_air.txt', Cd_lambda
+	readcol, dir + 'Zn_air.txt', Zn_lambda
+	readcol, dir + 'Kr_air_strong.txt', Kr_lambda
+	readcol, dir + 'Xe_air_strong.txt', Xe_lambda
+
+	; merge together the lines
+	all_lines_air = [Hg_lambda, Ne_lambda, Ar_lambda, Cd_lambda, Zn_lambda, Kr_lambda, Xe_lambda]
+
+	; sort them by wavelength
+	all_lines_air = all_lines_air[sort(all_lines_air)]
+
+	; convert to vacuum
+	airtovac, all_lines_air, all_lines_vac
+
+	; convert to micron
+	all_lines = all_lines_vac*1d-4
+
+	; select a reasonable range
+  wide_range = [ this_slit.range_lambda0[0], this_slit.range_lambda0[1] + this_slit.range_delta_lambda[1] * N_spectral_pix]
+
+	; make a simple theoretical spectrum from the line list (assuming all lines have equal intensity)
+	model_lambda = wide_range[0] + (wide_range[1]-wide_range[0]) * dindgen(N_spectral_pix)/double(N_spectral_pix)
+	model_flux = model_lambda*0.0
+	model_sigma = 2.0*mean(this_slit.range_delta_lambda)	; assume a sigma of two pixels
+	for i=0, n_elements(all_lines)-1 do model_flux += exp(-0.5*(model_lambda-all_lines[i])^2/model_sigma^2)
+
+	; start PS file
+  ps_filename = dirname + 'rough_wavelength_calibration_arc.ps'
+	cgPS_open, ps_filename, /nomatch
+
+	; find the wavelength solution
+	wavecal_solution = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=arc_spectrum, $
+		model_lambda=model_lambda, model_flux=model_flux)
+
+	cgPS_close
+
+	; output the observed sky spectrum used for the wavecal
+	rough_skyspec = arc_spectrum
 
 	; return the approximate wavelength axis
 	return, wavecal_solution
@@ -566,6 +674,10 @@ PRO flame_wavecal_rough, fuel
 				continue
 			endif
 		endif
+
+		rough_wavecal = flame_wavecal_rough_oneslit_witharcs( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyspec=rough_skyspec)
+    *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
+		*(fuel.slits[i_slit].rough_skyspec) = rough_skyspec
 
 		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyspec=rough_skyspec)
     *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
