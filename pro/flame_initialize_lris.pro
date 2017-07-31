@@ -1,7 +1,11 @@
-
+;
+; WHAT ABOUT CCDGAIN AND CCDSPEED???
+;
 ;******************************************************************
 
-FUNCTION flame_initialize_lris_settings, science_header
+FUNCTION flame_initialize_lris_red, science_header
+;
+; initialize LRIS - RED SIDE
 ;
 ; read the LRIS settings from the FITS header of a science frame
 ; and create the instrument structure
@@ -12,6 +16,13 @@ FUNCTION flame_initialize_lris_settings, science_header
   ; read instrument name - useful to discriminate between blue and red channel
   instrument_name = strtrim(fxpar(science_header, 'INSTRUME'), 2)
 
+  ; check that these are LRIS RED data
+  if instrument_name NE 'LRIS' then $
+    message, 'instrument name keyword ' + instrument_name + ': expected LRIS instead'
+
+  ; the header will show LRISBLUE for the blue side but only LRIS for the red side. Fix this:
+  instrument_name = 'LRISRED'
+
   ; read detector name - useful to discriminate between blue and red channel
   detector = strtrim(fxpar(science_header, 'DETECTOR'), 2)
 
@@ -21,33 +32,65 @@ FUNCTION flame_initialize_lris_settings, science_header
   ; read in grating angle
   grating_angle = fxpar(science_header, 'GRANGLE')
 
-  ; read grism name
-  grism = strtrim(fxpar(science_header, 'GRISNAME'), 2)
-
   ; read central wavelength for longslit
-  central_wavelength = fxpar(science_header, 'WAVELEN')
+  central_wavelength = fxpar(science_header, 'WAVELEN') * 1d-4
 
   ; read central wavelength for slitmasks
-  central_wavelength_MOS = fxpar(science_header, 'MSWAVE')
+  central_wavelength_MOS = fxpar(science_header, 'MSWAVE') * 1d-4
 
-  ; read filters
-  blue_filter = strtrim(fxpar(science_header, 'BLUFILT'), 2)
-  red_filter = strtrim(fxpar(science_header, 'REDFILT'), 2)
+  ; read filter
+  filter = strtrim(fxpar(science_header, 'REDFILT'), 2)
 
   ; ; read in read-out noise
-  readnoise = 5.0 ; actually LRIS blue has 4.0
+  readnoise = 5.0
 
-  ; ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - -
 
-  ; gain: since it is different for the four amplifiers,
-  ; it needs special handling with from readmhdufits.pro
-  gain = 1.0   ; e-/adu
+  ; ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - -
 
   ; pixel scale
   pixel_scale = 0.135  ; arcsec/pixel
 
   ; linearity correction: the polynomial coefficients describing the transformation
   linearity_correction = [0.0d, 1.0d]   ; CCDs are almost exactly linear
+
+  ; gain: since it is different for the four amplifiers,
+  ; it needs special handling with readmhdufits.pro
+
+  ; set the gain keyword to one
+  gain = 1.0   ; e-/adu
+
+  ; then make gaindata structure
+  vidinp = ['VidInp1','VidInp2','VidInp3','VidInp4']
+  gain_values = [1.255, 1.180, 1.191, 1.162]
+  gaindata = replicate({GAINDATA, vidinp:'', gain:0.}, 4)
+  for i=0,3 do gaindata[i] = {GAINDATA, vidinp:vidinp[i], gain:gain_values[i]}
+
+
+  ; look up tables for dispersion elements - - - - - - - - - - - - - - - - - - -
+
+  case grating of
+    '150/7500': dispersion = 3.0d-4
+    '300/5000': dispersion = 1.59d-4
+    '400/8500': dispersion = 1.16d-4
+    '600/5000': dispersion = 0.80d-4
+    '600/7500': dispersion = 0.80d-4
+    '600/10000': dispersion = 0.80d-4
+    '831/8200': dispersion = 0.58d-4
+    '900/5500': dispersion = 0.53d-4
+    '1200/7500': dispersion = 0.40d-4
+    '1200/9000': dispersion = 0.40d-4
+    else: message, 'grating ' + grating + 'not supported.'
+  endcase
+
+  ; calculate the total observed range in micron
+  observed_range = 4096*dispersion
+
+  ; estimate initial wavelength for a slit at the center of the mask
+  lambda0 = central_wavelength_MOS - 0.5*observed_range
+
+  ; the FWHM is approximately six pixels, and assume lambda~7000A
+  resolution_slit1arcsec = 0.7 / (6.0*dispersion)
+
 
   ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - -
   default_badpixel_mask = 'none'
@@ -56,21 +99,23 @@ FUNCTION flame_initialize_lris_settings, science_header
   default_illumflat = 'none'
   default_arc = 'none'
 
+
   ; create the instrument structure - - - - - - - - - - - - - - - - - - -
   instrument = { $
     instrument_name: instrument_name, $
     detector: detector, $
     grating: grating, $
     grating_angle: grating_angle, $
-    grism: grism, $
     central_wavelength: central_wavelength, $
     central_wavelength_MOS: central_wavelength_MOS, $
-    blue_filter: blue_filter, $
-    red_filter: red_filter, $
+    filter: filter, $
     gain: gain, $
+    gaindata: gaindata, $
     readnoise: readnoise, $
     pixel_scale: pixel_scale, $
-    resolution_slit1arcsec: 2000.0, $
+    resolution_slit1arcsec: resolution_slit1arcsec, $
+    dispersion:dispersion, $
+    lambda0:lambda0, $
     linearity_correction: linearity_correction, $
     default_badpixel_mask: default_badpixel_mask, $
     default_dark: default_dark, $
@@ -79,8 +124,6 @@ FUNCTION flame_initialize_lris_settings, science_header
     default_arc: default_arc $
     }
 
-  ; ; now use the instrument structure to calculate the spectral resolution
-  ; instrument.resolution_slit1arcsec = flame_initialize_luci_resolution(instrument)
 
   return, instrument
 
@@ -92,6 +135,123 @@ END
 ;******************************************************************
 
 
+
+
+;******************************************************************
+
+FUNCTION flame_initialize_lris_blue, science_header
+;
+; initialize LRIS - BLUE SIDE
+;
+; read the LRIS settings from the FITS header of a science frame
+; and create the instrument structure
+;
+
+  ; read things from header - - - - - - - - - - - - - - - - - - -
+
+  ; read instrument name
+  instrument_name = strtrim(fxpar(science_header, 'INSTRUME'), 2)
+
+  ; check that these are LRIS BLUE data
+  if instrument_name NE 'LRISBLUE' then $
+    message, 'instrument name keyword ' + instrument_name + ': expected LRISBLUE instead'
+
+  ; read detector name - useful to discriminate between blue and red channel
+  detector = strtrim(fxpar(science_header, 'DETECTOR'), 2)
+
+  ; read grism name
+  grism = strtrim(fxpar(science_header, 'GRISNAME'), 2)
+
+  ; read filter
+  filter = strtrim(fxpar(science_header, 'BLUFILT'), 2)
+
+  ; ; read in read-out noise
+  readnoise = 4.0 ; CHECK THIS
+
+
+  ; ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - -
+
+  ; pixel scale
+  pixel_scale = 0.135  ; arcsec/pixel
+
+  ; linearity correction: the polynomial coefficients describing the transformation
+  linearity_correction = [0.0d, 1.0d]   ; CCDs are almost exactly linear
+
+  ; gain: since it is different for the four amplifiers,
+  ; it needs special handling with readmhdufits.pro
+
+  ; set the gain keyword to one
+  gain = 1.0   ; e-/adu
+
+  ; then make gaindata structure
+  vidinp = ['VidInp1','VidInp2','VidInp3','VidInp4']
+  gain_values = [1.55,	1.56,	1.63, 1.70]
+  gaindata = replicate({GAINDATA, vidinp:'', gain:0.}, 4)
+  for i=0,3 do gaindata[i] = {GAINDATA, vidinp:vidinp[i], gain:gain_values[i]}
+
+
+  ; look up tables for dispersion elements - - - - - - - - - - - - - - - - - - -
+
+  case grism of
+    '300/5000': begin
+      dispersion = 1.43d-4
+      lambda0 = 0.2210
+    end
+    '400/3400': begin
+      dispersion = 1.09d-4
+      lambda0 = 0.1760
+    end
+    '600/4000': begin
+      dispersion = 0.63d-4
+      lambda0 = 0.3300
+    end
+    '1200/3400': begin
+      dispersion = 0.24d-4
+      lambda0 = 0.3010
+    end
+    else: message, 'grism ' + grism + 'not supported.'
+  endcase
+
+  ; the FWHM is approximately six pixels, and assume lambda~4000A
+  resolution_slit1arcsec = 0.4 / (6.0*dispersion)
+
+  ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - -
+  default_badpixel_mask = 'none'
+  default_dark = 'none'
+  default_pixelflat = 'none'
+  default_illumflat = 'none'
+  default_arc = 'none'
+
+
+  ; create the instrument structure - - - - - - - - - - - - - - - - - - -
+  instrument = { $
+    instrument_name: instrument_name, $
+    detector: detector, $
+    grism: grism, $
+    filter: filter, $
+    gain: gain, $
+    gaindata: gaindata, $
+    readnoise: readnoise, $
+    pixel_scale: pixel_scale, $
+    resolution_slit1arcsec: resolution_slit1arcsec, $
+    dispersion:dispersion, $
+    lambda0:lambda0, $
+    linearity_correction: linearity_correction, $
+    default_badpixel_mask: default_badpixel_mask, $
+    default_dark: default_dark, $
+    default_pixelflat: default_pixelflat, $
+    default_illumflat: default_illumflat, $
+    default_arc: default_arc $
+    }
+
+
+  return, instrument
+
+
+END
+
+
+;******************************************************************
 
 
 FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit_y
@@ -110,10 +270,9 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
   ; trace the edges of the slits using the sky emission lines
   for i_slit=0, n_elements(slit_y)/2-1 do begin
 
-  ; NEED TO calculate these values for different settings
-  range_lambda0 = [0.4, 0.7]
-  range_pixel_scale = [5d-5, 10d-5]
-
+  ; use the approximate wavelength parameters, and add a bit of uncertainty
+  range_lambda0 = instrument.lambda0 * [0.8, 1.20]
+  range_delta_lambda = instrument.dispersion * [0.9, 1.10]
 
     this_slit = { $
       number:i_slit+1, $
@@ -126,69 +285,18 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
       width_arcsec:!values.d_NaN, $
       approx_R:instrument.resolution_slit1arcsec, $
       range_lambda0:range_lambda0, $
-      range_pixel_scale:range_pixel_scale }
+      range_delta_lambda:range_delta_lambda }
 
     slits = [slits, this_slit]
 
   endfor
-
-  ; ; calculate the height of each slit
-  ; slit_height = slits.approx_top - slits.approx_bottom
-
-  ; ; rank them, starting from the smallest one
-  ; s = sort(slit_height)
-
-  ; ; assume the Nboxes smaller slits are the alignment boxes
-  ; box_height = slit_height[s[Nboxes-1]]
-
-  ; ; remove alignment boxes
-  ; slits = slits[where(slit_height GT box_height, /null)]
-
-  ; ; now fill in the slit numbers
-  ; slits.number = indgen(n_elements(slits)) + 1
 
 return, slits
 
 END
 
 
-
 ;******************************************************************
-
-
-
-FUNCTION flame_initialize_lris_gain, instrument
-  ;
-  ; calculates tabulated gain (for each of the 4 amplifiers)
-  ; according to the settings saved in the instrument structure
-  ;
-
-  ; LRIS - RED
-  if (strsplit(instrument.detector, /extract))[0] eq 'LRIS-R' then begin
-
-    gain = [1.255, 1.180, 1.191, 1.162]
-
-  ; LRIS - BLUE
-  endif else begin
-
-    gain = [1.55,	1.56,	1.63, 1.70]
-
-  endelse
-
-  ; make a structure that will be read by readmhdufits.pro
-  vidinp = ['VidInp1','VidInp2','VidInp3','VidInp4']
-  gaindata = replicate({GAINDATA, vidinp:'', gain:0.}, 4)
-  for i=0,3 do gaindata[i] = {GAINDATA, vidinp:vidinp[i], gain:gain[i]}
-
-  return, gaindata
-
-  ; ALSO WHAT ABOUT CCDGAIN AND CCDSPEED???
-
-END
-
-
-;******************************************************************
-
 
 
 FUNCTION flame_initialize_lris, input
@@ -211,8 +319,20 @@ FUNCTION flame_initialize_lris, input
   ; read FITS header of first science frame
   science_header = headfits(fuel.util.science.raw_files[0])
 
-  ; read the instrument settings from the header
-  instrument = flame_initialize_lris_settings(science_header)
+  ; read instrument name - useful to discriminate between blue and red channel
+  instrument_name = strtrim(fxpar(science_header, 'INSTRUME'), 2)
+
+  ; initialize the instrument structure
+  case instrument_name of
+
+    'LRISBLUE': instrument = flame_initialize_lris_blue(science_header)
+
+    'LRIS': instrument = flame_initialize_lris_red(science_header)
+
+    else: message, 'instrument keyword: ' + instrument_name + $
+      ' ; cannot determine if it is LRIS RED or LRIS BLUE'
+
+  endcase
 
 
   ; ---------------------   SETTINGS   --------------------------------------
@@ -239,7 +359,7 @@ FUNCTION flame_initialize_lris, input
   ; -----------------------------------------------------------------
 
   ; the conversion also applies the gain correction to each amplifier
-  gaindata = flame_initialize_lris_gain(instrument)
+  gaindata = instrument.gaindata
 
   ; create directory where we will store the new FITS files
   lris_dir = fuel.util.intermediate_dir + 'data_LRIS/'

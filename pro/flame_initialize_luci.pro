@@ -212,7 +212,7 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
 
   ; calculate pixel scale and its possible variation
   pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
-  range_pixel_scale = pixel_scale*[0.5,1.5]
+  range_delta_lambda = pixel_scale*[0.5,1.5]
 
   ; vertical range to be considered. Default is to cut 10% of pixels on each side
   if array_equal( input.longslit_edge, [0,0]) then $
@@ -231,7 +231,7 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
       width_arcsec:!values.d_nan, $
       approx_R:instrument.resolution_slit1arcsec, $
       range_lambda0:range_lambda0, $
-      range_pixel_scale:range_pixel_scale }
+      range_delta_lambda:range_delta_lambda }
 
   return, slits
 
@@ -355,7 +355,7 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
 
     ; calculate pixel scale and its possible variation
     pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
-    range_pixel_scale = pixel_scale*[0.5,1.5]
+    range_delta_lambda = pixel_scale*[0.5,1.5]
 
     this_slit = { $
       number:slit_num[i_slit], $
@@ -368,7 +368,7 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
       width_arcsec:slit_width[i_slit], $
       approx_R:instrument.resolution_slit1arcsec / slit_width[i_slit], $
       range_lambda0:range_lambda0, $
-      range_pixel_scale:range_pixel_scale }
+      range_delta_lambda:range_delta_lambda }
 
     slits = [slits, this_slit]
 
