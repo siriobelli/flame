@@ -1,6 +1,6 @@
 
 
-FUNCTION flame_create_fuel_loadfiles_new, filelist, corr_dir=corr_dir
+FUNCTION flame_create_fuel_loadfiles, filelist, corr_dir=corr_dir
 ;
 ; Load file names from the text file "filelist"
 ; Check for the existence of all files and expand the paths
@@ -87,41 +87,41 @@ FUNCTION flame_util_create_fuel, input
   ; read science filenames
   print, ''
   print, 'Science frames'
-  science = flame_create_fuel_loadfiles_new(input.science_filelist, corr_dir=frames_dir)
+  science = flame_create_fuel_loadfiles(input.science_filelist, corr_dir=frames_dir)
   print, science.n_frames, ' files read.'
 
   ; read dark filenames
   print, ''
   print, 'Dark frames'
-  calib_dark = flame_create_fuel_loadfiles_new(input.dark_filelist, corr_dir=frames_dir)
+  calib_dark = flame_create_fuel_loadfiles(input.dark_filelist, corr_dir=frames_dir)
   print, calib_dark.n_frames, ' files read.'
   calib_dark.master_file = intermediate_dir + 'master_dark.fits'
 
   ; read arc filenames
   print, ''
   print, 'Arc frames'
-  calib_arc = flame_create_fuel_loadfiles_new(input.arc_filelist, corr_dir=frames_dir)
+  calib_arc = flame_create_fuel_loadfiles(input.arc_filelist, corr_dir=frames_dir)
   print, calib_arc.n_frames, ' files read.'
   calib_arc.master_file = intermediate_dir + 'master_arc.fits'
 
   ; read pixelflat filenames
   print, ''
   print, 'Pixel flat frames'
-  calib_pixelflat = flame_create_fuel_loadfiles_new(input.pixelflat_filelist, corr_dir=frames_dir)
+  calib_pixelflat = flame_create_fuel_loadfiles(input.pixelflat_filelist, corr_dir=frames_dir)
   print, calib_pixelflat.n_frames, ' files read.'
   calib_pixelflat.master_file = intermediate_dir + 'master_pixelflat.fits'
 
   ; read illumflat filenames
   print, ''
   print, 'Illumination flat frames'
-  calib_illumflat = flame_create_fuel_loadfiles_new(input.illumflat_filelist, corr_dir=frames_dir)
+  calib_illumflat = flame_create_fuel_loadfiles(input.illumflat_filelist, corr_dir=frames_dir)
   print, calib_illumflat.n_frames, ' files read.'
   calib_illumflat.master_file = intermediate_dir + 'master_illumflat.fits'
 
   ; read slitflat filenames
   print, ''
   print, 'Slit flat frames'
-  calib_slitflat = flame_create_fuel_loadfiles_new(input.slitflat_filelist, corr_dir=frames_dir)
+  calib_slitflat = flame_create_fuel_loadfiles(input.slitflat_filelist, corr_dir=frames_dir)
   print, calib_slitflat.n_frames, ' files read.'
   calib_slitflat.master_file = intermediate_dir + 'master_slitflat.fits'
 
