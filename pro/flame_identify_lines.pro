@@ -345,7 +345,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   central_skyspec_clean[ where(~finite(central_skyspec), /null) ] = 0.0
 
   ; take the reference spectrum from the rough wavecal
-  ref_skyspec = median(*slit.rough_skyspec, 3)
+  ref_skyspec = median(*slit.rough_skyflux, 3)
   ref_skyspec[ where(~finite(ref_skyspec), /null) ] = 0.0
 
   ; measure the overall shift since the rough wavecal may have
@@ -357,7 +357,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   print, 'shifting the central pixel row by ' + strtrim(delta, 2) + ' pixels'
 
   ; apply the shift to the rough wavecal to obtain a good starting guess
-  approx_lambda_axis = shift(*slit.rough_wavecal, delta)
+  approx_lambda_axis = shift(*slit.rough_skylambda, delta)
   if delta GT 0 then approx_lambda_axis[0:delta] = !values.d_nan
   if delta LT 0 then approx_lambda_axis[-1-abs(delta):-1] = !values.d_nan
 

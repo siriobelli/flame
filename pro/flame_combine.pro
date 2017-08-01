@@ -349,7 +349,7 @@ PRO flame_combine_multislit, fuel=fuel
 	dithering_length = abs( floor(diagnostics[w_A[0]].position) - floor(diagnostics[w_B[0]].position) )
 
 	; number of pixels along the spatial position
-	Nx = n_elements(*fuel.slits[0].rough_wavecal)
+	Nx = n_elements(*fuel.slits[0].rough_skylambda)
 
 	; calculate the vertical coordinate of the geometric center of each slit
 	slit_center = fltarr(n_elements(fuel.slits))

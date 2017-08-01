@@ -423,7 +423,7 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skyspec=rough_skyspec
+FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skyflux=rough_skyflux
 	;
 	; Three steps:
 	; First, use a coarse, logarithmic grid with constant pixel scale (uniform wavelength solution)
@@ -517,7 +517,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skys
   cgPS_close
 
 	; output the observed sky spectrum used for the wavecal
-	rough_skyspec = sky
+	rough_skyflux = sky
 
 	; return the approximate wavelength axis
 	return, wavecal_solution
@@ -531,7 +531,7 @@ END
 
 
 
-FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, rough_skyspec=rough_skyspec
+FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, rough_arcflux=rough_arcflux
 	;
 	; Same as above, but use arcs instead of skylines
 	;
@@ -625,7 +625,7 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 	cgPS_close
 
 	; output the observed sky spectrum used for the wavecal
-	rough_skyspec = arc_spectrum
+	rough_arcflux = arc_spectrum
 
 	; return the approximate wavelength axis
 	return, wavecal_solution
@@ -675,13 +675,13 @@ PRO flame_wavecal_rough, fuel
 			endif
 		endif
 
-		rough_wavecal = flame_wavecal_rough_oneslit_witharcs( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyspec=rough_skyspec)
-    *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
-		*(fuel.slits[i_slit].rough_skyspec) = rough_skyspec
+		rough_arclambda = flame_wavecal_rough_oneslit_witharcs( fuel=fuel, this_slit=fuel.slits[i_slit], rough_arcflux=rough_arcflux)
+    *(fuel.slits[i_slit].rough_arclambda) = rough_arclambda
+		*(fuel.slits[i_slit].rough_arcflux) = rough_arcflux
 
-		rough_wavecal = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyspec=rough_skyspec)
-    *(fuel.slits[i_slit].rough_wavecal) = rough_wavecal
-		*(fuel.slits[i_slit].rough_skyspec) = rough_skyspec
+		rough_skylambda = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyflux=rough_skyflux)
+    *(fuel.slits[i_slit].rough_skylambda) = rough_skylambda
+		*(fuel.slits[i_slit].rough_skyflux) = rough_skyflux
 
 
   endfor
