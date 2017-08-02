@@ -663,7 +663,8 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 
 
   ; load the model spectrum of the arc lamp
-	;---------------------
+	; ------------------------------------------
+
 	; all lambdas in angstrom, in air
 	dir = '/data/flame/LRIS/line_lists/'
 
@@ -689,14 +690,15 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 
 	; select a reasonable range
   wide_range = [ this_slit.range_lambda0[0], this_slit.range_lambda0[1] + this_slit.range_delta_lambda[1] * N_spectral_pix]
+	all_lines = all_lines[ where(all_lines GT wide_range[0] and all_lines LT wide_range[1], /null) ]
+
+	; write out the linelist
+  forprint, all_lines, replicate(1, n_elements(all_lines)), $
+	 	textout=fuel.util.intermediate_dir + 'linelist_arcs.txt', comment='#  arc_lines  trust'
 
 	; make a simple theoretical spectrum from the line list (assuming all lines have equal intensity)
 	model_lambda = wide_range[0] + (wide_range[1]-wide_range[0]) * dindgen(N_spectral_pix)/double(N_spectral_pix)
 	model_flux = model_lambda*0.0
-
-	; model_sigma = 2.0*mean(this_slit.range_delta_lambda)	; assume a sigma of two pixels
-	; for i=0, n_elements(all_lines)-1 do model_flux += exp(-0.5*(model_lambda-all_lines[i])^2/model_sigma^2)
-
 	for i=0, n_elements(all_lines)-1 do model_flux[ (where(model_lambda GE all_lines[i]))[0] ] = 1
 	model_flux[-1] = 0.0	; for when where() returned -1
 
@@ -787,10 +789,17 @@ PRO flame_wavecal_rough, fuel
 			endif
 		endif
 
-		rough_arclambda = flame_wavecal_rough_oneslit_witharcs( fuel=fuel, this_slit=fuel.slits[i_slit], rough_arcflux=rough_arcflux)
-    *(fuel.slits[i_slit].rough_arclambda) = rough_arclambda
-		*(fuel.slits[i_slit].rough_arcflux) = rough_arcflux
+		; deal with arcs
+		if fuel.util.arc.n_frames GT 0 then begin
 
+			; find rough calibration using integrated arc spectrum
+			rough_arclambda = flame_wavecal_rough_oneslit_witharcs( fuel=fuel, this_slit=fuel.slits[i_slit], rough_arcflux=rough_arcflux)
+    	*(fuel.slits[i_slit].rough_arclambda) = rough_arclambda
+			*(fuel.slits[i_slit].rough_arcflux) = rough_arcflux
+
+		endif
+
+		; find rough calibration using integrated sky spectrum
 		rough_skylambda = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyflux=rough_skyflux)
     *(fuel.slits[i_slit].rough_skylambda) = rough_skylambda
 		*(fuel.slits[i_slit].rough_skyflux) = rough_skyflux

@@ -228,7 +228,7 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 
 	; panel 1: plot the spectrum
 	erase
-	cgplot, x, y, charsize=ch, xsty=1, xtit='', ytit='sky flux', title=plot_title, $
+	cgplot, x, y, charsize=ch, xsty=1, xtit='', ytit='observed flux', title=plot_title, $
 		position = [0.15, 0.70, 0.95, 0.96], xtickformat="(A1)", xra=[x[0], x[-1]], /nodata
 
 	; show the OH lines that were identified
@@ -251,7 +251,7 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 
 	; panel 3: show the residuals
 	cgplot, speclines_trust.x, 1d4 * (speclines_trust.lambda-poly(speclines_trust.x, wavesol_coeff)), /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
-		ytit='residuals (angstrom)', charsize=ch, $
+		ytit='residuals (' + string("305B) + ')', charsize=ch, $
 		/noerase, position = [0.15, 0.30, 0.95, 0.50], xtickformat="(A1)"
 
   if n_elements(speclines_donttrust) GT 0 then $
@@ -285,7 +285,7 @@ END
 
 
 PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
-	 slit=slit, $
+	 slit=slit, rough_lambda=rough_lambda, rough_flux=rough_flux, linelist_filename=linelist_filename, $
 	 speclines=speclines, wavelength_solution=wavelength_solution
 
 	print, ' '
@@ -345,7 +345,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   central_skyspec_clean[ where(~finite(central_skyspec), /null) ] = 0.0
 
   ; take the reference spectrum from the rough wavecal
-  ref_skyspec = median(*slit.rough_skyflux, 3)
+  ref_skyspec = median(rough_flux, 3)
   ref_skyspec[ where(~finite(ref_skyspec), /null) ] = 0.0
 
   ; measure the overall shift since the rough wavecal may have
@@ -357,7 +357,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   print, 'shifting the central pixel row by ' + strtrim(delta, 2) + ' pixels'
 
   ; apply the shift to the rough wavecal to obtain a good starting guess
-  approx_lambda_axis = shift(*slit.rough_skylambda, delta)
+  approx_lambda_axis = shift(rough_lambda, delta)
   if delta GT 0 then approx_lambda_axis[0:delta] = !values.d_nan
   if delta LT 0 then approx_lambda_axis[-1-abs(delta):-1] = !values.d_nan
 
@@ -366,7 +366,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 	;--------------------------------------------------------------------------------------------------------------
 
   ; load line list
-	readcol, fuel.settings.linelist_filename, line_list, line_trust, format='D,I', /silent
+	readcol, linelist_filename, line_list, line_trust, format='D,I', /silent
 
   ; calcolate typical wavelength step of one pixel
   lambda_step = median( approx_lambda_axis - shift(approx_lambda_axis, 1) )
@@ -581,18 +581,34 @@ PRO flame_identify_lines, fuel
   		endif
     endif
 
-		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
+		; this slit
+		this_slit = fuel.slits[i_slit]
+
+
+    ; arcs ---------------------------------------------------------------------
+
+    dirname = file_dirname( (this_slit.cutouts.filename_step1)[0], /mark_directory )
+	  arc_filename = dirname + 'arc_slit' + string(this_slit.number,format='(I02)') + '.fits'
+
+		; identify and measure the speclines
+		flame_identify_find_speclines, fuel=fuel, filename=arc_filename, slit=this_slit, $
+    rough_lambda=*this_slit.rough_arclambda, rough_flux=*this_slit.rough_arcflux, $
+    linelist_filename=fuel.util.intermediate_dir + 'linelist_arcs.txt', $
+			speclines=speclines, wavelength_solution=wavelength_solution
+
+
+    ; skylines -----------------------------------------------------------------
+
+		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
 				; filename of the cutout
 				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename_step1
 
-				; this slit
-				this_slit = fuel.slits[i_slit]
-
 				; identify and measure the speclines
-				flame_identify_find_speclines, fuel=fuel, filename=slit_filename, $
-					slit=this_slit, $
+				flame_identify_find_speclines, fuel=fuel, filename=slit_filename, slit=this_slit, $
+        rough_lambda=*this_slit.rough_skylambda, rough_flux=*this_slit.rough_skyflux, $
+        linelist_filename=fuel.settings.linelist_filename, $
 					speclines=speclines, wavelength_solution=wavelength_solution
 
 				; save the speclines in the slit structure
