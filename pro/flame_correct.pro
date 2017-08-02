@@ -344,13 +344,13 @@ END
 ;*******************************************************************************
 
 PRO flame_correct_oneframe, fuel, filename_raw, filename_corr, $
-    master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
+    master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=lacosmic
 
   ; read in raw frame
   frame = readfits(filename_raw, header)
 
   ; CORRECTION 0: cosmic rays
-  if fuel.settings.clean_individual_frames then begin
+  if keyword_set(lacosmic) then begin
 
     ; identify cosmic rays using L.A. Cosmic
     la_cosmic, filename_raw, gain=fuel.instrument.gain, readn=fuel.instrument.readnoise, niter=5, $
@@ -462,12 +462,6 @@ PRO flame_correct, fuel
     corr_filenames = [corr_filenames, fuel.util.dark.corr_files]
   endif
 
-  ; arc frames
-  if fuel.util.arc.n_frames gt 0 then begin
-    raw_filenames = [raw_filenames, fuel.util.arc.raw_files]
-    corr_filenames = [corr_filenames, fuel.util.arc.corr_files]
-  endif
-
   ; pixelflat frames
   if fuel.util.pixelflat.n_frames gt 0 then begin
     raw_filenames = [raw_filenames, fuel.util.pixelflat.raw_files]
@@ -501,6 +495,9 @@ PRO flame_correct, fuel
     print, '----------------------------------------------------'
   endif
 
+
+  ; correct all frames ----------------------------------------------
+
   print, ''
   for i_frame=0, n_elements(raw_filenames)-1 do begin
 
@@ -515,9 +512,30 @@ PRO flame_correct, fuel
 
     ; apply corrections and create "corrected" file
     flame_correct_oneframe, fuel, raw_filenames[i_frame], corr_filenames[i_frame], $
-      master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask
+      master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=fuel.settings.clean_individual_frames
 
   endfor
+
+
+  ; correct arc frames ----------------------------------------------
+
+    ; arc frames: apply correction but do not look for cosmic rays because arcs are very sharp
+    if fuel.util.arc.n_frames GT 0 then $
+      for i_frame=0, fuel.util.arc.n_frames-1 do begin
+
+        print, ''
+        print, 'Correcting frame ', fuel.util.arc.raw_files[i_frame]
+
+        ; check if the corrected frame already exist
+        if file_test(fuel.util.arc.corr_files[i_frame]) then begin
+          print, 'file already exists; skipping frame correction'
+          continue
+        endif
+
+        flame_correct_oneframe, fuel, fuel.util.arc.raw_files[i_frame], fuel.util.arc.corr_files[i_frame], $
+          master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=0
+
+      endfor
 
 
   ; create the master slit flat ----------------------------------------------
