@@ -261,11 +261,18 @@ END
 ;*******************************************************************************
 
 FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
-		 model_lambda=model_lambda, model_flux=model_flux, wavecal_coefficients=wavecal_coefficients
+		 model_lambda=model_lambda, model_flux=model_flux, wavecal_coefficients=wavecal_coefficients, $
+		 wavecal_rough_R=wavecal_rough_R
 
 	range_delta_lambda = this_slit.range_delta_lambda
   range_start_lambda = this_slit.range_lambda0
-	rough_wavecal_R = fuel.settings.wavecal_rough_R
+
+	if keyword_set(wavecal_rough_R) then begin
+		R_smooth_1 = wavecal_rough_R[0]
+		R_smooth_2 = wavecal_rough_R[1]
+		R_smooth_3 = wavecal_rough_R[2]
+	endif
+
 
 	  ; first step: smoothed spectrum, find zero-point and pixel scale
 		;---------------------
@@ -282,7 +289,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
-	   R_smooth = rough_wavecal_R[0], plot_title='step 1: find pixel scale and zero-point', $
+	   R_smooth = R_smooth_1, plot_title='step 1: find pixel scale and zero-point', $
 		 wavecal_coefficients=wavecal_coefficients
 
 
@@ -322,7 +329,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 
 	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = rough_wavecal_R[1], plot_title='step 2: use second-order polynomial', $
+	   R_smooth = R_smooth_2, plot_title='step 2: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
 
 
@@ -349,7 +356,7 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 
 		  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 			 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-		   R_smooth = rough_wavecal_R[2], plot_title='step 3: use second-order polynomial', $
+		   R_smooth = R_smooth_3, plot_title='step 3: use second-order polynomial', $
 			 wavecal_coefficients=wavecal_coefficients
 
 
@@ -394,13 +401,13 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		; cross-correlate the first half
 	  flame_wavecal_crosscorr, observed_sky=sky_1, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
-	   R_smooth = rough_wavecal_R[2], plot_title='step 3: first half', $
+	   R_smooth = R_smooth_3, plot_title='step 3: first half', $
 		 wavecal_coefficients=wavecal_coefficients_1
 
 		 ; cross-correlate the second half
  	  flame_wavecal_crosscorr, observed_sky=sky_2, model_lambda=model_lambda, model_flux=model_flux, $
  		 lambda0_range=lambda0_range_2, pix_scale_grid=pix_scale_grid_2, a2_grid=a2_grid, $
- 	   R_smooth = rough_wavecal_R[2], plot_title='step 3: second half', $
+ 	   R_smooth = R_smooth_3, plot_title='step 3: second half', $
  		 wavecal_coefficients=wavecal_coefficients_2
 
 		 ; calculate the two wavelength solutions for the two chunks
@@ -511,7 +518,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skyf
 
 	; find the wavelength solution
 	wavecal_solution = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=sky, $
-		model_lambda=model_lambda, model_flux=model_flux)
+		model_lambda=model_lambda, model_flux=model_flux, wavecal_rough_R = fuel.settings.wavecal_rough_R)
 
 
   cgPS_close
@@ -528,7 +535,33 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 ;*******************************************************************************
+;
+; FUNCTION match_arc_lines, wavecal_coefficients, arc_lines=arc_lines, model_lines=model_lines
+; ;
+; ; mpfit will minimize this output and find the best-fit coefficients
+; ;
+;
+; 	arc_lambda = poly(arc_lines, wavecal_coefficients)
+;
+; 	arc_lambda_residual = arc_lambda*0.0
+; 	for i=0, n_elements(arc_lambda)-1 do begin
+;
+; 		; for each arc line, find the closest model line
+; 		!NULL = min( abs(arc_lambda[i] - model_lines), w_match, /nan )
+;
+; 		arc_lambda_residual[i] = arc_lambda[i] - model_lines[w_match]
+;
+; 	endfor
+;
+; 	; for those lines that are not very close, max out at a fixed value
+; 	arc_lambda_residual[where(arc_lambda_residual GT 0.1, /null)] = 0.1
+;
+; 	return, arc_lambda_residual
+;
+; END
 
+
+;*******************************************************************************
 
 
 FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, rough_arcflux=rough_arcflux
@@ -536,7 +569,7 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 	; Same as above, but use arcs instead of skylines
 	;
 
-	; load the slit image
+	; load the arc spectrum
 	;---------------------
 
   ; filename for cutout of arc spectrum
@@ -553,31 +586,80 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 
 	; extract the spectrum
 	arc_spectrum = median(im[*,N_spatial_pix/2-2:N_spatial_pix/2+2], dimension=2)
+	arc_xcoord = dindgen(N_spectral_pix)
 
 	; smooth spectrum
 	arc_spectrum = gauss_smooth(arc_spectrum, 3, /nan)
 
-	;
-	; ; filter the sky spectrum: find the running minimum pixel value
-	; ;--------------------------------------------------------------
-	; if fuel.settings.wavecal_rough_smooth_window GT 0 then begin
-	;
-	; 	; make a 2D matrix where at each value of x-pixel you have a column with all the neighhboring pixel values
-	; 	matrix = []
-	; 	for i_shift = -fuel.settings.wavecal_rough_smooth_window/2, fuel.settings.wavecal_rough_smooth_window/2 do $
-	; 	 	matrix = [ [matrix], [shift(sky, i_shift)]]
-	;
-	; 	; for each x-pixel take the minimum of all the neighboring pixel values
-	; 	sky_minfilter = min(matrix, /nan, dimension=2)
-	;
-	; 	; subtract the continuum
-	; 	sky -= sky_minfilter
-	;
-	; 	; crop the edges
-	; 	sky[0:fuel.settings.wavecal_rough_smooth_window/2] = 0
-	; 	sky[-fuel.settings.wavecal_rough_smooth_window/2-1:*] = 0
-	;
-	; endif
+	; define a flux threshold for bright lines: standard deviation of the spectrum without the extreme points
+	sorted_values = arc_spectrum[sort(arc_spectrum)]
+	threshold = 0.5*stddev(sorted_values[N_spectral_pix/10 : -N_spectral_pix/10], /nan)
+
+	; automatically identify peaks
+	w_peaks = where( arc_spectrum GT shift(arc_spectrum, 1) and arc_spectrum GT shift(arc_spectrum, 2) and $
+		arc_spectrum GT shift(arc_spectrum, 3) and arc_spectrum GT shift(arc_spectrum, -1) and $
+		arc_spectrum GT shift(arc_spectrum, -2) and arc_spectrum GT shift(arc_spectrum, -3) and $
+		arc_spectrum - 0.5*(shift(arc_spectrum, 3)+shift(arc_spectrum, -3)) GT threshold, /null )
+
+	print, n_elements(w_peaks), ' bright lines identified in the arc spectrum'
+
+	; make array that will contain the x coordinate of each arc line
+	arc_lines = []
+
+	; fit a Gaussian to each line
+	for i_line=0,n_elements(w_peaks)-1 do begin
+
+		; select the region to fit - +/- 10 pixels
+		w_fit = where( abs(arc_xcoord-w_peaks[i_line]) LE 10, /null )
+
+		; check that the region is within the observed range
+		if w_fit eq !NULL then continue
+
+    ; check that there actually is signal and it's not just a bunch of NaNs
+    if n_elements( where( finite(arc_spectrum[w_fit]), /null ) ) LE 5 then continue
+
+		; error handling for the gaussian fitting
+		catch, error_gaussfit
+		if error_gaussfit ne 0 then begin
+			print, 'GAUSSFIT ERROR STATUS: ' + strtrim(error_gaussfit,2)
+			catch, /cancel
+			continue
+		endif
+
+		; estimate parameters of the Gaussian
+		est_peak = arc_spectrum[w_peaks[i_line]]
+		est_center = w_peaks[i_line]
+		est_sigma = 2.0
+		est_cont = min( median( arc_spectrum[w_fit], 3) , /nan)
+
+		; Gaussian fit
+		!NULL = gaussfit( arc_xcoord[w_fit], arc_spectrum[w_fit], gauss_param, nterms=4, $
+			estimates=[est_peak, est_center, est_sigma, est_cont], sigma=gauss_err, chisq=chisq )
+
+		; check that chi square makes sense
+		if ~finite(chisq) then continue
+
+		; check that the peak of the Gaussian is positive
+		if gauss_param[0] LT 0.0 then continue
+
+		; check that the SNR is high
+		if gauss_param[0] LT 5.0*gauss_err[0] then continue
+
+		; check that the center of the Guassian is in the observed range
+		if gauss_param[1] LT min(arc_xcoord[w_fit]) or gauss_param[1] GT max(arc_xcoord[w_fit]) then continue
+
+		; check that the Gaussian width makes sense
+		if gauss_param[2] LT 0.3 or gauss_param[2] GT 20.0 then continue
+
+		; add to the stack
+		arc_lines = [arc_lines, gauss_param[1]]
+
+	endfor
+
+	; make a simple spectrum from the identified line list, assuming all lines have equal intensity
+	arc_simplespectrum = arc_xcoord*0.0
+	simple_sigma = 2.0	; assume a sigma of two pixels
+	for i=0, n_elements(arc_lines)-1 do arc_simplespectrum += exp(-0.5*(arc_xcoord-arc_lines[i])^2/simple_sigma^2)
 
 
   ; load the model spectrum of the arc lamp
@@ -611,18 +693,48 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 	; make a simple theoretical spectrum from the line list (assuming all lines have equal intensity)
 	model_lambda = wide_range[0] + (wide_range[1]-wide_range[0]) * dindgen(N_spectral_pix)/double(N_spectral_pix)
 	model_flux = model_lambda*0.0
-	model_sigma = 2.0*mean(this_slit.range_delta_lambda)	; assume a sigma of two pixels
-	for i=0, n_elements(all_lines)-1 do model_flux += exp(-0.5*(model_lambda-all_lines[i])^2/model_sigma^2)
+
+	; model_sigma = 2.0*mean(this_slit.range_delta_lambda)	; assume a sigma of two pixels
+	; for i=0, n_elements(all_lines)-1 do model_flux += exp(-0.5*(model_lambda-all_lines[i])^2/model_sigma^2)
+
+	for i=0, n_elements(all_lines)-1 do model_flux[ (where(model_lambda GE all_lines[i]))[0] ] = 1
+	model_flux[-1] = 0.0	; for when where() returned -1
 
 	; start PS file
   ps_filename = dirname + 'rough_wavelength_calibration_arc.ps'
 	cgPS_open, ps_filename, /nomatch
 
 	; find the wavelength solution
-	wavecal_solution = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=arc_spectrum, $
+	wavecal_solution = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=arc_simplespectrum, $
 		model_lambda=model_lambda, model_flux=model_flux)
 
 	cgPS_close
+
+ ;
+ ; ; --------------------------------------------------------------------------------------------
+ ; ; here we try to use a different method: match the lines without building a fake spectrum
+ ;
+ ; ; keep only those lines within a reasonable wavelength range
+ ; model_lines = all_lines[ where(all_lines GT wide_range[0] and all_lines LT wide_range[1], /null) ]
+ ;
+ ; ; match arc_lines to model_lines
+ ;
+ ; args = {arc_lines:arc_lines, model_lines:model_lines }
+ ;
+ ; starting_coefficients = [ mean(this_slit.range_lambda0, /nan), $
+ ; 	mean(this_slit.range_delta_lambda, /nan), 0.0 ]
+ ;
+ ; ; set constraints on the coefficients
+ ; parinfo = replicate({limits:[0.D,0]}, 3)
+ ; parinfo[0].limits = this_slit.range_lambda0
+ ; parinfo[1].limits = this_slit.range_delta_lambda
+ ;
+ ; ; fit the data and find the coefficients for the lambda calibration
+ ; wavecal_coeff = mpfit('match_arc_lines', starting_coefficients, functargs=args, $
+ ; 	parinfo=parinfo, bestnorm=bestnorm, best_resid=best_resid, /quiet, status=status)
+ ;
+ ; ; --------------------------------------------------------------------------------------------
+
 
 	; output the observed sky spectrum used for the wavecal
 	rough_arcflux = arc_spectrum
