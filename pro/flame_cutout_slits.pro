@@ -100,7 +100,7 @@ PRO flame_cutout_slits, fuel
 
     ; create directory
     slitdir = fuel.util.intermediate_dir + $
-      '/slit' + string(slits[i_slit].number,format='(I02)') + '/'
+      'slit' + string(slits[i_slit].number,format='(I02)') + '/'
     file_delete, slitdir, /allow_nonexistent, /recursive
     file_mkdir, slitdir
 
@@ -128,6 +128,7 @@ PRO flame_cutout_slits, fuel
 
       output_filename = slitdir + 'arc_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'
       flame_cutout_slits_extract, fuel, slits[i_slit], fuel.util.arc.master_file, output_filename
+      fuel.slits[i_slit].arc_cutout.filename_step1 = output_filename
 
     endif
 

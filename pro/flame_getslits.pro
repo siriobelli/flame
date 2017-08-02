@@ -459,6 +459,11 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
     cutouts.rectification = ptrarr(fuel.util.science.n_frames, /allocate_heap)
     cutouts.speclines = ptrarr(fuel.util.science.n_frames, /allocate_heap)
 
+    ; again for the arc cutout
+    arc_cutout = cutout
+    arc_cutout.rectification = ptr_new(/allocate_heap)
+    arc_cutout.speclines = ptr_new(/allocate_heap)
+
     ; add new fields to slit structure
     new_slit = create_struct( $
       'yshift', yshift, $
@@ -467,10 +472,11 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
       'height', slit_height, $
       'bottom_poly', poly_coeff, $
       'rough_arclambda', ptr_new(/allocate_heap), $
-      'rough_arcflux', ptr_new(/allocate_heap), $      
+      'rough_arcflux', ptr_new(/allocate_heap), $
       'rough_skylambda', ptr_new(/allocate_heap), $
       'rough_skyflux', ptr_new(/allocate_heap), $
       'cutouts', cutouts, $
+      'arc_cutout', arc_cutout, $
       'outlambda_min', 0d, $
       'outlambda_delta', 0d, $
       'outlambda_Npix', 0L, $

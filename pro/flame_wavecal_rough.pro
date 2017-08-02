@@ -573,8 +573,7 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 	;---------------------
 
   ; filename for cutout of arc spectrum
-  dirname = file_dirname( (this_slit.cutouts.filename_step1)[0], /mark_directory )
-	arc_filename = dirname + 'arc_slit' + string(this_slit.number,format='(I02)') + '.fits'
+	arc_filename = this_slit.arc_cutout.filename_step1
   print, 'Using the central pixel rows of ', arc_filename
 
 	; read in arc spectrum
@@ -703,7 +702,7 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 	model_flux[-1] = 0.0	; for when where() returned -1
 
 	; start PS file
-  ps_filename = dirname + 'rough_wavelength_calibration_arc.ps'
+  ps_filename = file_dirname( arc_filename, /mark_directory ) + 'rough_wavelength_calibration_arc.ps'
 	cgPS_open, ps_filename, /nomatch
 
 	; find the wavelength solution
