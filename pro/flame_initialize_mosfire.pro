@@ -25,10 +25,9 @@ FUNCTION flame_initialize_mosfire_settings, science_header
 
 
   ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - -
-  ; (these are all stored in the flame data directory, fuel.util.flame_data_dir)
-  default_badpixel_mask = 'default_badpixel_' + instrument_name + '.fits'
+  default_badpixel_mask = 'none'
   default_dark = 'none'
-  default_pixelflat = 'default_pixelflat_' + instrument_name + '_allbands.fits'
+  default_pixelflat = 'none'
   default_illumflat = 'none'
   default_arc = 'none'
 
