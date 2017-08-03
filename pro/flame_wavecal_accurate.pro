@@ -208,6 +208,201 @@ END
 ;*******************************************************************************
 
 
+
+PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, $
+		diagnostics=diagnostics, this_diagnostics=this_diagnostics
+;
+; Use the rectification obtained from the arcs, calculate and apply the horizontal and
+; vertical shift, and copy to science frame
+;
+
+	; rectify and extract the sky spectrum
+	; --------------------------------------------------
+
+	; read in slit
+	im = mrdfits(cutout.filename_step1, 0, hdr, /silent)
+
+	; read dimensions of the observed frame
+	N_imx = (size(im))[1]
+	N_imy = (size(im))[2]
+
+	; create 2D arrays containing the observed coordinates of each pixel
+	x_2d = indgen(N_imx) # replicate(1, N_imy)
+	y_2d = replicate(1, N_imx) # indgen(N_imy)
+
+	; create 2D arrays containing the rectified coordinates of each pixel
+	flame_util_transform_direct, *slit.arc_cutout.rectification, x=x_2d, y=y_2d, lambda=lambda_2d, gamma=gamma_2d
+
+	; get the parameters for the output grid
+	lambda_0 = slit.outlambda_min
+	delta_lambda = slit.outlambda_delta
+	Nx = slit.outlambda_Npix
+	Ny = N_imy
+
+	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
+	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
+
+	; resample image onto new grid using griddata
+	triangulate, lambdax_2d, gamma_2d, triangles
+	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
+
+	; now stack the rectified image into a 1D spectrum
+	spec1d = median(new_im, dimension=2)
+
+	; make the 1D lambda axis
+	lambda1d = lambda_0 + delta_lambda * dindgen(Nx)
+
+
+	; fit sky lines
+	; --------------------------------------------------
+
+  ; load line list
+	readcol, fuel.settings.linelist_filename, line_list, line_trust, format='D,I', /silent
+
+	; use only the lines in the right range and with a wavelength that we can trust
+	line_list = line_list[where( line_list GT lambda1d[0] and line_list LT lambda1d[-1] and line_trust gt 0, /null)]
+
+	; estimate the FWHM of sky lines
+	fwhm_lambda = median(lambda1d) / slit.approx_R
+
+	; empty arrays that will have the results
+	line_th = []
+	line_meas = []
+	line_width = []
+
+	; fit each of the sky lines
+	for i_line=0, n_elements(line_list)-1 do begin
+
+		; select the region to fit - +/- 3 FWHM
+		w_fit = where( abs(lambda1d-line_list[i_line]) LT 3.0*fwhm_lambda, /null )
+
+		; check that the region is within the observed range
+		if w_fit eq !NULL then continue
+
+    ; check that there actually is signal and it's not just a bunch of NaNs
+    if n_elements( where( finite(spec1d[w_fit]), /null ) ) LE 5 then continue
+		;
+		; ; error handling for the gaussian fitting
+		; catch, error_gaussfit
+		; if error_gaussfit ne 0 then begin
+		; 	print, 'GAUSSFIT ERROR STATUS: ' + strtrim(error_gaussfit,2)
+		; 	catch, /cancel
+		; 	continue
+		; endif
+
+		; estimate parameters of the Gaussian
+		est_peak = max( median( spec1d[w_fit], 3) , /nan)
+		est_center = line_list[i_line]
+		est_sigma = fwhm_lambda/2.36
+		est_cont = min( median( spec1d[w_fit], 3) , /nan)
+
+		; Gaussian fit
+		!NULL = gaussfit( lambda1d[w_fit], spec1d[w_fit], gauss_param, nterms=4, $
+			estimates=[est_peak, est_center, est_sigma, est_cont], sigma=gauss_err, chisq=chisq )
+
+		; check that chi square makes sense
+		if ~finite(chisq) then continue
+
+		; check that the peak of the Gaussian is positive
+		if gauss_param[0] LT 0.0 then continue
+
+		; check that the SNR is high
+		if gauss_param[0] LT 5.0*gauss_err[0] then continue
+
+		; check that the center of the Guassian is in the observed range
+		if gauss_param[1] LT min(lambda1d[w_fit]) or gauss_param[1] GT max(lambda1d[w_fit]) then continue
+
+		; check that the Gaussian width makes sense
+		if gauss_param[2] LT fwhm_lambda/10.0 or gauss_param[2] GT fwhm_lambda*10.0 then continue
+
+		; save the result of the fit
+		line_th = [line_th, line_list[i_line]]
+		line_meas = [line_meas, gauss_param[1]]
+		line_width = [line_width, gauss_param[2]]
+
+	endfor
+
+
+	; make plots
+	; --------------------------------------------------
+
+	; charsize
+	ch = 0.8
+
+	; panel 1: plot the spectrum
+	erase
+	cgplot, lambda1d, spec1d, charsize=ch, xsty=1, xtit='', ytit='observed flux', title='measuring shift between sky lines and arcs wavelength solution', $
+		position = [0.15, 0.65, 0.95, 0.96], xtickformat="(A1)", xra=[lambda1d[0], lambda1d[-1]], /nodata
+
+	; show the OH lines that were identified
+	for i_line=0, n_elements(line_meas)-1 do cgplot, line_meas[i_line] + [0,0], [-2,2]*max(abs(spec1d)), /overplot, color='red'
+
+	; show the spectrum on top, for clarity
+	cgplot, lambda1d, spec1d, /overplot
+
+
+	; panel 2: show the residuals
+	cgplot, line_meas, 1d4 * (line_meas-line_th), /ynozero, xra=[lambda1d[0], lambda1d[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+		ytit='residuals (' + string("305B) + ')', charsize=ch, $
+		/noerase, position = [0.15, 0.35, 0.95, 0.65], xtickformat="(A1)"
+
+  cgplot, [lambda1d[0], lambda1d[-1]], [0,0], /overplot, thick=2
+
+	; show median value of residuals
+	cgplot, [lambda1d[0], lambda1d[-1]], [0,0]+median(line_meas-line_th)*1d4, /overplot, thick=3, linestyle=2
+
+
+	; panel 3: plot the line widths
+	cgplot, line_meas, line_width*1d4, /ynozero, xra=[lambda1d[0], lambda1d[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+		xtit='wavelength (micron)', ytit='line width (' + string("305B) + ')', charsize=ch, $
+		/noerase, position = [0.15, 0.10, 0.95, 0.35]
+
+	; show median value of line width
+	cgplot, [lambda1d[0], lambda1d[-1]], [0,0]+median(line_width)*1d4, /overplot, thick=3, linestyle=2
+
+
+	; apply shift to rectification
+	; --------------------------------------------------
+
+	; take the median shift
+	lambda_shift = median(line_meas-line_th)
+	print, 'The median shift between this frame and the arcs frame is ', lambda_shift*1d4, ' angstrom'
+
+	; start with the rectification form the arcs
+	rectification = *slit.arc_cutout.rectification
+
+	; apply a constant wavelength shift
+	rectification.Klambda[0,0] = rectification.Klambda[0,0] - lambda_shift/delta_lambda
+
+	; save into slit structure - copy also the lambda_min and lambda_step parameters
+	*cutout.rectification = rectification
+
+	; finally, output the actual wavelength calibration as a 2D array
+
+	; create empty frame that will contain the wavelength solution
+	wavelength_solution = im * 0.0
+
+	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
+	for ix=0, N_imx-1 do $
+		for iy=0, N_imy-1 do begin
+			flame_util_transform_direct, *cutout.rectification, x=ix, y=iy, lambda=lambda, gamma=gamma
+			wavelength_solution[ix, iy] = lambda
+		endfor
+
+	; write the accurate solution to a FITS file
+	writefits, flame_util_replace_string(cutout.filename_step1, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
+
+
+END
+
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+
 PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	;
 	; use the speclines to derive and apply an illumination correction
@@ -215,8 +410,13 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	;
 
 	cutout = fuel.slits[i_slit].cutouts[i_frame]
-
 	speclines = *cutout.speclines
+
+	; if the illumination correction has already been applied, then skip
+	if cutout.illcorr_applied gt 0 then begin
+		print, cutout.filename_step1, ': illumination correction already applied. Skipping.'
+		return
+	endif
 
 	; read in slit
 	im = mrdfits(cutout.filename_step1, 0, hdr, /silent)
@@ -277,10 +477,7 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], 1.25+[0,0], /overplot, linestyle=2, thick=1
 
 	; if we do not have to apply the illumination correction, then we are done
-	if ~fuel.settings.illumination_correction then begin
-		fuel.slits[i_slit].cutouts[i_frame].filename_step2 = fuel.slits[i_slit].cutouts[i_frame].filename_step1
-		return
-	endif
+	if ~fuel.settings.illumination_correction then return
 
 	; calculate the gamma coordinate for each observed pixel, row by row
 	gamma_coordinate = im * 0.0
@@ -312,8 +509,11 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
   writefits, illcorr_filename, im, hdr
 	writefits, illcorr_filename, im_sigma, /append
 
-	; save the filename of the illumination-corrected frame in the cutout structure as the step2 frame
-	fuel.slits[i_slit].cutouts[i_frame].filename_step2 = illcorr_filename
+	; update the filename of the illumination-corrected frame in the cutout structure
+	fuel.slits[i_slit].cutouts[i_frame].filename_step1 = illcorr_filename
+
+	; update the flag
+	fuel.slits[i_slit].cutouts[i_frame].illcorr_applied = 1
 
 
 END
@@ -375,6 +575,7 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 
 	; -------------------------------------------------------
 	; plot the individual detections on a 2D view of the slit
+	erase
 	cgplot, speclines.x, speclines.y, psym=16, xtit='x pixel', ytitle='y pixel on this slit', $
 	title='OH line detections', charsize=1, layout=[1,2,1], symsize=0.5
 
@@ -461,9 +662,12 @@ PRO flame_wavecal_accurate, fuel
 	; loop through all slits
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 
-		if fuel.slits[i_slit].skip then continue
+		; this slit
+		this_slit = fuel.slits[i_slit]
 
-	  print, 'Accurate wavelength calibration for slit ', strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+		if this_slit.skip then continue
+
+	  print, 'Accurate wavelength calibration for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
 		print, ' '
 
 		; handle errors by ignoring that slit
@@ -474,7 +678,7 @@ PRO flame_wavecal_accurate, fuel
 		    print, '**************************'
 		    print, '***       WARNING      ***'
 		    print, '**************************'
-		    print, 'Error found. Skipping slit ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
+		    print, 'Error found. Skipping slit ' + strtrim(this_slit.number,2), ' - ', this_slit.name
 				fuel.slits[i_slit].skip = 1
 				catch, /cancel
 				continue
@@ -482,20 +686,48 @@ PRO flame_wavecal_accurate, fuel
 		endif
 
 
+		if fuel.util.arc.n_frames GT 0 then begin
+
+				; the speclines measured for this slit
+				arc_speclines = *this_slit.arc_cutout.speclines
+
+				; calculate the polynomial transformation between observed and rectified frame
+				flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.arc_cutout, $
+					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[0]
+
+				; show plots of the wavelength calibration and specline identification
+				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].arc_cutout.filename_step1, '.fits', '_plots.ps'), /nomatch
+				flame_wavecal_plots, slit=this_slit, cutout=this_slit.arc_cutout
+				cgPS_close
+
+		endif
+
+
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
-				; this slit
-				this_slit = fuel.slits[i_slit]
+				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename_step1, '.fits', '_plots.ps'), /nomatch
 
 				; the speclines measured for this slit
 				speclines = *this_slit.cutouts[i_frame].speclines
 
-				; calculate the polynomial transformation between observed and rectified frame
-				flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
-					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
+				if fuel.util.arc.n_frames GT 0 then begin
+
+					; copy the arc wavelength solution to all cutouts
+					*fuel.slits[i_slit].cutouts[i_frame].rectification = *fuel.slits[i_slit].arc_cutout.rectification
+
+					; use the arcs wavelength solution, find a wavelength shift, and save to current frame
+					flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
+						diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
+
+				endif else begin
+
+					; calculate the polynomial transformation between observed and rectified frame
+					flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
+						diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
+
+				endelse
 
 				; show plots of the wavelength calibration and specline identification
-				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename_step1, '.fits', '_plots.ps'), /nomatch
 				flame_wavecal_plots, slit=this_slit, cutout=this_slit.cutouts[i_frame]
 
 				; calculate and apply the illumination correction
