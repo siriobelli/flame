@@ -253,6 +253,34 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	lambda1d = lambda_0 + delta_lambda * dindgen(Nx)
 
 
+	; cross-correlate sky spectrum for zero-th order shift
+	; --------------------------------------------------
+
+  ; load the model sky spectrum, to be used as a reference
+  readcol, fuel.settings.sky_emission_filename, model_lambda, model_flux	; lambda in micron
+
+	; trim to the wavelength of interest
+	w_touse = where(model_lambda GT lambda1d[0] and model_lambda LT lambda1d[-1], /null)
+	model_lambda = model_lambda[w_touse]
+	model_flux = model_flux[w_touse]
+
+	; slightly smooth model
+	model_flux = median(model_flux, 5)
+
+	; resample model onto the observed wavelength grid
+	model_flux_int = interpol( model_flux, model_lambda, lambda1d)
+
+  ; clean observed spectrum from NaNs because they don't work with the cross correlation
+  spec1d_clean = spec1d
+  spec1d_clean[ where(~finite(spec1d), /null) ] = 0.0
+
+  ; measure the overall shift between observed and model spectrum
+  lag = indgen(100)-50 ; up to 50 pixels each direction
+  crosscorr = c_correlate( spec1d_clean, model_flux_int, lag)
+  max_crosscorr = max( crosscorr, max_ind, /nan)
+  delta = -lag[max_ind] * delta_lambda	; this is the overall shift in wavelength obtained by the cross-correlation
+
+
 	; fit sky lines
 	; --------------------------------------------------
 
@@ -273,26 +301,21 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	; fit each of the sky lines
 	for i_line=0, n_elements(line_list)-1 do begin
 
+		; the expected wavelength of this line, accounting for overall shift
+		line_exp = line_list[i_line] + delta
+
 		; select the region to fit - +/- 3 FWHM
-		w_fit = where( abs(lambda1d-line_list[i_line]) LT 3.0*fwhm_lambda, /null )
+		w_fit = where( abs(lambda1d-line_exp) LT 3.0*fwhm_lambda, /null )
 
 		; check that the region is within the observed range
 		if w_fit eq !NULL then continue
 
     ; check that there actually is signal and it's not just a bunch of NaNs
     if n_elements( where( finite(spec1d[w_fit]), /null ) ) LE 5 then continue
-		;
-		; ; error handling for the gaussian fitting
-		; catch, error_gaussfit
-		; if error_gaussfit ne 0 then begin
-		; 	print, 'GAUSSFIT ERROR STATUS: ' + strtrim(error_gaussfit,2)
-		; 	catch, /cancel
-		; 	continue
-		; endif
 
 		; estimate parameters of the Gaussian
 		est_peak = max( median( spec1d[w_fit], 3) , /nan)
-		est_center = line_list[i_line]
+		est_center = line_exp
 		est_sigma = fwhm_lambda/2.36
 		est_cont = min( median( spec1d[w_fit], 3) , /nan)
 
@@ -321,6 +344,8 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 		line_width = [line_width, gauss_param[2]]
 
 	endfor
+
+	if n_elements(line_meas) LT 3 then message, 'Could not find enough sky lines to shift the wavelength solution!'
 
 
 	; make plots
