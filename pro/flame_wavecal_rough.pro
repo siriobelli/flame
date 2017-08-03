@@ -442,7 +442,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skyf
 	;---------------------
 
   ; take the first frame
-  slit_filename = (this_slit.cutouts.filename_step1)[0]
+  slit_filename = (this_slit.cutouts.filename)[0]
   print, 'Using the central pixel rows of ', slit_filename
 
 	; read in slit
@@ -573,7 +573,7 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 	;---------------------
 
   ; filename for cutout of arc spectrum
-	arc_filename = this_slit.arc_cutout.filename_step1
+	arc_filename = this_slit.arc_cutout.filename
   print, 'Using the central pixel rows of ', arc_filename
 
 	; read in arc spectrum

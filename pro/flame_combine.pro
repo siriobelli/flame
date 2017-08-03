@@ -153,7 +153,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 		string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name
 
 	; input filenames for this slit
-	filenames = fuel.slits[i_slit].cutouts.filename_step2
+	filenames = fuel.slits[i_slit].cutouts.filename
 
 	; identify the A and B and X positions
 	diagnostics = fuel.diagnostics

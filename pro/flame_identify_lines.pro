@@ -589,7 +589,7 @@ PRO flame_identify_lines, fuel
     ; arcs ---------------------------------------------------------------------
 
 		; filename of the cutout
-    arc_filename = this_slit.arc_cutout.filename_step1
+    arc_filename = this_slit.arc_cutout.filename
 
 		; identify and measure the speclines
 		flame_identify_find_speclines, fuel=fuel, filename=arc_filename, slit=this_slit, $
@@ -609,7 +609,7 @@ PRO flame_identify_lines, fuel
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
 				; filename of the cutout
-				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename_step1
+				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename
 
 				; identify and measure the speclines
 				flame_identify_find_speclines, fuel=fuel, filename=slit_filename, slit=this_slit, $

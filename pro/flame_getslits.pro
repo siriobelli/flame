@@ -447,8 +447,8 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
 
     ; make the cutout structure
     cutout = { $
-      filename_step1: '', $ ; this one has the corr frame
-      filename_step2: '', $ ; if illumination correction is applied, then this is the illcorr frame
+      filename: '', $ ; this one has the corr frame
+      illcorr_applied: 0, $ ; flag: 1 if illumination correction is applied to cutout.filename
       rectification: ptr_new(), $
       speclines: ptr_new() }
 

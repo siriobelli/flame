@@ -119,7 +119,7 @@ PRO flame_cutout_slits, fuel
       flame_cutout_slits_extract, fuel, slits[i_slit], fuel.util.science.corr_files[i_frame], output_filenames[i_frame]
 
     ; add the cutout filenames
-    fuel.slits[i_slit].cutouts.filename_step1 = output_filenames
+    fuel.slits[i_slit].cutouts.filename = output_filenames
 
     ; cutout the corresponding arc
     if fuel.util.arc.n_frames gt 0 then begin
@@ -128,7 +128,7 @@ PRO flame_cutout_slits, fuel
 
       output_filename = slitdir + 'arc_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'
       flame_cutout_slits_extract, fuel, slits[i_slit], fuel.util.arc.master_file, output_filename
-      fuel.slits[i_slit].arc_cutout.filename_step1 = output_filename
+      fuel.slits[i_slit].arc_cutout.filename = output_filename
 
     endif
 
