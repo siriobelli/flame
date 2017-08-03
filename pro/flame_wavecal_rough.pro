@@ -664,36 +664,12 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
   ; load the model spectrum of the arc lamp
 	; ------------------------------------------
 
-	; all lambdas in angstrom, in air
-	dir = '/data/flame/LRIS/line_lists/'
-
-  readcol, dir + 'Hg_air.txt', Hg_lambda
-	readcol, dir + 'Ne_air.txt', Ne_lambda
-	readcol, dir + 'Ar_air.txt', Ar_lambda
-	readcol, dir + 'Cd_air.txt', Cd_lambda
-	readcol, dir + 'Zn_air.txt', Zn_lambda
-	readcol, dir + 'Kr_air_strong.txt', Kr_lambda
-	readcol, dir + 'Xe_air_strong.txt', Xe_lambda
-
-	; merge together the lines
-	all_lines_air = [Hg_lambda, Ne_lambda, Ar_lambda, Cd_lambda, Zn_lambda, Kr_lambda, Xe_lambda]
-
-	; sort them by wavelength
-	all_lines_air = all_lines_air[sort(all_lines_air)]
-
-	; convert to vacuum
-	airtovac, all_lines_air, all_lines_vac
-
-	; convert to micron
-	all_lines = all_lines_vac*1d-4
+	; load the linelist
+  readcol, fuel.util.intermediate_dir + 'linelist_arcs.txt', all_lines
 
 	; select a reasonable range
   wide_range = [ this_slit.range_lambda0[0], this_slit.range_lambda0[1] + this_slit.range_delta_lambda[1] * N_spectral_pix]
 	all_lines = all_lines[ where(all_lines GT wide_range[0] and all_lines LT wide_range[1], /null) ]
-
-	; write out the linelist
-  forprint, all_lines, replicate(1, n_elements(all_lines)), $
-	 	textout=fuel.util.intermediate_dir + 'linelist_arcs.txt', comment='#  arc_lines  trust'
 
 	; make a simple theoretical spectrum from the line list (assuming all lines have equal intensity)
 	model_lambda = wide_range[0] + (wide_range[1]-wide_range[0]) * dindgen(N_spectral_pix)/double(N_spectral_pix)

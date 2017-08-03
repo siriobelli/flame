@@ -354,6 +354,56 @@ FUNCTION flame_initialize_lris, input
   fuel.settings.wavecal_rough_split = 1
 
 
+  ; ---------------------   ARC LINE LIST    -----------------------------------
+
+  if fuel.util.arc.n_frames gt 0 then begin
+
+    ; read first frame
+    arc_hdr = headfits(fuel.util.arc.raw_files[0])
+
+    ; read lamp status from header
+    lamp_name = ['MERCURY', 'NEON', 'ARGON', 'CADMIUM', 'ZINC', 'KRYPTON', 'XENON', 'FEARGON']
+    lamp_file = ['arc_Hg_air.txt', 'arc_Ne_air.txt', 'arc_Ar_air.txt', 'arc_Cd_air.txt', $
+      'arc_Zn_air.txt', 'arc_Kr_air.txt', 'arc_Xe_air.txt', 'arc_FeNe_air.txt' ]
+    lamp_status = strarr(n_elements(lamp_name))
+    for i=0, n_elements(lamp_name)-1 do lamp_status[i] = strtrim(sxpar(arc_hdr, lamp_name[i]), 2)
+
+    print, ''
+    print, 'Lamps used for the arc calibrations:'
+    forprint, lamp_name, lamp_status, format='(A10,A7)'
+
+    ; check that some are on
+    w_on = where(lamp_status eq 'on', /null)
+    if w_on eq !NULL then message, 'arc frame was taken with no arc lamp on!'
+
+    ; load line lists for the lamps that were used
+    all_lines_air = []
+    for i=0, n_elements(w_on)-1 do begin
+      print, 'Loading line list ' + fuel.util.flame_data_dir + lamp_file[w_on[i]]
+      readcol, fuel.util.flame_data_dir + lamp_file[w_on[i]], arc_linelist
+      all_lines_air = [all_lines_air, arc_linelist]
+    endfor
+
+  	; sort them by wavelength
+  	all_lines_air = all_lines_air[sort(all_lines_air)]
+
+  	; convert to vacuum
+  	airtovac, all_lines_air, all_lines_vac
+
+  	; convert to micron
+  	all_lines = all_lines_vac*1d-4
+
+  	; write out the linelist
+    forprint, all_lines, replicate(1, n_elements(all_lines)), $
+  	 	textout=fuel.util.intermediate_dir + 'linelist_arcs.txt', comment='#  arc_lines  trust'
+
+    print, ''
+    print, 'Arc line list written to ', fuel.util.intermediate_dir + 'linelist_arcs.txt'
+
+  endif
+
+
+
   ; -----------------------------------------------------------------
   ;        convert the LRIS frames into the "normal" format
   ; -----------------------------------------------------------------
@@ -408,6 +458,7 @@ FUNCTION flame_initialize_lris, input
 
 
   ; now apply conversion to all frames
+  print, ''
   print, 'Converting LRIS frames to standard format'
   for i=0, n_elements(old_filenames)-1 do begin
 
