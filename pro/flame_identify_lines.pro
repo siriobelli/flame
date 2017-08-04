@@ -605,35 +605,36 @@ PRO flame_identify_lines, fuel
   		; write a ds9 region file with the identified speclines
   		flame_identify_writeds9, speclines, filename=flame_util_replace_string(arc_filename, '.fits', '_speclines.reg')
 
-    endif
-
+    endif else begin
 
     ; skylines -----------------------------------------------------------------
 
-		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
+  		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
-				; filename of the cutout
-				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename
+  				; filename of the cutout
+  				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename
 
-				; identify and measure the speclines
-				flame_identify_find_speclines, fuel=fuel, filename=slit_filename, slit=this_slit, $
-        rough_lambda=*this_slit.rough_skylambda, rough_flux=*this_slit.rough_skyflux, $
-        linelist_filename=fuel.settings.linelist_filename, $
-					speclines=speclines, wavelength_solution=wavelength_solution
+  				; identify and measure the speclines
+  				flame_identify_find_speclines, fuel=fuel, filename=slit_filename, slit=this_slit, $
+          rough_lambda=*this_slit.rough_skylambda, rough_flux=*this_slit.rough_skyflux, $
+          linelist_filename=fuel.settings.linelist_filename, $
+  					speclines=speclines, wavelength_solution=wavelength_solution
 
-				; save the speclines in the slit structure
-				*this_slit.cutouts[i_frame].speclines = speclines
+  				; save the speclines in the slit structure
+  				*this_slit.cutouts[i_frame].speclines = speclines
 
-				; write a ds9 region file with the identified speclines
-				flame_identify_writeds9, speclines, filename=flame_util_replace_string(slit_filename, '.fits', '_speclines.reg')
+  				; write a ds9 region file with the identified speclines
+  				flame_identify_writeds9, speclines, filename=flame_util_replace_string(slit_filename, '.fits', '_speclines.reg')
 
-				; use the pixel-by-pixel wavelength solution OF THE FIRST FRAME to set the output grid in wavelength
-				if i_frame eq 0 then begin
-					flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
-					fuel.slits[i_slit] = this_slit
-				endif
+  				; use the pixel-by-pixel wavelength solution OF THE FIRST FRAME to set the output grid in wavelength
+  				if i_frame eq 0 then begin
+  					flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
+  					fuel.slits[i_slit] = this_slit
+  				endif
 
-		endfor
+  		endfor
+
+    endelse
 
 	endfor
 
