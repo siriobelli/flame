@@ -4,10 +4,10 @@
 ;
 ;******************************************************************
 
-PRO flame_cutout_slits_extract, fuel, slit_structure, input_filename, output_filename
+PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename, yref
 
-  ; if we are not applying the illumination correction, then we need to be more generous in cutting the margin
-  if ~fuel.settings.illumination_correction then margin = 3 else margin = 1
+  ; how much margin to leave beyond the slit edge, in pixels
+  margin = 2
 
   ; read in science frame
   im = mrdfits(input_filename, 0, header, /silent)
@@ -34,19 +34,36 @@ PRO flame_cutout_slits_extract, fuel, slit_structure, input_filename, output_fil
   ; convert indices to 2D
   w_slit2d = array_indices(im, w_slit)
 
-  ; calculate upper and lower limits
-  max_y = max(w_slit2d[1,*])
-  min_y = min(w_slit2d[1,*])
-
   ; extract the slit as a rectangle
-  this_slit = im[ * , min_y:max_y]
+  this_cutout = im[ * , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
 
   ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
-  this_slit[*, 0] = !values.d_nan
-  this_slit[*,-1] = !values.d_nan
+  this_cutout[*, 0] = !values.d_nan
+  this_cutout[*,-1] = !values.d_nan
+
+  ; add the horizontal trivial coordinate to the FITS header
+	SXADDPAR, Header, 'CTYPE1', 'LINEAR'
+	SXADDPAR, Header, 'CUNIT1', 'PIXEL'
+	SXADDPAR, Header, 'CRPIX1', 1
+	SXADDPAR, Header, 'CRVAL1', 1.0
+	SXADDPAR, Header, 'CDELT1', 1.0
+
+  ; add the vertical coordinate (relative to the reference star!) to the FITS header
+  SXADDPAR, Header, 'CTYPE2', 'LINEAR'
+	SXADDPAR, Header, 'CUNIT2', 'PIXEL'
+	SXADDPAR, Header, 'CRPIX2', 0
+	SXADDPAR, Header, 'CRVAL2', slit_structure.yrange_cutout[0] - yref
+	SXADDPAR, Header, 'CDELT2', 1.0
+
+
+	;SXADDPAR, Header, 'CTYPE2', 'VERTDIST'
+;	SXADDPAR, Header, 'CUNIT2', 'PIXEL'
+;	SXADDPAR, Header, 'CRPIX2', 1
+;	SXADDPAR, Header, 'CRVAL2', slit_structure.yrange_cutout[0]
+;	SXADDPAR, Header, 'CDELT2', 1
 
   ; write this out
-  writefits, output_filename, this_slit, header
+  writefits, output_filename, this_cutout, header
 
 
   ; cutout the error spectrum
@@ -55,7 +72,6 @@ PRO flame_cutout_slits_extract, fuel, slit_structure, input_filename, output_fil
 	; check whether there is an extension in the input file (containing the error spectrum)
 	rdfits_struct, input_filename, struct, /silent, /header_only
 	Next = n_tags(struct)
-
 
   if Next GT 1 then begin
 
@@ -66,14 +82,76 @@ PRO flame_cutout_slits_extract, fuel, slit_structure, input_filename, output_fil
     im_sigma[w_outside_slit] = !values.d_nan
 
     ; extract the slit as a rectangle
-    this_slit_sigma = im_sigma[ * , min_y:max_y]
+    this_cutout_sigma = im_sigma[ * , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
 
     ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
-    this_slit_sigma[*, 0] = !values.d_nan
-    this_slit_sigma[*,-1] = !values.d_nan
+    this_cutout_sigma[*, 0] = !values.d_nan
+    this_cutout_sigma[*,-1] = !values.d_nan
 
     ; write this out
-    writefits, output_filename, this_slit_sigma, /append
+    writefits, output_filename, this_cutout_sigma, /append
+
+  endif
+
+
+END
+
+
+;******************************************************************
+
+
+PRO flame_cutout_oneslit, fuel, i_slit
+
+  print,'Working on slit ', fuel.slits[i_slit].name, ' - ', fuel.slits[i_slit].number
+
+  ; create directory (and delete previous one if present)
+  slitdir = fuel.util.intermediate_dir + $
+    'slit' + string(fuel.slits[i_slit].number,format='(I02)') + '/'
+  file_delete, slitdir, /allow_nonexistent, /recursive
+  file_mkdir, slitdir
+
+  ; file names for the cutouts
+  output_filenames = strarr(fuel.util.science.n_frames)
+  for i_frame=0, fuel.util.science.n_frames-1 do begin
+    naked_filename = file_basename(fuel.util.science.corr_files[i_frame])
+    output_filenames[i_frame] = flame_util_replace_string( slitdir + naked_filename, '.fits', '_slit' + string(fuel.slits[i_slit].number,format='(I02)') + '.fits'  )
+  endfor
+
+  ; read the x-axis and calculate slit edges
+  im = readfits(fuel.util.science.corr_files[0])
+  x_axis = dindgen( (size(im))[1] )
+  bottom_y = poly(x_axis, fuel.slits[i_slit].bottom_poly)
+  top_y = bottom_y + fuel.slits[i_slit].height
+
+  ; set the vertical range for the cutout
+  ymin = floor(min(bottom_y)) - 1
+  ymax = floor(max(top_y)) + 2
+  fuel.slits[i_slit].yrange_cutout = [ymin, ymax]
+
+  ; get the vertical position of the reference star at each frame
+  yref = fuel.diagnostics.position
+
+  ; if the reference star is not measured, then set to zero
+  if where(~finite(yref), /NULL) NE !NULL then yref[*] = 0.0
+
+  ; extract slit
+  print,'*** Cutting out slit ', fuel.slits[i_slit].name
+
+  ; loop through science frames
+  for i_frame=0, fuel.util.science.n_frames-1 do $
+    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.science.corr_files[i_frame], output_filenames[i_frame], yref[i_frame]
+
+  ; add the cutout filenames to the slits structure
+  fuel.slits[i_slit].cutouts.filename = output_filenames
+
+  ; cutout the corresponding arc
+  if fuel.util.arc.n_frames gt 0 then begin
+
+    print,'*** Cutting out slit from master arc frame'
+
+    output_filename = slitdir + 'arc_slit' + string(fuel.slits[i_slit].number,format='(I02)') + '.fits'
+    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.arc.master_file, output_filename, 0.0
+    fuel.slits[i_slit].arc_cutout.filename = output_filename
 
   endif
 
@@ -89,50 +167,11 @@ PRO flame_cutout_slits, fuel
 	flame_util_module_start, fuel, 'flame_cutout_slits'
 
 
-  ; extract slits structure
-  slits = fuel.slits
+  for i_slit=0, n_elements(fuel.slits)-1 do begin
 
-  for i_slit=0, n_elements(slits)-1 do begin
+    if fuel.slits[i_slit].skip then continue
 
-    if slits[i_slit].skip then continue
-
-    print,'Working on slit ', slits[i_slit].name, ' - ', slits[i_slit].number
-
-    ; create directory
-    slitdir = fuel.util.intermediate_dir + $
-      'slit' + string(slits[i_slit].number,format='(I02)') + '/'
-    file_delete, slitdir, /allow_nonexistent, /recursive
-    file_mkdir, slitdir
-
-    ; file names for the cutouts
-    output_filenames = strarr(fuel.util.science.n_frames)
-    for i_frame=0, fuel.util.science.n_frames-1 do begin
-      naked_filename = ( strsplit((fuel.util.science.corr_files)[i_frame], '/', /extract) )[-1]
-      output_filenames[i_frame] = flame_util_replace_string( slitdir + naked_filename, '.fits', '_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'  )
-    endfor
-
-    ; extract slit
-    print,'*** Cutting out slit ', slits[i_slit].name
-
-    ; loop through science frames
-    for i_frame=0, n_elements(output_filenames)-1 do $
-      flame_cutout_slits_extract, fuel, slits[i_slit], fuel.util.science.corr_files[i_frame], output_filenames[i_frame]
-
-    ; add the cutout filenames
-    fuel.slits[i_slit].cutouts.filename = output_filenames
-
-    ; cutout the corresponding arc
-    if fuel.util.arc.n_frames gt 0 then begin
-
-      print,'*** Cutting out slit from master arc frame'
-
-      output_filename = slitdir + 'arc_slit' + string(slits[i_slit].number,format='(I02)') + '.fits'
-      flame_cutout_slits_extract, fuel, slits[i_slit], fuel.util.arc.master_file, output_filename
-      fuel.slits[i_slit].arc_cutout.filename = output_filename
-
-    endif
-
-
+    flame_cutout_oneslit, fuel, i_slit
 
   endfor
 
