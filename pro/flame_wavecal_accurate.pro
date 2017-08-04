@@ -345,59 +345,69 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 
 	endfor
 
-	if n_elements(line_meas) LT 3 then message, 'Could not find enough sky lines to shift the wavelength solution!'
+	if n_elements(line_meas) LT 3 then begin
+		print, ''
+		print, 'WARNING: Could not find enough sky lines to shift the wavelength solution!'
+		print, 'The arcs wavelength solution will be applied blindly to the science frames'
+
+		; take the rectification form the arcs
+		rectification = *slit.arc_cutout.rectification
+
+	endif else begin
 
 
-	; make plots
-	; --------------------------------------------------
+		; make plots
+		; --------------------------------------------------
 
-	; charsize
-	ch = 0.8
+		; charsize
+		ch = 0.8
 
-	; panel 1: plot the spectrum
-	erase
-	cgplot, lambda1d, spec1d, charsize=ch, xsty=1, xtit='', ytit='observed flux', title='measuring shift between sky lines and arcs wavelength solution', $
-		position = [0.15, 0.65, 0.95, 0.96], xtickformat="(A1)", xra=[lambda1d[0], lambda1d[-1]], /nodata
+		; panel 1: plot the spectrum
+		erase
+		cgplot, lambda1d, spec1d, charsize=ch, xsty=1, xtit='', ytit='observed flux', title='measuring shift between sky lines and arcs wavelength solution', $
+			position = [0.15, 0.65, 0.95, 0.96], xtickformat="(A1)", xra=[lambda1d[0], lambda1d[-1]], /nodata
 
-	; show the OH lines that were identified
-	for i_line=0, n_elements(line_meas)-1 do cgplot, line_meas[i_line] + [0,0], [-2,2]*max(abs(spec1d)), /overplot, color='red'
+		; show the OH lines that were identified
+		for i_line=0, n_elements(line_meas)-1 do cgplot, line_meas[i_line] + [0,0], [-2,2]*max(abs(spec1d)), /overplot, color='red'
 
-	; show the spectrum on top, for clarity
-	cgplot, lambda1d, spec1d, /overplot
-
-
-	; panel 2: show the residuals
-	cgplot, line_meas, 1d4 * (line_meas-line_th), /ynozero, xra=[lambda1d[0], lambda1d[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
-		ytit='residuals (' + string("305B) + ')', charsize=ch, $
-		/noerase, position = [0.15, 0.35, 0.95, 0.65], xtickformat="(A1)"
-
-  cgplot, [lambda1d[0], lambda1d[-1]], [0,0], /overplot, thick=2
-
-	; show median value of residuals
-	cgplot, [lambda1d[0], lambda1d[-1]], [0,0]+median(line_meas-line_th)*1d4, /overplot, thick=3, linestyle=2
+		; show the spectrum on top, for clarity
+		cgplot, lambda1d, spec1d, /overplot
 
 
-	; panel 3: plot the line widths
-	cgplot, line_meas, line_width*1d4, /ynozero, xra=[lambda1d[0], lambda1d[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
-		xtit='wavelength (micron)', ytit='line width (' + string("305B) + ')', charsize=ch, $
-		/noerase, position = [0.15, 0.10, 0.95, 0.35]
+		; panel 2: show the residuals
+		cgplot, line_meas, 1d4 * (line_meas-line_th), /ynozero, xra=[lambda1d[0], lambda1d[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+			ytit='residuals (' + string("305B) + ')', charsize=ch, $
+			/noerase, position = [0.15, 0.35, 0.95, 0.65], xtickformat="(A1)"
 
-	; show median value of line width
-	cgplot, [lambda1d[0], lambda1d[-1]], [0,0]+median(line_width)*1d4, /overplot, thick=3, linestyle=2
+	  cgplot, [lambda1d[0], lambda1d[-1]], [0,0], /overplot, thick=2
+
+		; show median value of residuals
+		cgplot, [lambda1d[0], lambda1d[-1]], [0,0]+median(line_meas-line_th)*1d4, /overplot, thick=3, linestyle=2
 
 
-	; apply shift to rectification
-	; --------------------------------------------------
+		; panel 3: plot the line widths
+		cgplot, line_meas, line_width*1d4, /ynozero, xra=[lambda1d[0], lambda1d[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
+			xtit='wavelength (micron)', ytit='line width (' + string("305B) + ')', charsize=ch, $
+			/noerase, position = [0.15, 0.10, 0.95, 0.35]
 
-	; take the median shift
-	lambda_shift = median(line_meas-line_th)
-	print, 'The median shift between this frame and the arcs frame is ', lambda_shift*1d4, ' angstrom'
+		; show median value of line width
+		cgplot, [lambda1d[0], lambda1d[-1]], [0,0]+median(line_width)*1d4, /overplot, thick=3, linestyle=2
 
-	; start with the rectification form the arcs
-	rectification = *slit.arc_cutout.rectification
 
-	; apply a constant wavelength shift
-	rectification.Klambda[0,0] = rectification.Klambda[0,0] - lambda_shift/delta_lambda
+		; apply shift to rectification
+		; --------------------------------------------------
+
+		; take the median shift
+		lambda_shift = median(line_meas-line_th)
+		print, 'The median shift between this frame and the arcs frame is ', lambda_shift*1d4, ' angstrom'
+
+		; start with the rectification form the arcs
+		rectification = *slit.arc_cutout.rectification
+
+		; apply a constant wavelength shift
+		rectification.Klambda[0,0] = rectification.Klambda[0,0] - lambda_shift/delta_lambda
+
+	endelse
 
 
 	; update the Kgamma matrix using the diagnostics for this particular frame
@@ -753,8 +763,6 @@ PRO flame_wavecal_accurate, fuel
 
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
-				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename, '.fits', '_plots.ps'), /nomatch
-
 				; the speclines measured for this slit
 				speclines = *this_slit.cutouts[i_frame].speclines
 
@@ -773,15 +781,18 @@ PRO flame_wavecal_accurate, fuel
 					flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
 						diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
 
+					cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename, '.fits', '_plots.ps'), /nomatch
+
+					; show plots of the wavelength calibration and specline identification
+					flame_wavecal_plots, slit=this_slit, cutout=this_slit.cutouts[i_frame]
+
+					; calculate and apply the illumination correction
+					flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
+
+					cgPS_close
+
 				endelse
 
-				; show plots of the wavelength calibration and specline identification
-				flame_wavecal_plots, slit=this_slit, cutout=this_slit.cutouts[i_frame]
-
-				; calculate and apply the illumination correction
-				flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
-
-				cgPS_close
 
 
 		endfor
