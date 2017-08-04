@@ -55,12 +55,11 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
 	SXADDPAR, Header, 'CRVAL2', slit_structure.yrange_cutout[0] - yref
 	SXADDPAR, Header, 'CDELT2', 1.0
 
-
-	;SXADDPAR, Header, 'CTYPE2', 'VERTDIST'
-;	SXADDPAR, Header, 'CUNIT2', 'PIXEL'
-;	SXADDPAR, Header, 'CRPIX2', 1
-;	SXADDPAR, Header, 'CRVAL2', slit_structure.yrange_cutout[0]
-;	SXADDPAR, Header, 'CDELT2', 1
+	; delete WCS keywords set by the instrument
+	SXDELPAR, Header, 'CD1_1'
+	SXDELPAR, Header, 'CD1_2'
+	SXDELPAR, Header, 'CD2_1'
+	SXDELPAR, Header, 'CD2_2'
 
   ; write this out
   writefits, output_filename, this_cutout, header
