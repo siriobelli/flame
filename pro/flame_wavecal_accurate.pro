@@ -399,6 +399,29 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	; apply a constant wavelength shift
 	rectification.Klambda[0,0] = rectification.Klambda[0,0] - lambda_shift/delta_lambda
 
+
+	; update the Kgamma matrix using the diagnostics for this particular frame
+	; ------------------------------------------------------------------------
+
+	; calculate vertical offset
+	w_this_offset = where(diagnostics.offset_pos eq this_diagnostics.offset_pos)
+	ref_diagnostics = diagnostics[w_this_offset[0]]
+	vertical_offset = this_diagnostics.position - floor(ref_diagnostics.position)
+
+	; make the 4x4 matrix
+	Kgamma = dblarr(4, 4)
+
+	; by definition, dgamma/dy = 1
+	Kgamma[1,0] = 1.0
+
+	; use the definition of the bottom edge of the slit to build the gamma matrix
+	Kgamma[0,*] = -slit.bottom_poly
+
+	; but the zero is now at the edge of the cutout, and is corrected for the drift
+	Kgamma[0,0] += slit.yrange_cutout[0] - vertical_offset
+
+	rectification.Kgamma = Kgamma
+
 	; save into slit structure - copy also the lambda_min and lambda_step parameters
 	*cutout.rectification = rectification
 
@@ -716,9 +739,9 @@ PRO flame_wavecal_accurate, fuel
 				; the speclines measured for this slit
 				arc_speclines = *this_slit.arc_cutout.speclines
 
-				; calculate the polynomial transformation between observed and rectified frame
+				; calculate the polynomial transformation between observed and rectified frame, for the arcs
 				flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.arc_cutout, $
-					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[0]
+					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[0] 	; assume the dithering of the first frame
 
 				; show plots of the wavelength calibration and specline identification
 				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].arc_cutout.filename, '.fits', '_plots.ps'), /nomatch
