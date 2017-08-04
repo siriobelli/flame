@@ -588,20 +588,24 @@ PRO flame_identify_lines, fuel
 
     ; arcs ---------------------------------------------------------------------
 
-		; filename of the cutout
-    arc_filename = this_slit.arc_cutout.filename
+    if fuel.util.arc.n_frames GT 0 then begin
 
-		; identify and measure the speclines
-		flame_identify_find_speclines, fuel=fuel, filename=arc_filename, slit=this_slit, $
-    rough_lambda=*this_slit.rough_arclambda, rough_flux=*this_slit.rough_arcflux, $
-    linelist_filename=fuel.util.intermediate_dir + 'linelist_arcs.txt', $
-			speclines=speclines, wavelength_solution=wavelength_solution
+  		; filename of the cutout
+      arc_filename = this_slit.arc_cutout.filename
 
-		; save the speclines in the slit structure
-		*this_slit.arc_cutout.speclines = speclines
+  		; identify and measure the speclines
+  		flame_identify_find_speclines, fuel=fuel, filename=arc_filename, slit=this_slit, $
+      rough_lambda=*this_slit.rough_arclambda, rough_flux=*this_slit.rough_arcflux, $
+      linelist_filename=fuel.util.intermediate_dir + 'linelist_arcs.txt', $
+  			speclines=speclines, wavelength_solution=wavelength_solution
 
-				; write a ds9 region file with the identified speclines
-		flame_identify_writeds9, speclines, filename=flame_util_replace_string(arc_filename, '.fits', '_speclines.reg')
+  		; save the speclines in the slit structure
+  		*this_slit.arc_cutout.speclines = speclines
+
+  		; write a ds9 region file with the identified speclines
+  		flame_identify_writeds9, speclines, filename=flame_util_replace_string(arc_filename, '.fits', '_speclines.reg')
+
+    endif
 
 
     ; skylines -----------------------------------------------------------------
