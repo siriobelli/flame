@@ -605,6 +605,11 @@ PRO flame_identify_lines, fuel
   		; write a ds9 region file with the identified speclines
   		flame_identify_writeds9, speclines, filename=flame_util_replace_string(arc_filename, '.fits', '_speclines.reg')
 
+			; use the pixel-by-pixel wavelength solution of the arc frame to set the output grid in wavelength
+			flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
+			fuel.slits[i_slit] = this_slit
+
+
     endif else begin
 
     ; skylines -----------------------------------------------------------------
