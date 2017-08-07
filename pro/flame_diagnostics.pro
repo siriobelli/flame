@@ -368,10 +368,10 @@ PRO flame_diagnostics_plot, diagnostics
 
 
   ; plot parameters
-  extra_structure = {noerase:1, xtickformat:'(A1)', charsize:0.7, xsty:1, ynozero:1, psym:-16}
-  x0 = 0.1
+  extra_structure = {noerase:1, xtickformat:'(A1)', charsize:0.9, xsty:1, ynozero:1, psym:-16}
+  x0 = 0.15
   x1 = 0.95
-  y0 = 0.10
+  y0 = 0.07
   y1 = 0.95
   delta_y = (y1-y0)/5.0
 
@@ -431,7 +431,7 @@ PRO flame_diagnostics_plot, diagnostics
     cgplot, frame_seqnum[where(diagnostics.offset_pos eq 'A', /null)], $
       diagnostics[where(diagnostics.offset_pos eq 'A', /null)].position, $
       _extra = extra_structure, xra=xra, /xsty, $
-      ytit='A $\Delta$ y (pixels)', position=[x0,y1-3.0*delta_y,x1,y1-2.0*delta_y], $
+      ytit='A y-position (pixels)', position=[x0,y1-3.0*delta_y,x1,y1-2.0*delta_y], $
       xtickv = xtickv, xticks=n_elements(xtickv)-1, xminor=xminor, xticklen=0.04
 
   ; plot position of B frames
@@ -439,7 +439,7 @@ PRO flame_diagnostics_plot, diagnostics
     cgplot, frame_seqnum[where(diagnostics.offset_pos eq 'B', /null)], $
       diagnostics[where(diagnostics.offset_pos eq 'B', /null)].position, $
       _extra = extra_structure, xra=xra, /xsty, $
-      ytit='B $\Delta$ y (pixels)', position=[x0,y1-4.0*delta_y,x1,y1-3.0*delta_y], $
+      ytit='B y-position (pixels)', position=[x0,y1-4.0*delta_y,x1,y1-3.0*delta_y], $
       xtickv = xtickv, xticks=n_elements(xtickv)-1, xminor=xminor, xticklen=0.04
 
   ; plot airmass
@@ -478,7 +478,7 @@ PRO flame_diagnostics, fuel
   ; 2 - plot diagnostics
   ;----------------------------------------
 
-  cgPS_open, fuel.util.intermediate_dir + 'diagnostics.ps', /nomatch
+  cgPS_open, fuel.util.intermediate_dir + 'diagnostics.ps', /nomatch, ysize=10, xsize=6, /cm
     flame_diagnostics_plot, diagnostics
   cgPS_close
 
