@@ -175,6 +175,7 @@ FUNCTION flame_util_create_fuel, input
     identify_lines_linefit_window: 6.0, $       ; in units of expected linewidth
     wavesolution_order_x: 3, $
     wavesolution_order_y: 2, $
+    shift_arcs_Nmin_lines: 1, $
     skysub_plot_range: [0.4, 0.6], $
     combine_sigma_clip : 2.0, $
     debugging:0 $

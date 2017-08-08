@@ -268,15 +268,19 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	model_flux = median(model_flux, 5)
 
 	; resample model onto the observed wavelength grid
-	model_flux_int = interpol( model_flux, model_lambda, lambda1d)
+	model_flux_resampled = interpol( model_flux, model_lambda, lambda1d)
 
   ; clean observed spectrum from NaNs because they don't work with the cross correlation
   spec1d_clean = spec1d
   spec1d_clean[ where(~finite(spec1d), /null) ] = 0.0
 
+	; normalize both model and observed spectrum
+	model_flux_resampled /= median(model_flux_resampled)
+	spec1d_clean /= median(spec1d_clean)
+
   ; measure the overall shift between observed and model spectrum
   lag = indgen(100)-50 ; up to 50 pixels each direction
-  crosscorr = c_correlate( spec1d_clean, model_flux_int, lag)
+  crosscorr = c_correlate( spec1d_clean, model_flux_resampled, lag)
   max_crosscorr = max( crosscorr, max_ind, /nan)
   delta = -lag[max_ind] * delta_lambda	; this is the overall shift in wavelength obtained by the cross-correlation
 
@@ -345,16 +349,11 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 
 	endfor
 
-	if n_elements(line_meas) LT 3 then begin
-		print, ''
-		print, 'WARNING: Could not find enough sky lines to shift the wavelength solution!'
-		print, 'The arcs wavelength solution will be applied blindly to the science frames'
 
-		; take the rectification form the arcs
-		rectification = *slit.arc_cutout.rectification
+	; check if sky lines were found
+	; --------------------------------------------------
 
-	endif else begin
-
+	if n_elements(line_meas) GE fuel.settings.shift_arcs_Nmin_lines then begin
 
 		; make plots
 		; --------------------------------------------------
@@ -393,21 +392,88 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 		; show median value of line width
 		cgplot, [lambda1d[0], lambda1d[-1]], [0,0]+median(line_width)*1d4, /overplot, thick=3, linestyle=2
 
-
-		; apply shift to rectification
-		; --------------------------------------------------
-
 		; take the median shift
 		lambda_shift = median(line_meas-line_th)
 		print, 'The median shift between this frame and the arcs frame is ', lambda_shift*1d4, ' angstrom'
 
-		; start with the rectification form the arcs
-		rectification = *slit.arc_cutout.rectification
 
-		; apply a constant wavelength shift
-		rectification.Klambda[0,0] = rectification.Klambda[0,0] - lambda_shift/delta_lambda
+	endif else begin
+
+		; use the sky continuum for calculating the shift
+		; --------------------------------------------------
+
+		print, ''
+		print, 'Could not find enough sky lines to shift the wavelength solution!'
+		print, 'The shift of the wavelength solution will be derived from the sky continuum'
+
+		; determine the region in common between model and observed spectrum
+		w_incommon = where( median( spec1d_clean * model_flux_resampled, 15) GT 0.0, /null)
+		min_x = min(w_incommon, /nan)
+		max_x = max(w_incommon, /nan)
+
+		; split the part in common into bins of approximately 500 (observed) pixels
+		N_bins = round( float(max_x - min_x) / 500.0 )
+		bin_size = round( float(max_x-min_x) / float(N_bins) )
+
+		; arrays that will contain the result
+		shift_x = []
+		shift_y = []
+
+		; for each bin, perform cross-correlation
+		for i_bin=0,N_bins-1 do begin
+
+			; extract the spectra in this bin
+			bin_range = [min_x + i_bin*bin_size , min_x + (i_bin+1)*bin_size < max_x-1]
+			bin_model = model_flux_resampled[bin_range[0] : bin_range[1]]
+			bin_obs = spec1d_clean[bin_range[0] : bin_range[1]]
+			bin_lambda = lambda1d[bin_range[0] : bin_range[1]]
+
+			; upsample by a factor of 10
+			bin_model_up = rebin(bin_model, 10*n_elements(bin_model))
+			bin_obs_up = rebin(bin_obs, 10*n_elements(bin_obs))
+			bin_lambda_up = rebin(bin_lambda, 10*n_elements(bin_obs))
+
+			; smooth and normalize
+			bin_model_up = median(bin_model_up, 50) / median(bin_model_up)
+			bin_obs_up = median(bin_obs_up, 50) / median(bin_obs_up)
+
+			; measure the local shift between observed and model spectrum
+		  lag = indgen(100)-50 ; up to 5 pixels each direction
+		  crosscorr = c_correlate( bin_obs_up, bin_model_up, lag)
+		  max_crosscorr = max( crosscorr, max_ind, /nan)
+		  delta = -lag[max_ind] * delta_lambda/10.0
+
+			; show the shifted spectra
+			cgplot, bin_lambda_up, bin_model_up, color='red', thick=3, xtit='wavelength (micron)', $
+				title='cross-correlation of observed vs model sky', charsize=1, /ynozero
+			cgplot, bin_lambda_up, shift(bin_obs_up, lag[max_ind]), thick=2, /overplot
+
+			; save the result
+			shift_x = [shift_x, mean(bin_lambda_up)]
+			shift_y = [shift_y, delta]
+
+		endfor
+
+		; this is the final shift
+		lambda_shift = median(shift_y)
+
+		cgplot, shift_x, shift_y, psym=-16, charsize=1, xtit='wavelength (micron)', ytit='wavelength shift (angstrom)'
+		cgplot, [-1, 2*shift_x[-1]], [0,0]+lambda_shift, /overplot, linestyle=2
+
+		print, 'The median shift between this frame and the arcs frame is ', lambda_shift*1d4, ' angstrom'
+
 
 	endelse
+
+
+	; apply shift to rectification
+	; --------------------------------------------------
+
+	; start with the rectification form the arcs
+	rectification = *slit.arc_cutout.rectification
+
+	; apply a constant wavelength shift
+	rectification.Klambda[0,0] = rectification.Klambda[0,0] - lambda_shift/delta_lambda
 
 
 	; update the Kgamma matrix using the diagnostics for this particular frame
@@ -766,6 +832,8 @@ PRO flame_wavecal_accurate, fuel
 				; the speclines measured for this slit
 				speclines = *this_slit.cutouts[i_frame].speclines
 
+				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename, '.fits', '_plots.ps'), /nomatch
+
 				if fuel.util.arc.n_frames GT 0 then begin
 
 					; copy the arc wavelength solution to all cutouts
@@ -781,17 +849,15 @@ PRO flame_wavecal_accurate, fuel
 					flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
 						diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
 
-					cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename, '.fits', '_plots.ps'), /nomatch
-
 					; show plots of the wavelength calibration and specline identification
 					flame_wavecal_plots, slit=this_slit, cutout=this_slit.cutouts[i_frame]
 
 					; calculate and apply the illumination correction
 					flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 
-					cgPS_close
-
 				endelse
+
+				cgPS_close
 
 
 
