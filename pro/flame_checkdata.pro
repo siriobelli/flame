@@ -188,6 +188,88 @@ END
 ;*******************************************************************************
 
 
+PRO flame_checkdata_skycontinuum, fuel, lambda1d, spec1d
+
+	; load sky model
+  readcol, fuel.settings.sky_emission_filename, model_lambda, model_flux	; lambda in micron
+
+	; trim to the wavelength of interest
+	w_touse = where(model_lambda GT lambda1d[0] and model_lambda LT lambda1d[-1], /null)
+	model_lambda = model_lambda[w_touse]
+	model_flux = model_flux[w_touse]
+
+	; slightly smooth model
+	model_flux = median(model_flux, 5)
+
+	; resample model onto the observed wavelength grid
+	model_flux_resampled = interpol( model_flux, model_lambda, lambda1d)
+
+  ; clean observed spectrum from NaNs because they don't work with the cross correlation
+  spec1d_clean = spec1d
+  spec1d_clean[ where(~finite(spec1d), /null) ] = 0.0
+
+	; determine the region in common between model and observed spectrum
+	w_incommon = where( median( spec1d_clean * model_flux_resampled, 15) GT 0.0, /null)
+	min_x = min(w_incommon, /nan)
+	max_x = max(w_incommon, /nan)
+
+	; split the part in common into bins of approximately 500 (observed) pixels
+	N_bins = round( float(max_x - min_x) / 500.0 )
+	bin_size = round( float(max_x-min_x) / float(N_bins) )
+
+	; arrays that will contain the result
+	shift_x = []
+	shift_y = []
+
+	; for each bin, perform cross-correlation
+	for i_bin=0,N_bins-1 do begin
+
+		; extract the spectra in this bin
+		bin_range = [min_x + i_bin*bin_size , min_x + (i_bin+1)*bin_size < max_x-1]
+		bin_model = model_flux_resampled[bin_range[0] : bin_range[1]]
+		bin_obs = spec1d_clean[bin_range[0] : bin_range[1]]
+		bin_lambda = lambda1d[bin_range[0] : bin_range[1]]
+
+		; upsample by a factor of 10
+		bin_model_up = rebin(bin_model, 10*n_elements(bin_model))
+		bin_obs_up = rebin(bin_obs, 10*n_elements(bin_obs))
+		bin_lambda_up = rebin(bin_lambda, 10*n_elements(bin_obs))
+
+		; smooth and normalize
+		bin_model_up = median(bin_model_up, 50) / median(bin_model_up)
+		bin_obs_up = median(bin_obs_up, 50) / median(bin_obs_up)
+
+		; measure the local shift between observed and model spectrum
+	  lag = indgen(100)-50 ; up to 5 pixels each direction
+	  crosscorr = c_correlate( bin_obs_up, bin_model_up, lag)
+	  max_crosscorr = max( crosscorr, max_ind, /nan)
+	  delta = -lag[max_ind] * (lambda1d[1]-lambda1d[0])/10.0
+
+		; show the shifted spectra
+		cgplot, bin_lambda_up, bin_model_up, color='red', thick=3, xtit='wavelength (micron)', $
+			title='cross-correlation of observed vs model sky', charsize=1, /ynozero
+		cgplot, bin_lambda_up, shift(bin_obs_up, lag[max_ind]), thick=2, /overplot
+
+		; save the result
+		shift_x = [shift_x, mean(bin_lambda_up)]
+		shift_y = [shift_y, delta]
+
+	endfor
+
+	; plot summary of typical shifts
+	lambda_shift = median(shift_y)
+	cgplot, shift_x, shift_y*1d4, psym=-16, charsize=1, xtit='wavelength (micron)', ytit='wavelength shift (angstrom)'
+	cgplot, [-1, 2*shift_x[-1]], [0,0], /overplot, linestyle=2
+
+
+END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
 
 PRO flame_checkdata_sky, fuel, i_slit=i_slit
 ;
@@ -236,10 +318,13 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	w_lines = where(line_list GT min(lambda_axis, /nan)+6.0*linewidth_um $
 		AND line_list LT max(lambda_axis, /nan)-6.0*linewidth_um, /null )
 
+	; if there are very few lines, then use the sky continuum
+	if n_elements(w_lines) LT 5 then flame_checkdata_skycontinuum, fuel, lambda_axis, sky_spec
+
 	; make sure there are sky lines here
 	if w_lines EQ !NULL then begin
     print, 'Warning: wavelength range does not contain sky lines'
-    return
+		return
   endif
 
 	; keep only the OH lines of interest
@@ -401,6 +486,9 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 	for i_frame=0, Nfr-1 do begin
 		speclines = *this_slit.cutouts[i_frame].speclines
 
+		; check that there are speclines measured
+		if speclines EQ !NULL then continue
+
 		; calculate residuals
 		flame_util_transform_direct, *this_slit.cutouts[i_frame].rectification, $
 			x=speclines.x, y=speclines.y, lambda=lambda, gamma=gamma
@@ -414,6 +502,10 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 
 	; total number of speclines for all frames
 	Nlines = n_elements(line_frame)
+
+	; if there are no speclines (because arcs were used), then we are done
+	if Nlines eq 0 then return
+
 
 	; take care of the frame numbers for the x axis titles (see also flame_diagnostics)
 	;----------------------------------------------------------------------------------
