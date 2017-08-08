@@ -276,7 +276,7 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
 
     this_slit = { $
       number:i_slit+1, $
-      name:'', $
+      name:'NN', $
       skip:0, $
       PA:!values.d_NaN, $
       approx_bottom:slit_y[2*i_slit], $
