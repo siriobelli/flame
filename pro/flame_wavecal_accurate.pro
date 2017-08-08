@@ -457,7 +457,7 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 		; this is the final shift
 		lambda_shift = median(shift_y)
 
-		cgplot, shift_x, shift_y, psym=-16, charsize=1, xtit='wavelength (micron)', ytit='wavelength shift (angstrom)'
+		cgplot, shift_x, shift_y*1d4, psym=-16, charsize=1, xtit='wavelength (micron)', ytit='wavelength shift (angstrom)'
 		cgplot, [-1, 2*shift_x[-1]], [0,0]+lambda_shift, /overplot, linestyle=2
 
 		print, 'The median shift between this frame and the arcs frame is ', lambda_shift*1d4, ' angstrom'
