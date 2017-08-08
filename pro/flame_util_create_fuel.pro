@@ -163,7 +163,7 @@ FUNCTION flame_util_create_fuel, input
     linelist_filename: data_dir + 'sky_line_list_R3000.dat', $
     star_x_range: [1000, 1200], $
     star_y_window: 0, $
-    trace_slit_with_skylines : 1, $
+    trace_slit_with_skylines : 0, $
     wavecal_rough_R : [500, 1000, 3000], $
     clean_individual_frames : 0, $
     illumination_correction : 1, $

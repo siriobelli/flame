@@ -457,6 +457,9 @@ FUNCTION flame_initialize_luci, input
 
   ; ---------------------   SETTINGS   --------------------------------------
 
+  ; use the sky background to trace the slit edges (works well on raw data)
+  fuel.settings.trace_slit_with_skylines = 1
+
   ; do not split the spectrum into two when doing the rough wavecal
   fuel.settings.wavecal_rough_split = 0
 
