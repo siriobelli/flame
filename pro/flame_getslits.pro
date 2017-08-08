@@ -490,6 +490,7 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
 
       ; in that case, assign new values
       struct_assign, new_slit, old_slit, /nozero
+      new_slit = old_slit
 
       ; otherwise, append new fields
     endif else $
@@ -652,12 +653,12 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
       ; write the line corresponding to each point for the top edge
       if top_x ne !NULL then for i=0, n_elements(top_x)-1 do $
         printf, lun, 'circle(' + strtrim(top_x[i],2) + ',' + strtrim(top_y[i],2) + ',' + radius + $
-        ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + '}'
+        ') # color=' + color_string
 
       ; write the line corresponding to each point for the bottom edge
       if bottom_x ne !NULL then for i=0, n_elements(bottom_x)-1 do $
         printf, lun, 'circle(' + strtrim(bottom_x[i],2) + ',' + strtrim(bottom_y[i],2) + ',' + radius + $
-        ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + '}'
+        ') # color=' + color_string
 
 
     endif else begin    ; show the polynomial fit to the slit edges --------------------------------
