@@ -15,7 +15,7 @@
 
 PRO flame_identify_writeds9, speclines, filename=filename
 ;
-; write a ds9 region file with all the OH line detections
+; write a ds9 region file with all the emission line detections
 ;
 
   ; extract the wavelength of all identifications
@@ -27,7 +27,7 @@ PRO flame_identify_writeds9, speclines, filename=filename
 
   ; write header
   printf, lun, '# Region file format: DS9 version 4.1'
-  printf, lun, 'global dashlist=8 3 width=3 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
+  printf, lun, 'global dashlist=8 3 width=2 font="helvetica 10 normal roman" select=1 highlite=1 dash=0 fixed=0 edit=0 move=0 delete=1 include=1 source=1'
   printf, lun, 'image'
 
   for i_line=0, n_elements(uniq_lambdas)-1 do begin
@@ -45,26 +45,22 @@ PRO flame_identify_writeds9, speclines, filename=filename
    	this_x = this_x[wsort]
    	this_y = this_y[wsort]
 
-    ; concatenate points
-    all_x = [ this_x, reverse(this_x) ]
-    all_y = [ this_y, reverse(this_y) ]
+    ; the color for this line (red if we are using it for wavecal, otherwise blue)
+    if speclines[w_thisline[0]].trust_lambda eq 1 then color ='red' $
+      else color='blue'
 
 		; in ds9, the first pixel is (1,1), not (0,0)
-		all_x += 1
-		all_y += 1
+		this_x += 1
+		this_y += 1
 
-    ; make the string with all the points
-    all_points = ''
-    for i=0,n_elements(all_x)-2 do all_points += strtrim(all_x[i],2) + ',' + cgnumber_formatter(all_y[i], decimals=1) + ','
-    ; add the last two points without the final comma
-    all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
+    ; for each detection make a point region
+    for i=0, n_elements(this_x)-1 do $
+      printf, lun, 'point(' + strtrim(this_x[i], 2) + ',' + strtrim(this_y[i], 2) + ') # point=cross color = ' + color
 
-    ; the color for this line (red if we are using it for wavecal, otherwise black)
-    if speclines[w_thisline[0]].trust_lambda eq 1 then color ='red' $
-      else color='black'
-
-    ; write the region corresponding to this line
-    printf, lun, 'polygon(' + all_points + ') # text={' + cgnumber_formatter(this_lambda, decimals=5) + '} color = ' + color
+    ; for the top detection, make an extra region with the line wavelength in the text
+    !NULL = max(this_y, w_top, /nan)
+    printf, lun, 'point(' + strtrim(this_x[w_top], 2) + ',' + strtrim(this_y[w_top], 2) + $
+      ') # point=cross color = ' + color + ' text={' + cgnumber_formatter(this_lambda, decimals=5) + '}'
 
   endfor
 
