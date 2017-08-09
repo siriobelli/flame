@@ -171,7 +171,7 @@ FUNCTION flame_util_create_fuel, input
     wavecal_rough_split: 1, $
     identify_lines_stack_rows: 0, $
     identify_lines_poly_degree: 5, $
-    identify_lines_Nmin_lines: 8, $
+    identify_lines_Nmin_lines: 6, $
     identify_lines_linefit_window: 6.0, $       ; in units of expected linewidth
     wavesolution_order_x: 3, $
     wavesolution_order_y: 2, $
