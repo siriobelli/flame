@@ -540,12 +540,6 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	cutout = fuel.slits[i_slit].cutouts[i_frame]
 	speclines = *cutout.speclines
 
-	; if the illumination correction has already been applied, then skip
-	if cutout.illcorr_applied gt 0 then begin
-		print, cutout.filename, ': illumination correction already applied. Skipping.'
-		return
-	endif
-
 	; read in slit
 	im = mrdfits(cutout.filename, 0, hdr, /silent)
 	im_sigma = mrdfits(cutout.filename, 1, /silent)
@@ -636,9 +630,6 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	; write out the illumination-corrected cutout
   writefits, illcorr_filename, im, hdr
 	writefits, illcorr_filename, im_sigma, /append
-
-	; update the filename of the illumination-corrected frame in the cutout structure
-	fuel.slits[i_slit].cutouts[i_frame].filename = illcorr_filename
 
 	; update the flag
 	fuel.slits[i_slit].cutouts[i_frame].illcorr_applied = 1

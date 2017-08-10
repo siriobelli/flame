@@ -3,6 +3,7 @@
 PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 
 	slit_filename = cutout.filename
+	if cutout.illcorr_applied then slit_filename = flame_util_replace_string(cutout.filename, '_corr', '_illcorr')
 	print, 'Sky subtraction for ', slit_filename
 
 	; read in the slit image

@@ -154,6 +154,8 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	; input filenames for this slit
 	filenames = fuel.slits[i_slit].cutouts.filename
+	if fuel.slits[i_slit].cutouts[0].illcorr_applied then $
+				filenames = flame_util_replace_string(filenames, '_corr', '_illcorr')
 
 	; identify the A and B and X positions
 	diagnostics = fuel.diagnostics
