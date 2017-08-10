@@ -21,7 +21,6 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	lambda_0 = slit.outlambda_min
 	delta_lambda = slit.outlambda_delta
 	Nx = slit.outlambda_Npix
-	Ny = N_imy
 
 	; create 2D arrays containing the observed coordinates of each pixel
 	x_2d = indgen(N_imx) # replicate(1, N_imy)
@@ -30,15 +29,17 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	; create 2D arrays containing the rectified coordinates of each pixel
 	flame_util_transform_direct, rectification, x=x_2d, y=y_2d, lambda=lambda_2d, gamma=gamma_2d
 
-	; define grid on the gamma axis
-	gamma_min = min(gamma_2d, /nan)
+	; define grid on the gamma axis - note that the grid points are integer numbers
+	gamma_min = floor( min(gamma_2d, /nan) )
+	gamma_max = floor( max(gamma_2d, /nan)+0.5 )
+	Ny = gamma_max - gamma_min
 
 	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
 	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
 
 	; resample image onto new grid using griddata
 	triangulate, lambdax_2d, gamma_2d, triangles
-	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
+	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
 	if Next GT 1 then new_im_sigma = griddata(lambdax_2d, gamma_2d, im_sigma, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
 
 	; add the wavelength calibration to the FITS header

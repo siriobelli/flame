@@ -17,14 +17,61 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 	; number of frames
 	N_frames = n_elements(filenames)
 
-	; read first frame
-	im_0 = readfits(filenames[0], header)
+	; check there is more than one frame
+	if N_frames LE 1 then message, 'cannot stack only one frame'
+
+
+	; construct the grid for the output image
+	; ----------------------------------------------------------------------------
+
+	; read header of first frame and get the grid of (lambda,gamma)
+	header = headfits(filenames[0])
+	lambda_min = sxpar(header, 'CRVAL1')
+	lambda_step = sxpar(header, 'CDELT1')
+	N_x = sxpar(header, 'NAXIS1')
+	gamma_min = sxpar(header, 'CRVAL2')
+	gamma_max = sxpar(header, 'CRVAL2') + sxpar(header, 'NAXIS2')
+
+	; for each frame, read header and compare the grid
+	for i_frame=1, N_frames-1 do begin
+
+		header = headfits(filenames[i_frame])
+
+		; check that they have the same lambda axis
+		if (sxpar(header, 'CRVAL1')-lambda_min)/lambda_min GT 0.001 then message, 'wavelength axes not identical'
+		if (sxpar(header, 'CDELT1')-lambda_step)/lambda_step GT 0.001 then message, 'wavelength axes not identical'
+
+		; get the new extreme values for the gamma range
+		if sxpar(header, 'CRVAL2') LT gamma_min then gamma_min = sxpar(header, 'CRVAL2')
+		if sxpar(header, 'CRVAL2') + sxpar(header, 'NAXIS2') GT gamma_max then gamma_max = sxpar(header, 'CRVAL2') + sxpar(header, 'NAXIS2')
+
+	endfor
+
+	; check that final gamma range is reasonable
+	if gamma_max - gamma_min GT 3000 then message, 'vertical dimension of the combined image is too large'
 
 	; make big cube containing all frames
-	im_cube = dblarr( N_frames, (size(im_0))[1], (size(im_0))[2] )
+	im_cube = dblarr( N_frames, N_x, gamma_max-gamma_min+1 )
+	im_cube[*] = !values.d_nan
 
-	; read all frames
-	for i_frame=0,N_frames-1 do im_cube[i_frame,*,*] = mrdfits(filenames[i_frame], 0, /silent)
+
+	; read in all frames
+	; ----------------------------------------------------------------------------
+
+	; read in all frames
+	for i_frame=0, N_frames-1 do begin
+
+		; read in image and header
+		im = mrdfits(filenames[i_frame], 0, header, /silent)
+
+		; determine the spatial shift needed to align this with the cube
+		y_start = sxpar(header, 'CRVAL2') - gamma_min
+		y_end = y_start + sxpar(header, 'NAXIS2') - 1
+
+		; insert the image at the right place in the cube
+		im_cube[i_frame, *, y_start:y_end] = im
+
+	endfor
 
 	; calculate median at each pixel of the image
 	median_im = median(im_cube, dimension=1)
@@ -64,8 +111,22 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 	if N_ext GE 1 then begin
 
 			; read in the error images
-			error_cube = dblarr( N_frames, (size(im_0))[1], (size(im_0))[2] )
-			for i_frame=0,N_frames-1 do error_cube[i_frame,*,*] = mrdfits(filenames[i_frame], 1, /silent)
+			error_cube = im_cube
+			error_cube[*] = !values.d_nan
+			for i_frame=0, N_frames-1 do begin
+
+				; read in error image and primary header
+				im_err = mrdfits(filenames[i_frame], 1, /silent)
+				header = headfits(filenames[i_frame])
+
+				; determine the spatial shift needed to align this with the cube
+				y_start = sxpar(header, 'CRVAL2') - gamma_min
+				y_end = y_start + sxpar(header, 'NAXIS2') - 1
+
+				; insert the image at the right place in the cube
+				error_cube[i_frame, *, y_start:y_end] = im_err
+
+			endfor
 
 			; turn masked pixels into NaNs
 			error_cube[where(mask_cube, /null)] = !values.d_nan
@@ -169,7 +230,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	; select all X frames
 	w_X = where(diagnostics.offset_pos eq 'X', /null)
 
-	; read in a header with the wavelength calibration
+	; read in a header with the wavelength and gamma calibration
 	header = headfits(flame_util_replace_string(filenames[0], '.fits', '_rectified.fits'))
 
 
