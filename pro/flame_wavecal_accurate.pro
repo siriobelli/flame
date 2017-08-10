@@ -10,6 +10,42 @@
 ;*******************************************************************************
 ;*******************************************************************************
 
+FUNCTION flame_wavecal_gamma, fuel=fuel, slit=slit, this_diagnostics=this_diagnostics
+	; return the polynomial coefficients that describe gamma(x,y)
+
+	; first, find the vertical offset to the reference star
+	w_this_offset = where(fuel.diagnostics.offset_pos eq this_diagnostics.offset_pos, /null)
+	ref_diagnostics = fuel.diagnostics[w_this_offset[0]]
+	vertical_offset = this_diagnostics.position - ref_diagnostics.position
+
+	; find the average x coordinate of the reference star trace
+	xref = mean(fuel.settings.star_x_range)
+
+	; set the size of the matrix: linear in y, and same degree as slit edge in x
+	N_y = 2
+	N_x = n_elements(slit.bottom_poly)
+
+	; make the matrix of coefficients
+	gamma_coeff = dblarr(N_y, N_x)
+
+	; by definition, dgamma/dy = 1
+	gamma_coeff[1,0] = 1.0
+
+	; use the definition of the bottom edge of the slit to build the gamma matrix
+	gamma_coeff[0,*] = -slit.bottom_poly
+
+	; but the zero point is such that gamma at xref is the vertical distance to the star trace
+	gamma_coeff[0,0] += slit.yrange_cutout[0] - this_diagnostics.position + poly(xref, slit.bottom_poly)
+
+	return, gamma_coeff
+
+END
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
 FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax, lambda_polyorder=lambda_polyorder
 	;
 	; This function is used for finding the best-fit coefficients
@@ -96,29 +132,8 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	lambda_0 = slit.outlambda_min
 	delta_lambda = slit.outlambda_delta
 
-	; calculate vertical offset
-	w_this_offset = where(diagnostics.offset_pos eq this_diagnostics.offset_pos)
-	ref_diagnostics = diagnostics[w_this_offset[0]]
-	vertical_offset = this_diagnostics.position - floor(ref_diagnostics.position)
-
 	; translate every OH detection into the new coordinate system
 	OH_lambdax = (OH_lambda - lambda_0)/delta_lambda
-	;OH_gamma = OH_y + first_pixel - poly(OH_x, slit.bottom_poly) - vertical_offset
-
-
-	; find the gamma coefficients analytically -------------------------------------------------------
-
-	; make the 4x4 matrix
-	Kgamma = dblarr(4, 4)
-
-	; by definition, dgamma/dy = 1
-	Kgamma[1,0] = 1.0
-
-	; use the definition of the bottom edge of the slit to build the gamma matrix
-	Kgamma[0,*] = -slit.bottom_poly
-
-	; but the zero is now at the edge of the cutout, and is corrected for the drift
-	Kgamma[0,0] += first_pixel - vertical_offset
 
 
 	; guess the lambda coefficients -------------------------------------------------------
@@ -178,10 +193,14 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; convert the coefficients to a 2D matrix
 	Klambda = reform(lambda_coeff, polyorder_y+1, polyorder_x+1)
 
-; ---------------------------------------------------------------------------------------
+
+	; find the gamma coefficients -------------------------------------------------------
+
+	gamma_coeff = flame_wavecal_gamma(fuel=fuel, slit=slit, this_diagnostics=this_diagnostics)
+
 
 	; save into slit structure - copy also the lambda_min and lambda_step parameters
-	*cutout.rectification = {Klambda:Klambda, Kgamma:Kgamma, $
+	*cutout.rectification = {Klambda:Klambda, Kgamma:gamma_coeff, $
 		lambda_min:slit.outlambda_min, lambda_delta:slit.outlambda_delta}
 
 	; finally, output the actual wavelength calibration as a 2D array
@@ -476,27 +495,12 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	rectification.Klambda[0,0] = rectification.Klambda[0,0] - lambda_shift/delta_lambda
 
 
-	; update the Kgamma matrix using the diagnostics for this particular frame
-	; ------------------------------------------------------------------------
+	; find the gamma coefficients -------------------------------------------------------
 
-	; calculate vertical offset
-	w_this_offset = where(diagnostics.offset_pos eq this_diagnostics.offset_pos)
-	ref_diagnostics = diagnostics[w_this_offset[0]]
-	vertical_offset = this_diagnostics.position - floor(ref_diagnostics.position)
+	gamma_coeff = flame_wavecal_gamma(fuel=fuel, slit=slit, this_diagnostics=this_diagnostics)
 
-	; make the 4x4 matrix
-	Kgamma = dblarr(4, 4)
+	rectification.Kgamma = gamma_coeff
 
-	; by definition, dgamma/dy = 1
-	Kgamma[1,0] = 1.0
-
-	; use the definition of the bottom edge of the slit to build the gamma matrix
-	Kgamma[0,*] = -slit.bottom_poly
-
-	; but the zero is now at the edge of the cutout, and is corrected for the drift
-	Kgamma[0,0] += slit.yrange_cutout[0] - vertical_offset
-
-	rectification.Kgamma = Kgamma
 
 	; save into slit structure - copy also the lambda_min and lambda_step parameters
 	*cutout.rectification = rectification

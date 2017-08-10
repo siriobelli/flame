@@ -23,10 +23,6 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	Nx = slit.outlambda_Npix
 	Ny = N_imy
 
-	; ; resample image onto new grid using poly_2d
-	; new_im = poly_2D(im, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
-	; if Next GT 1 then new_im_sigma = poly_2D(im_sigma, rectification.Kx, rectification.Ky, 1, Nx, Ny, missing=!values.d_nan )
-
 	; create 2D arrays containing the observed coordinates of each pixel
 	x_2d = indgen(N_imx) # replicate(1, N_imy)
 	y_2d = replicate(1, N_imx) # indgen(N_imy)
@@ -34,25 +30,28 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	; create 2D arrays containing the rectified coordinates of each pixel
 	flame_util_transform_direct, rectification, x=x_2d, y=y_2d, lambda=lambda_2d, gamma=gamma_2d
 
+	; define grid on the gamma axis
+	gamma_min = min(gamma_2d, /nan)
+
 	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
 	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
 
 	; resample image onto new grid using griddata
 	triangulate, lambdax_2d, gamma_2d, triangles
-	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
-	if Next GT 1 then new_im_sigma = griddata(lambdax_2d, gamma_2d, im_sigma, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
+	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
+	if Next GT 1 then new_im_sigma = griddata(lambdax_2d, gamma_2d, im_sigma, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
 
 	; add the wavelength calibration to the FITS header
 	SXADDPAR, Header, 'CTYPE1', 'AWAV    '
 	SXADDPAR, Header, 'CUNIT1', 'MICRON'
-	SXADDPAR, Header, 'CRPIX1', 1
+	SXADDPAR, Header, 'CRPIX1', 0
 	SXADDPAR, Header, 'CRVAL1', lambda_0
 	SXADDPAR, Header, 'CDELT1', delta_lambda
 
 	; add the spatial position to the FITS header
 	SXADDPAR, Header, 'CUNIT2', 'PIXEL'
-	SXADDPAR, Header, 'CRPIX2', 1
-	SXADDPAR, Header, 'CRVAL2', 1.0
+	SXADDPAR, Header, 'CRPIX2', 0
+	SXADDPAR, Header, 'CRVAL2', gamma_min
 	SXADDPAR, Header, 'CDELT2', 1.0
 
 	; delete WCS keywords
