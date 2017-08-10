@@ -7,17 +7,21 @@
 
 
 
-FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, rejected_im=rejected_im, error_image=error_image
+FUNCTION flame_combine_stack, filenames=filenames, output_filename=output_filename, $
+	sigma_clip=sigma_clip
 ;
 ; read in FITS files and mean-stack them doing a sigma clipping
-; optionally, outputs an image with the number of masked pixels
-; and the error image
+; write multi-HDU output FITS file:
+; HDU 0: stacked spectrum
+; HDU 1: error spectrum
+; HDU 2: sigma map [i.e., standard deviation of values for each pixel]
+; HDU 3: exptime map
 ;
 
 	; number of frames
 	N_frames = n_elements(filenames)
 
-	; check there is more than one frame
+	; check that there is more than one frame
 	if N_frames LE 1 then message, 'cannot stack only one frame'
 
 
@@ -25,12 +29,12 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 	; ----------------------------------------------------------------------------
 
 	; read header of first frame and get the grid of (lambda,gamma)
-	header = headfits(filenames[0])
-	lambda_min = sxpar(header, 'CRVAL1')
-	lambda_step = sxpar(header, 'CDELT1')
-	N_x = sxpar(header, 'NAXIS1')
-	gamma_min = sxpar(header, 'CRVAL2')
-	gamma_max = sxpar(header, 'CRVAL2') + sxpar(header, 'NAXIS2')
+	header0 = headfits(filenames[0])
+	lambda_min = sxpar(header0, 'CRVAL1')
+	lambda_step = sxpar(header0, 'CDELT1')
+	N_x = sxpar(header0, 'NAXIS1')
+	gamma_min = sxpar(header0, 'CRVAL2')
+	gamma_max = sxpar(header0, 'CRVAL2') + sxpar(header0, 'NAXIS2')
 
 	; for each frame, read header and compare the grid
 	for i_frame=1, N_frames-1 do begin
@@ -50,9 +54,17 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 	; check that final gamma range is reasonable
 	if gamma_max - gamma_min GT 3000 then message, 'vertical dimension of the combined image is too large'
 
-	; make big cube containing all frames
+	; make big cube containing all images
 	im_cube = dblarr( N_frames, N_x, gamma_max-gamma_min+1 )
 	im_cube[*] = !values.d_nan
+
+	; cube for the error spectra
+	error_cube = dblarr( N_frames, N_x, gamma_max-gamma_min+1 )
+	error_cube[*] = !values.d_nan
+
+	; cube for the exptime
+	exptime_cube = dblarr( N_frames, N_x, gamma_max-gamma_min+1 )
+	exptime_cube[*] = !values.d_nan
 
 
 	; read in all frames
@@ -71,7 +83,21 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 		; insert the image at the right place in the cube
 		im_cube[i_frame, *, y_start:y_end] = im
 
+		; if present, read the error spectrum
+		fits_info, filenames[i_frame], N_ext=N_ext, /silent
+		if N_ext GE 1 then error_cube[i_frame, *, y_start:y_end] = $
+		 	mrdfits(filenames[i_frame], 1, /silent)
+
+		; make map of exposure time
+		exptime = sxpar(header, 'EXPTIME')
+		map_exptime = im*0.0 + exptime ; account for NaNs
+		exptime_cube[i_frame, *, y_start:y_end] = map_exptime
+
 	endfor
+
+
+	; sigma-clipping and stacking
+	; ----------------------------------------------------------------------------
 
 	; calculate median at each pixel of the image
 	median_im = median(im_cube, dimension=1)
@@ -100,47 +126,40 @@ FUNCTION flame_combine_stack, filenames=filenames, sigma_clip=sigma_clip, reject
 
 	; turn masked pixels into NaNs
 	im_cube[where(mask_cube, /null)] = !values.d_nan
+	error_cube[where(mask_cube, /null)] = !values.d_nan
+	exptime_cube[where(mask_cube, /null)] = !values.d_nan
 
-	; make an image with the number of rejected pixels
-	rejected_im = total(mask_cube, 1)
 
-	; check if there are more than one extensions in the FITS file (i.e. error images)
-	fits_info, filenames[0], N_ext=N_ext, /silent
+	; make stack and output files
+	; ----------------------------------------------------------------------------
 
-	; if sigma images exist, then calculate the combined error image
-	if N_ext GE 1 then begin
+	; stack the frames
+	im_stack =	mean(im_cube, dimension=1, /nan)
 
-			; read in the error images
-			error_cube = im_cube
-			error_cube[*] = !values.d_nan
-			for i_frame=0, N_frames-1 do begin
+	; make the error spectrum
+	error_stack = sqrt( total(error_cube^2, 1, /nan)  ) / float( total(finite(mask_cube), 1))
 
-				; read in error image and primary header
-				im_err = mrdfits(filenames[i_frame], 1, /silent)
-				header = headfits(filenames[i_frame])
+	; make final map of exptime
+	exptime_stack = total(exptime_cube, 1, /nan)
 
-				; determine the spatial shift needed to align this with the cube
-				y_start = sxpar(header, 'CRVAL2') - gamma_min
-				y_end = y_start + sxpar(header, 'NAXIS2') - 1
+	; make header array with the correct grid
+	sxaddpar, header0, 'CRVAL2', gamma_min
+	sxaddpar, header0, 'NAXIS2', gamma_max-gamma_min+1
 
-				; insert the image at the right place in the cube
-				error_cube[i_frame, *, y_start:y_end] = im_err
+	; write out FITS file with stack
+	writefits, output_filename, im_stack, header0
 
-			endfor
+	; add extension with error
+	writefits, output_filename, error_stack, /append
 
-			; turn masked pixels into NaNs
-			error_cube[where(mask_cube, /null)] = !values.d_nan
+	; add extension with exptime
+	writefits, output_filename, exptime_stack, /append
 
-			; make an image with the number of non-rejected pixels
-			nonrejected_im = N_frames - rejected_im
+	; add extension with the pixel standard deviation
+	writefits, output_filename, sigma_im, /append
 
-			; make the final error image by adding the uncertainties in quadrature
-			error_image = sqrt( total(error_cube^2, 1, /nan)  ) / float(nonrejected_im)
+	return, im_stack
 
-	endif
-
-	; finally stack the frames
-	return,	mean(im_cube, dimension=1, /nan)
 
 END
 
@@ -241,10 +260,8 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	sky_filenames = flame_util_replace_string(filenames, '.fits', '_skymodel_rectified.fits')
 
 	; stack and get the sky spectrum
-	stack_sky = flame_combine_stack(filenames=sky_filenames, sigma_clip=sigma_clip)
-
-	; write out the sky spectrum
-	writefits, filename_prefix + '_sky.fits', stack_sky, header
+	stack_sky = flame_combine_stack(filenames=sky_filenames, $
+		output_filename = filename_prefix + '_sky.fits', sigma_clip=sigma_clip)
 
 
 	; stack all A, B, and X frames
@@ -256,48 +273,43 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_X ne !NULL then begin
 
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
-		stack_X = flame_combine_stack(filenames=stack_X_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, error_image=stack_X_sigma)
-		writefits, filename_prefix + '_X.fits', stack_X, header
-		writefits, filename_prefix + '_X.fits', stack_X_sigma, /append
+		stack_X = flame_combine_stack(filenames=stack_X_filenames, $
+			output_filename=filename_prefix + '_X.fits', sigma_clip=sigma_clip)
 		fuel.slits[i_slit].output_file = filename_prefix + '_X.fits'
 
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
-		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_X, error_image=stack_X_skysub_sigma)
-		writefits, filename_prefix + '_skysub_X.fits', stack_X_skysub, header
-		writefits, filename_prefix + '_skysub_X.fits', stack_X_skysub_sigma, /append
+		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, $
+			output_filename=filename_prefix + '_skysub_X.fits', sigma_clip=sigma_clip)
 
 	endif
 
 	if w_B ne !NULL then begin
 
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
-		stack_B = flame_combine_stack(filenames=stack_B_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, error_image=stack_B_sigma)
-		writefits, filename_prefix + '_B.fits', stack_B, header
-		writefits, filename_prefix + '_B.fits', stack_B_sigma, /append
+		stack_B = flame_combine_stack(filenames=stack_B_filenames, $
+		 	output_filename=filename_prefix + '_B.fits', sigma_clip=sigma_clip)
 		fuel.slits[i_slit].output_file = filename_prefix + '_B.fits'
 
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
-		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_B, error_image=stack_B_skysub_sigma)
-		writefits, filename_prefix + '_skysub_B.fits', stack_B_skysub, header
-		writefits, filename_prefix + '_skysub_B.fits', stack_B_skysub_sigma, /append
+		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, $
+		 	output_filename=filename_prefix + '_skysub_B.fits', sigma_clip=sigma_clip)
 
 	endif
 
 	if w_A ne !NULL then begin
 
 		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
-		stack_A = flame_combine_stack(filenames=stack_A_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, error_image=stack_A_sigma)
-		writefits, filename_prefix + '_A.fits', stack_A, header
-		writefits, filename_prefix + '_A.fits', stack_A_sigma, /append
+		stack_A = flame_combine_stack(filenames=stack_A_filenames, $
+			output_filename=filename_prefix + '_A.fits', sigma_clip=sigma_clip)
 		fuel.slits[i_slit].output_file = filename_prefix + '_A.fits'
 
 		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
-		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, sigma_clip=sigma_clip, rejected_im=rejected_im_A, error_image=stack_A_skysub_sigma)
-		writefits, filename_prefix + '_skysub_A.fits', stack_A_skysub, header
-		writefits, filename_prefix + '_skysub_A.fits', stack_A_skysub_sigma, /append
+		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, $
+			output_filename=filename_prefix + '_skysub_A.fits', sigma_clip=sigma_clip)
 
 	endif
 
+stop
 
 	; combine A, B, and X stacks
 	;*************************************
@@ -388,6 +400,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 
 END
+
 
 ;*******************************************************************************
 ;*******************************************************************************
