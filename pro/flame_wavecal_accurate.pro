@@ -59,11 +59,11 @@ FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax,
 	if n_elements(coefficients) NE (lambda_polyorder[0]+1)*(lambda_polyorder[1]+1) then message, 'dimension of coefficients is wrong!'
 
 	; transform the coefficients from 1D to 2D
-	Klambda = reform(coefficients, lambda_polyorder[1]+1, lambda_polyorder[0]+1)
+	lambda_coeff = reform(coefficients, lambda_polyorder[1]+1, lambda_polyorder[0]+1)
 
 	; given the coefficients, calculate the predicted normalized lambda for each specline
 	predicted_lambdax = dblarr(n_elements(speclines))*0.0
-	for i=0,lambda_polyorder[0] do for j=0,lambda_polyorder[1] do predicted_lambdax += double(Klambda[j,i]) * double(speclines.x)^i * double(speclines.y)^j
+	for i=0,lambda_polyorder[0] do for j=0,lambda_polyorder[1] do predicted_lambdax += double(lambda_coeff[j,i]) * double(speclines.x)^i * double(speclines.y)^j
 
 	; construct array with deviation in lambda for each line
 	dev = dblarr(n_elements(speclines))
@@ -173,7 +173,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		args = {speclines:speclines, lambdax:OH_lambdax, lambda_polyorder:[polyorder_x, polyorder_y] }
 
 		; fit the data and find the coefficients for the lambda calibration
-		lambda_coeff = mpfit('lambda_calibration', starting_coefficients_l, functargs=args, $
+		lambda_coeff1d = mpfit('lambda_calibration', starting_coefficients_l, functargs=args, $
 			bestnorm=bestnorm_l, best_resid=best_resid_l, /quiet, status=status_l)
 
 		; check that mpfit worked
@@ -191,7 +191,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	print, ''
 
 	; convert the coefficients to a 2D matrix
-	Klambda = reform(lambda_coeff, polyorder_y+1, polyorder_x+1)
+	lambda_coeff = reform(lambda_coeff1d, polyorder_y+1, polyorder_x+1)
 
 
 	; find the gamma coefficients -------------------------------------------------------
@@ -200,7 +200,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 
 
 	; save into slit structure - copy also the lambda_min and lambda_step parameters
-	*cutout.rectification = {Klambda:Klambda, Kgamma:gamma_coeff, $
+	*cutout.rectification = {lambda_coeff:lambda_coeff, gamma_coeff:gamma_coeff, $
 		lambda_min:slit.outlambda_min, lambda_delta:slit.outlambda_delta}
 
 	; finally, output the actual wavelength calibration as a 2D array
@@ -492,14 +492,14 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	rectification = *slit.arc_cutout.rectification
 
 	; apply a constant wavelength shift
-	rectification.Klambda[0,0] = rectification.Klambda[0,0] - lambda_shift/delta_lambda
+	rectification.lambda_coeff[0,0] = rectification.lambda_coeff[0,0] - lambda_shift/delta_lambda
 
 
 	; find the gamma coefficients -------------------------------------------------------
 
 	gamma_coeff = flame_wavecal_gamma(fuel=fuel, slit=slit, this_diagnostics=this_diagnostics)
 
-	rectification.Kgamma = gamma_coeff
+	rectification.gamma_coeff = gamma_coeff
 
 
 	; save into slit structure - copy also the lambda_min and lambda_step parameters
