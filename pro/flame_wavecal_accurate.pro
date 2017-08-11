@@ -668,7 +668,7 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 		endfor
 
 		; find the center of the x-distribution of the speclines
-		x_center = 0.5*(max(lambdas_x) - min(lambdas_x))
+		x_center = 0.5*(max(lambdas_x) + min(lambdas_x))
 
 		; split into left and right sides
 		w_left = where(lambdas_x LT x_center, complement=w_right, /null)
