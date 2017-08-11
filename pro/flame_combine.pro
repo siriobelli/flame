@@ -1,10 +1,3 @@
-;
-;
-; TO-DO:
-;
-; - handle better the case in which A or B are actually sky
-;
-
 
 
 ;*******************************************************************************
@@ -182,11 +175,13 @@ END
 
 
 
-PRO flame_combine_diff, filename1=filename1, filename2=filename2, output_filename=output_filename, $
-	sigma_clip=sigma_clip
+PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
+		output_filename=output_filename, combined_filename=combined_filename
 ;
 ; make difference image
 ; the input files must be written by flame_combine_stack and have four extensions
+; if combined_filename is specified, then the ABcombined image is also written,
+; using the gamma coordinate to align
 ;
 
 	; read in the two files
@@ -220,8 +215,8 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, output_filenam
 	; combine the sigma
 	sigdiff = sqrt( sig1^2 + sig2^2 )
 
-	; add the exptime
-	exptimediff = exptime1 + exptime2
+	; add the exptime (0.5 factor because we are not really adding the signal)
+	exptimediff = 0.5*(exptime1 + exptime2)
 
 
 	; output file
@@ -234,59 +229,61 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, output_filenam
 	print, output_filename, ' written'
 
 
-END
+	; double-combine frames
+	; ----------------------------------------------------------------------------
 
+	; if the keyword is not provided, then skip
+	if ~keyword_set(combined_filename) then return
 
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
+	; get the range of gamma values for the two frames
+	gamma_min1 = sxpar(hdr1, 'CRVAL2')
+	gamma_max1 = sxpar(hdr1, 'CRVAL2') + sxpar(hdr1, 'NAXIS2')
+	gamma_min2 = sxpar(hdr2, 'CRVAL2')
+	gamma_max2 = sxpar(hdr2, 'CRVAL2') + sxpar(hdr2, 'NAXIS2')
 
-FUNCTION flame_combine_AB, filename_top=filename_top, filename_bottom=filename_bottom, $
-		dithering_length=dithering_length, error_image=error_image
-	;
-	; For on-source dithering, combine A and B traces together.
-	; filename_top is the filename of the frame with the trace on top.
-	; Optionally output error spectrum
-	;
+	; if there is no overlap in the gamma ranges, then we are done
+	if max([gamma_max1, gamma_max2]) - min([gamma_min1, gamma_min2]) GT $
+		(gamma_max1-gamma_min1) + (gamma_max2-gamma_min2) then return
 
-	; read in frames with error spectra too
-	top = mrdfits(filename_top, 0, /silent)
-	top_sigma = mrdfits(filename_top, 1, /silent)
-	bottom = mrdfits(filename_bottom, 0, /silent)
-	bottom_sigma = mrdfits(filename_bottom, 1, /silent)
+	; calculate the gamma range for the double-combined frame
+	gamma_min = min([gamma_min1, gamma_min2])
+	gamma_max = max([gamma_max1, gamma_max2])
 
-	; A-B stack
-	AB = top - bottom
-	AB_sigma = sqrt(top_sigma^2 + bottom_sigma^2)
+	; make an empty cube for the stacking
+	cube_imdiff = dblarr( 2, (size(imdiff))[1], gamma_max-gamma_min+1 )
+	cube_imdiff[*] = !values.d_nan
+	cube_errdiff = cube_imdiff
+	cube_sigdiff = cube_imdiff
+	cube_exptimediff = cube_imdiff
 
-	; change NaNs into zeros, to properly account for the empty areas at the edges
-	AB[where(~finite(AB), /null)] = 0.0
+	; add the difference image, aligning the gamma of the first frame
+	cube_imdiff[0,*,gamma_min1-gamma_min:gamma_max1-gamma_min-1] = imdiff
+	cube_errdiff[0,*,gamma_min1-gamma_min:gamma_max1-gamma_min-1] = errdiff^2
+	cube_sigdiff[0,*,gamma_min1-gamma_min:gamma_max1-gamma_min-1] = sigdiff^2
+	cube_exptimediff[0,*,gamma_min1-gamma_min:gamma_max1-gamma_min-1] = exptimediff
 
-	; invert the A-B stack
-	BA = -AB
-	BA_sigma = AB_sigma
+	; then add the NEGATIVE difference image, aligning the gamma of the SECOND frame
+	cube_imdiff[1,*,gamma_min2-gamma_min:gamma_max2-gamma_min-1] = -imdiff
+	cube_errdiff[1,*,gamma_min2-gamma_min:gamma_max2-gamma_min-1] = errdiff^2
+	cube_sigdiff[1,*,gamma_min2-gamma_min:gamma_max2-gamma_min-1] = sigdiff^2
+	cube_exptimediff[1,*,gamma_min2-gamma_min:gamma_max2-gamma_min-1] = exptimediff
 
-	; zero padding on top
-	padding = dblarr( (size(top))[1], dithering_length )
-	padding[*] = 0.0
-	AB_padded = [ [AB], [padding] ]
-	AB_padded_sigma = [ [AB_sigma], [padding] ]
-	BA_padded = [ [BA], [padding] ]
-	BA_padded_sigma = [ [BA_sigma], [padding] ]
+	; finally stack the cube
+	dbl_imdiff = total(cube_imdiff, 1, /nan)
+	dbl_errdiff = sqrt( total(cube_errdiff, 1, /nan) )
+	dbl_sigdiff = sqrt( total(cube_sigdiff, 1, /nan) )
+	dbl_exptimediff = total(cube_exptimediff, 1, /nan)
 
-	; shift by the dithering length
-	BA_shifted = shift(BA_padded, 0, dithering_length)
-	BA_shifted_sigma = shift(BA_padded_sigma, 0, dithering_length)
+	; update the header
+	sxaddpar, hdr1, 'CRVAL2', gamma_min
 
-	; combine positive and negative
-	AB_combined = mean( [ [[AB_padded]], [[BA_shifted]] ], dimension=3, /nan )
-	error_image = sqrt( total( [ [[AB_padded_sigma^2]], [[BA_shifted_sigma^2]] ], 3, /nan ) ) / $
-	 	double( total( finite([ [[AB_padded_sigma]], [[BA_shifted_sigma]] ]), 3 ) )
+	; write out FITS file
+	writefits, combined_filename, dbl_imdiff, hdr1
+	writefits, combined_filename, dbl_errdiff, err_hdr, /append
+	writefits, combined_filename, dbl_sigdiff, sig_hdr, /append
+	writefits, combined_filename, dbl_exptimediff, exptime_hdr, /append
+	print, output_filename, ' written'
 
-	; revert the true bad pixels (i.e., both A and B are NaN) into NaNs
-	AB_combined[where(~finite(error_image), /null)] = !values.d_nan
-
-	return, AB_combined
 
 END
 
@@ -390,10 +387,10 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_B NE !NULL and w_X ne !NULL then begin
 
 		flame_combine_diff, filename1=filename_prefix+'_B.fits', filename2=filename_prefix+'_X.fits', $
-			output_filename=filename_prefix + '_B-X.fits', sigma_clip=sigma_clip
+			output_filename=filename_prefix + '_B-X.fits'
 
 		flame_combine_diff, filename1=filename_prefix+'_skysub_B.fits', filename2=filename_prefix+'_skysub_X.fits', $
-			output_filename=filename_prefix + '_skysub_B-X.fits', sigma_clip=sigma_clip
+			output_filename=filename_prefix + '_skysub_B-X.fits'
 
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B-X.fits'
 
@@ -403,10 +400,10 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_A NE !NULL and w_X ne !NULL then begin
 
 		flame_combine_diff, filename1=filename_prefix+'_A.fits', filename2=filename_prefix+'_X.fits', $
-			output_filename=filename_prefix + '_A-X.fits', sigma_clip=sigma_clip
+			output_filename=filename_prefix + '_A-X.fits'
 
 		flame_combine_diff, filename1=filename_prefix+'_skysub_A.fits', filename2=filename_prefix+'_skysub_X.fits', $
-			output_filename=filename_prefix + '_skysub_A-X.fits', sigma_clip=sigma_clip
+			output_filename=filename_prefix + '_skysub_A-X.fits'
 
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-X.fits'
 
@@ -416,57 +413,18 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_A NE !NULL and w_B ne !NULL then begin
 
 		flame_combine_diff, filename1=filename_prefix+'_A.fits', filename2=filename_prefix+'_B.fits', $
-			output_filename=filename_prefix + '_A-B.fits', sigma_clip=sigma_clip
+			output_filename=filename_prefix + '_A-B.fits', combined_filename=filename_prefix + '_ABcombined.fits'
 
 		flame_combine_diff, filename1=filename_prefix+'_skysub_A.fits', filename2=filename_prefix+'_skysub_B.fits', $
-			output_filename=filename_prefix + '_skysub_A-B.fits', sigma_clip=sigma_clip
+			output_filename=filename_prefix + '_skysub_A-B.fits', combined_filename=filename_prefix + '_skysub_ABcombined.fits'
 
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-B.fits'
 
+		; if written, then use the ABcombined file
+		if file_test(filename_prefix + '_skysub_ABcombined.fits') then $
+			fuel.slits[i_slit].output_file = filename_prefix + '_skysub_ABcombined.fits'
+
 	endif
-
-
-	; if only one among the A and B positions is available, then we are done
-	if w_A eq !NULL or w_B eq !NULL then return
-
-
-	; combine A and B into a negative-positive-negative image
-	;*****************************************************************************
-
-	; find the dithering length
-	; (keep in mind that the rectification step already shifted each frame to the floor() of the reference position)
-	dithering_length = abs( floor(diagnostics[w_A[0]].position) - floor(diagnostics[w_B[0]].position) )
-
-	; if the dithering was not along the slit, then we are done
-	if dithering_length GE (size(stack_A))[2] then return
-
-	; combine A and B traces
-
-	; make sure to pick the right offset position for the "top" trace
-		if diagnostics[w_A[0]].position GT diagnostics[w_B[0]].position then begin
-			AB = flame_combine_AB( filename_top=filename_prefix + '_A.fits', filename_bottom=filename_prefix + '_B.fits', $
-				dithering_length=dithering_length, error_image=AB_sigma )
-			AB_skysub = flame_combine_AB( filename_top=filename_prefix + '_skysub_A.fits', filename_bottom=filename_prefix + '_skysub_B.fits', $
-				dithering_length=dithering_length, error_image=AB_skysub_sigma )
-		endif else begin
-			AB = flame_combine_AB( filename_top=filename_prefix + '_B.fits', filename_bottom=filename_prefix + '_A.fits', $
-				dithering_length=dithering_length, error_image=AB_sigma )
-			AB_skysub = flame_combine_AB( filename_top=filename_prefix + '_skysub_B.fits', filename_bottom=filename_prefix + '_skysub_A.fits', $
-				dithering_length=dithering_length, error_image=AB_skysub_sigma )
-		endelse
-
-	; output final result
-	writefits, filename_prefix + '_ABcombined.fits', AB, header
-	writefits, filename_prefix + '_ABcombined.fits', AB_sigma, /append
-	writefits, filename_prefix + '_skysub_ABcombined.fits', AB_skysub, header
-	writefits, filename_prefix + '_skysub_ABcombined.fits', AB_skysub_sigma, /append
-
-	; also output the SNR map
-	writefits, filename_prefix + '_ABcombined_SNR.fits', AB/AB_sigma, header
-	writefits, filename_prefix + '_skysub_ABcombined_SNR.fits', AB_skysub/AB_skysub_sigma, header
-
-	; update the filename of the final output
-	fuel.slits[i_slit].output_file = filename_prefix + '_skysub_ABcombined.fits'
 
 
 END
