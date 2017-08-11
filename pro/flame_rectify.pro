@@ -45,13 +45,13 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	; add the wavelength calibration to the FITS header
 	SXADDPAR, Header, 'CTYPE1', 'AWAV    '
 	SXADDPAR, Header, 'CUNIT1', 'MICRON'
-	SXADDPAR, Header, 'CRPIX1', 0
+	SXADDPAR, Header, 'CRPIX1', 1
 	SXADDPAR, Header, 'CRVAL1', lambda_0
 	SXADDPAR, Header, 'CDELT1', delta_lambda
 
 	; add the spatial position to the FITS header
 	SXADDPAR, Header, 'CUNIT2', 'PIXEL'
-	SXADDPAR, Header, 'CRPIX2', 0
+	SXADDPAR, Header, 'CRPIX2', 1
 	SXADDPAR, Header, 'CRVAL2', gamma_min
 	SXADDPAR, Header, 'CDELT2', 1.0
 
