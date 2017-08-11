@@ -300,18 +300,16 @@ FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, 
 		print, 'STEP 2: rough estimate of second-order variation'
 
 		; set the size of the grid
-		; N1 = 30
-		; N2 = 60
-		N1 = 20
-		N2 = 20
+		N1 = 40
+		N2 = 60
 
 		; make the grid
-	  ; for the pixel scale, bracket the value found in the coarse fit, +/- 20% of its value
-		pix_scale_grid = wavecal_coefficients[1] *( 0.80 + 0.40*dindgen(N1)/double(N1-1) )
+	  ; for the pixel scale, bracket the value found in the coarse fit, +/- 30% of its value
+		pix_scale_grid = wavecal_coefficients[1] *( 0.70 + 0.60*dindgen(N1)/double(N1-1) )
 
 	  ; we assume that the pixel scale does not vary by more than a factor of 2
 	  ; across the full spectrum. This gives us the extreme negative values for a2:
-	  a2_ref = wavecal_coefficients[1] / (4d*n_elements(sky) + 1d)
+	  a2_ref = 1.5 * wavecal_coefficients[1] / (4d*n_elements(sky) + 1d)
 
 	  ; then we make a generic grid, from 1/1000 to 1 with logarithmic spacing
 	  log_grid = 10.0^( -3.0 + 3.0*dindgen(N2/2)/double(N2/2-1))
