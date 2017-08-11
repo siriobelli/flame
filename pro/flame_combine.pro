@@ -7,6 +7,11 @@
 
 
 
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
 FUNCTION flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	sigma_clip=sigma_clip
 ;
@@ -143,20 +148,28 @@ FUNCTION flame_combine_stack, filenames=filenames, output_filename=output_filena
 	exptime_stack = total(exptime_cube, 1, /nan)
 
 	; make header array with the correct grid
+	sxaddpar, header0, 'EXTNAME', 'DATA'
 	sxaddpar, header0, 'CRVAL2', gamma_min
 	sxaddpar, header0, 'NAXIS2', gamma_max-gamma_min+1
+	sxaddpar, header0, 'CRDELT2', 1.0
 
 	; write out FITS file with stack
 	writefits, output_filename, im_stack, header0
 
-	; add extension with error
-	writefits, output_filename, error_stack, /append
+	; make header for extensions
+	mkhdr, xten_hdr, error_stack, /image
 
-	; add extension with exptime
-	writefits, output_filename, exptime_stack, /append
+	; add extension with error
+	sxaddpar, xten_hdr, 'EXTNAME', 'NOISE'
+	writefits, output_filename, error_stack, xten_hdr, /append
 
 	; add extension with the pixel standard deviation
-	writefits, output_filename, sigma_im, /append
+	sxaddpar, xten_hdr, 'EXTNAME', 'SIGMA'
+	writefits, output_filename, sigma_im, xten_hdr, /append
+
+	; add extension with exptime
+	sxaddpar, xten_hdr, 'EXTNAME', 'EXPTIME'
+	writefits, output_filename, exptime_stack, xten_hdr, /append
 
 	return, im_stack
 
