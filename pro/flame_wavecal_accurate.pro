@@ -575,12 +575,13 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	; do not consider measurements that are more than a factor of three off
 	w_tofit = where(sorted_illum GT 0.33 and sorted_illum LT 3.0, /null)
 
-	; fit polynomial to the illumination correction as a function of gamma
-	poly_coeff = poly_fit(sorted_gamma[w_tofit], sorted_illum[w_tofit], 8)
-
 	; set the boundaries for a meaningful correction
 	gamma_min = sorted_gamma[3]
 	gamma_max = sorted_gamma[-4]
+
+	; fit polynomial to the illumination correction as a function of gamma
+	; NB: to increase robustness, set zero-point for gamma so that we are working with small numbers
+	poly_coeff = robust_poly_fit(sorted_gamma[w_tofit]-gamma_min, sorted_illum[w_tofit], 8)
 
 	; scatter plot of the illumination (show all OH lines)
 	cgplot, sorted_gamma[w_tofit], sorted_illum[w_tofit], psym=3, /ynozero, charsize=1.2, $
@@ -588,8 +589,11 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 
 	; overplot the smooth illumination
 	x_axis = gamma_min + (gamma_max-gamma_min)*dindgen(200)/199.
-	cgplot, x_axis, poly(x_axis, poly_coeff), $
+	cgplot, x_axis, poly(x_axis-gamma_min, poly_coeff), $
 		/overplot, color='red', thick=3
+
+	if median(poly(x_axis-gamma_min, poly_coeff)) GT 2.0 or $
+		median(poly(x_axis-gamma_min, poly_coeff)) LT 0.5 then message, 'Illumination correction failed'
 
 	; overplot flat illumination
 	cgplot, [gamma_min - 0.5*gamma_max , gamma_max*1.5], [1,1], /overplot, linestyle=2, thick=3
@@ -610,7 +614,7 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	endfor
 
 	; calculate the illumination correction at each pixel
-	illumination_correction = poly(gamma_coordinate, poly_coeff)
+	illumination_correction = poly(gamma_coordinate-gamma_min, poly_coeff)
 
 	; set the correction to NaN when outside the boundary
 	illumination_correction[where(gamma_coordinate LT gamma_min OR $
