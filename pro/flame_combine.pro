@@ -12,10 +12,10 @@
 ;*******************************************************************************
 
 
-FUNCTION flame_combine_stack, filenames=filenames, output_filename=output_filename, $
+PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	sigma_clip=sigma_clip
 ;
-; read in FITS files and mean-stack them doing a sigma clipping
+; read in FITS files and mean-stack them after a sigma clipping.
 ; write multi-HDU output FITS file:
 ; HDU 0: stacked spectrum
 ; HDU 1: error spectrum
@@ -171,7 +171,67 @@ FUNCTION flame_combine_stack, filenames=filenames, output_filename=output_filena
 	sxaddpar, xten_hdr, 'EXTNAME', 'EXPTIME'
 	writefits, output_filename, exptime_stack, xten_hdr, /append
 
-	return, im_stack
+	print, output_filename, ' written'
+
+END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+
+PRO flame_combine_diff, filename1=filename1, filename2=filename2, output_filename=output_filename, $
+	sigma_clip=sigma_clip
+;
+; make difference image
+; the input files must be written by flame_combine_stack and have four extensions
+;
+
+	; read in the two files
+	; ----------------------------------------------------------------------------
+
+	im1 = mrdfits(filename1, 0, hdr1, /silent)
+	im2 = mrdfits(filename2, 0, hdr2, /silent)
+
+	err1 = mrdfits(filename1, 1, err_hdr, /silent)
+	err2 = mrdfits(filename2, 1, /silent)
+
+	sig1 = mrdfits(filename1, 2, sig_hdr, /silent)
+	sig2 = mrdfits(filename2, 2, /silent)
+
+	exptime1 = mrdfits(filename1, 3, exptime_hdr, /silent)
+	exptime2 = mrdfits(filename2, 3, /silent)
+
+
+	; combine the data
+	; ----------------------------------------------------------------------------
+
+	if (size(im1))[1] ne (size(im1))[1] or (size(im1))[2] ne (size(im1))[2] then $
+		message, filename1 + ' and ' + filename2 + ' have different dimensions'
+
+	; make the difference image
+	imdiff = im1-im2
+
+	; combine the noise
+	errdiff = sqrt( err1^2 + err2^2 )
+
+	; combine the sigma
+	sigdiff = sqrt( sig1^2 + sig2^2 )
+
+	; add the exptime
+	exptimediff = exptime1 + exptime2
+
+
+	; output file
+	; ----------------------------------------------------------------------------
+
+	writefits, output_filename, imdiff, hdr1
+	writefits, output_filename, errdiff, err_hdr, /append
+	writefits, output_filename, sigdiff, sig_hdr, /append
+	writefits, output_filename, exptimediff, exptime_hdr, /append
+	print, output_filename, ' written'
 
 
 END
@@ -273,8 +333,8 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	sky_filenames = flame_util_replace_string(filenames, '.fits', '_skymodel_rectified.fits')
 
 	; stack and get the sky spectrum
-	stack_sky = flame_combine_stack(filenames=sky_filenames, $
-		output_filename = filename_prefix + '_sky.fits', sigma_clip=sigma_clip)
+	flame_combine_stack, filenames=sky_filenames, $
+		output_filename = filename_prefix + '_sky.fits', sigma_clip=sigma_clip
 
 
 	; stack all A, B, and X frames
@@ -286,95 +346,92 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_X ne !NULL then begin
 
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
-		stack_X = flame_combine_stack(filenames=stack_X_filenames, $
-			output_filename=filename_prefix + '_X.fits', sigma_clip=sigma_clip)
+		flame_combine_stack, filenames=stack_X_filenames, $
+			output_filename=filename_prefix + '_X.fits', sigma_clip=sigma_clip
 		fuel.slits[i_slit].output_file = filename_prefix + '_X.fits'
 
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
-		stack_X_skysub = flame_combine_stack(filenames=stack_X_skysub_filenames, $
-			output_filename=filename_prefix + '_skysub_X.fits', sigma_clip=sigma_clip)
+		flame_combine_stack, filenames=stack_X_skysub_filenames, $
+			output_filename=filename_prefix + '_skysub_X.fits', sigma_clip=sigma_clip
 
 	endif
 
 	if w_B ne !NULL then begin
 
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
-		stack_B = flame_combine_stack(filenames=stack_B_filenames, $
-		 	output_filename=filename_prefix + '_B.fits', sigma_clip=sigma_clip)
+		flame_combine_stack, filenames=stack_B_filenames, $
+		 	output_filename=filename_prefix + '_B.fits', sigma_clip=sigma_clip
 		fuel.slits[i_slit].output_file = filename_prefix + '_B.fits'
 
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
-		stack_B_skysub = flame_combine_stack(filenames=stack_B_skysub_filenames, $
-		 	output_filename=filename_prefix + '_skysub_B.fits', sigma_clip=sigma_clip)
+		flame_combine_stack, filenames=stack_B_skysub_filenames, $
+		 	output_filename=filename_prefix + '_skysub_B.fits', sigma_clip=sigma_clip
 
 	endif
 
 	if w_A ne !NULL then begin
 
 		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
-		stack_A = flame_combine_stack(filenames=stack_A_filenames, $
-			output_filename=filename_prefix + '_A.fits', sigma_clip=sigma_clip)
+		flame_combine_stack, filenames=stack_A_filenames, $
+			output_filename=filename_prefix + '_A.fits', sigma_clip=sigma_clip
 		fuel.slits[i_slit].output_file = filename_prefix + '_A.fits'
 
 		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
-		stack_A_skysub = flame_combine_stack(filenames=stack_A_skysub_filenames, $
-			output_filename=filename_prefix + '_skysub_A.fits', sigma_clip=sigma_clip)
+		flame_combine_stack, filenames=stack_A_skysub_filenames, $
+			output_filename=filename_prefix + '_skysub_A.fits', sigma_clip=sigma_clip
 
 	endif
 
-stop
 
-	; combine A, B, and X stacks
+	; make difference images
 	;*************************************
+
 
 	if w_B NE !NULL and w_X ne !NULL then begin
 
-		writefits, filename_prefix + '_B-X.fits', stack_B - stack_X, header
-		writefits, filename_prefix + '_B-X.fits', sqrt(stack_B_sigma^2 + stack_X_sigma^2), /append
+		flame_combine_diff, filename1=filename_prefix+'_B.fits', filename2=filename_prefix+'_X.fits', $
+			output_filename=filename_prefix + '_B-X.fits', sigma_clip=sigma_clip
 
-		writefits, filename_prefix + '_rejectedpixels_B-X.fits', rejected_im_B + rejected_im_X, header
-
-		writefits, filename_prefix + '_skysub_B-X.fits', stack_B_skysub - stack_X_skysub, header
-		writefits, filename_prefix + '_skysub_B-X.fits', sqrt(stack_B_skysub_sigma^2 + stack_X_skysub_sigma^2), /append
+		flame_combine_diff, filename1=filename_prefix+'_skysub_B.fits', filename2=filename_prefix+'_skysub_X.fits', $
+			output_filename=filename_prefix + '_skysub_B-X.fits', sigma_clip=sigma_clip
 
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B-X.fits'
 
 	endif
 
+
 	if w_A NE !NULL and w_X ne !NULL then begin
 
-		writefits, filename_prefix + '_A-X.fits', stack_A - stack_X, header
-		writefits, filename_prefix + '_A-X.fits', sqrt(stack_A_sigma^2 + stack_X_sigma^2), /append
+		flame_combine_diff, filename1=filename_prefix+'_A.fits', filename2=filename_prefix+'_X.fits', $
+			output_filename=filename_prefix + '_A-X.fits', sigma_clip=sigma_clip
 
-		writefits, filename_prefix + '_rejectedpixels_A-X.fits', rejected_im_A + rejected_im_X, header
-
-		writefits, filename_prefix + '_skysub_A-X.fits', stack_A_skysub - stack_X_skysub, header
-		writefits, filename_prefix + '_skysub_A-X.fits', sqrt(stack_A_skysub_sigma^2 + stack_X_skysub_sigma^2), /append
+		flame_combine_diff, filename1=filename_prefix+'_skysub_A.fits', filename2=filename_prefix+'_skysub_X.fits', $
+			output_filename=filename_prefix + '_skysub_A-X.fits', sigma_clip=sigma_clip
 
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-X.fits'
 
 	endif
 
+
 	if w_A NE !NULL and w_B ne !NULL then begin
 
-		writefits, filename_prefix + '_A-B.fits', stack_A - stack_B, header
-		writefits, filename_prefix + '_A-B.fits', sqrt(stack_A_sigma^2 + stack_B_sigma^2), /append
+		flame_combine_diff, filename1=filename_prefix+'_A.fits', filename2=filename_prefix+'_B.fits', $
+			output_filename=filename_prefix + '_A-B.fits', sigma_clip=sigma_clip
 
-		writefits, filename_prefix + '_rejectedpixels_A-B.fits', rejected_im_A + rejected_im_B, header
-
-		writefits, filename_prefix + '_skysub_A-B.fits', stack_A_skysub - stack_B_skysub, header
-		writefits, filename_prefix + '_skysub_A-B.fits', sqrt(stack_A_skysub_sigma^2 + stack_B_skysub_sigma^2), /append
+		flame_combine_diff, filename1=filename_prefix+'_skysub_A.fits', filename2=filename_prefix+'_skysub_B.fits', $
+			output_filename=filename_prefix + '_skysub_A-B.fits', sigma_clip=sigma_clip
 
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-B.fits'
 
 	endif
 
+
 	; if only one among the A and B positions is available, then we are done
 	if w_A eq !NULL or w_B eq !NULL then return
 
 
-	; combine A and B into negative-positive-negative
-	;*************************************
+	; combine A and B into a negative-positive-negative image
+	;*****************************************************************************
 
 	; find the dithering length
 	; (keep in mind that the rectification step already shifted each frame to the floor() of the reference position)
