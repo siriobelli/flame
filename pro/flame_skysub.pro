@@ -78,7 +78,7 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; 	fullbkpt=breakpoints, x2=pixel_ycoord, npoly=1, $
 	; 	outmask=outmask, upper=4.0, lower=4.0 )
 
-	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
+	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=5, $
 		fullbkpt=breakpoints, invvar=1.0/pixel_variance, $
 		outmask=outmask, upper=4.0, lower=4.0 )
 
