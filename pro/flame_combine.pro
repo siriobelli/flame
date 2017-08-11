@@ -282,7 +282,7 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	writefits, combined_filename, dbl_errdiff, err_hdr, /append
 	writefits, combined_filename, dbl_sigdiff, sig_hdr, /append
 	writefits, combined_filename, dbl_exptimediff, exptime_hdr, /append
-	print, output_filename, ' written'
+	print, combined_filename, ' written'
 
 
 END
