@@ -344,6 +344,9 @@ FUNCTION flame_initialize_lris, input
   ; use the sky background to trace the slit edges
   fuel.settings.trace_slit_with_skylines = 0
 
+  ; how much margin to allow for detecting slit vertical distortion
+  fuel.settings.trace_slit_ymargin = 30
+
   ; identify cosmic rays using L.A.Cosmic in each science frame
   fuel.settings.clean_individual_frames = 1
 

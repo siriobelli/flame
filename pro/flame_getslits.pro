@@ -169,7 +169,7 @@ END
 
 ; ****************************************************************************************
 
-PRO flame_getslits_trace_emlines, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
+PRO flame_getslits_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
   ;
   ; Given a frame containing bright emission lines from sky or arcs, it traces the edge of a slit.
   ; approx_edges is an array of two elements indicating the approximate y-coordinates
@@ -181,7 +181,7 @@ PRO flame_getslits_trace_emlines, image, approx_edges, slitid_top=slitid_top, sl
   ; ---------------------------------------------------
 
   ; set the number of pixels above and below the slit to include in the cutout
-  ymargin = 12
+  ymargin = fuel.settings.trace_slit_ymargin
 
   ; extract a cutout of the slit
   cutout = image[ * , min(approx_edges) - ymargin : max(approx_edges) + ymargin ]
@@ -528,7 +528,7 @@ PRO flame_getslits_multislit, fuel=fuel
       slitid_bottom = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
     endif else begin
       ; identify top and bottom edge using emission lines
-      flame_getslits_trace_emlines, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
+      flame_getslits_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
     endelse
 
     ; calculate the slit height
