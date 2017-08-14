@@ -169,174 +169,162 @@ END
 
 ; ****************************************************************************************
 
-
-
-FUNCTION flame_getslits_trace_skylines, image, approx_edge, top=top, bottom=bottom
-
+PRO flame_getslits_trace_emlines, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
   ;
-  ; Given a frame containing bright sky emission lines, it traces the edge of a slit.
-  ; One of the two keywords /top and /bottom must be specified
-  ; The output is a 1D array with the y-coordinate of the edge at each x position.
-  ; Pixels with no detected edges are set to NaN
+  ; Given a frame containing bright emission lines from sky or arcs, it traces the edge of a slit.
+  ; approx_edges is an array of two elements indicating the approximate y-coordinates
+  ; of the top and bottom edges of a slit
   ;
 
-  ; check keywords
-  if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
-  if keyword_set(top) AND keyword_set(bottom) then message, 'Please select either /top or /bottom'
 
-
-  ; extract cutout
+  ; extract cutout and reference spectrum
   ; ---------------------------------------------------
 
-  ; read in the x-size of the image
-  sz = size(image)
-  N_pixel_x = sz[1]
+  ; set the number of pixels above and below the slit to include in the cutout
+  ymargin = 12
 
-  ; how big, in the y direction, is the cutout?
-  cutout_size = 34      ; even number please
+  ; extract a cutout of the slit
+  cutout = image[ * , min(approx_edges) - ymargin : max(approx_edges) + ymargin ]
+  Nx = (size(cutout))[1]
+  Ny = (size(cutout))[2]
 
-  ; let's extract a cutout centered on the edge
-  cutout_bottom_ycoord = approx_edge-cutout_size/2
-  cutout = image[ * , cutout_bottom_ycoord : cutout_bottom_ycoord + cutout_size - 1 ]
+	; calculate the distance of each pixel row from the spatial center of the slit
+	dist_to_center = abs( indgen(Ny) - Ny/2 )
 
-  ; from now on, the code assumes that we are interested in finding the top edge of a slit
-  ; if instead we want the bottom edge, simply flip vertically the cutout
-  if keyword_set(bottom) then cutout = reverse(cutout, 2)
+	; extract profile
+	profile = median(cutout, dimension=1)
+
+	; detect positive flux fluctuations, probably due to bright objects
+	w_objects = where( profile - median(profile) GT 3.0* stddev(profile, /nan), /null)
+
+	; exclude these pixels by assigning them an arbitrary high distance
+	if w_objects NE !NULL then dist_to_center[w_objects] = 999
+
+	; identify the most-central five pixel rows that are not contaminated by bright objects
+	w_skyregion = (sort(dist_to_center))[0:4]
+
+	; extract the sky region
+	sky_region = []
+	for i=0, n_elements(w_skyregion)-1 do sky_region = [ [sky_region], [cutout[*,w_skyregion[i]]] ]
+
+	; extract the spectrum from the sky region
+	central_spectrum = median(sky_region, dimension=2)
+
+  ; identify the continuum (particularly important in the K band)
+  central_spectrum_padded = [replicate(0d,200), central_spectrum, replicate(0d,200)]
+  central_spectrum_continuum = (median(central_spectrum_padded, 200))[200:-201]
+
+  ; make the reference spectrum: subtract continuum, smooth, trim edges
+  ref_spectrum = gauss_smooth(central_spectrum - central_spectrum_continuum, 3, /nan)
+  ref_spectrum[0:40]=0.0
+  ref_spectrum[-40:-1]=0.0
+
+  ; subtract the continuum from the full slit
+  cutout_zeroed = cutout - central_spectrum_continuum # transpose(replicate(1, (size(cutout))[2]))
 
 
-  ; identify the OH lines
+  ; for each emission line find the top and bottom edges
   ; ---------------------------------------------------
 
-  ; extract a spectrum from the fiducial slit region
-  sky_spectrum = median(cutout[*,0:cutout_size/4], dimension=2)
+	; define a flux threshold for emission lines: standard deviation of the spectrum without the extreme points
+	sorted_values = ref_spectrum[sort(ref_spectrum)]
+	threshold = 0.5*stddev(sorted_values[0.1*Nx : -0.3*Nx], /nan)
 
-  ; subtract the continuum from the sky spectrum (particularly important in the K band)
-  sky_spectrum_padded = [replicate(0d,200), sky_spectrum, replicate(0d,200)]
-  sky_spectrum_continuum = (median(sky_spectrum_padded, 200))[200:-201]
-  sky_spectrum_zeroed = sky_spectrum - sky_spectrum_continuum
+	; automatically identify peaks
+	w_peaks = where( ref_spectrum GT shift(ref_spectrum, 1) and ref_spectrum GT shift(ref_spectrum, 2) and $
+		ref_spectrum GT shift(ref_spectrum, 3) and ref_spectrum GT shift(ref_spectrum, -1) and $
+		ref_spectrum GT shift(ref_spectrum, -2) and ref_spectrum GT shift(ref_spectrum, -3) and $
+		ref_spectrum - 0.5*(shift(ref_spectrum, 3)+shift(ref_spectrum, -3)) GT threshold, /null )
 
-  ; measure the sky flux in between the OH lines
-  mmm, sky_spectrum_zeroed, level_betweenlines, sigma_betweenlines
+  if n_elements(w_peaks) LT 5 then message, 'Did not find enough emission lines to trace the slit'
+  print, n_elements(w_peaks), ' emission lines identified'
 
-  ; consider as a sky line all those pixels that are more than 2 sigma above the normal level of between-lines sky
-  w_OH = where(sky_spectrum_zeroed GT level_betweenlines + 2.0*sigma_betweenlines, /null)
-  if w_OH eq !NULL then w_OH = -1 ; it won't be used anyway
+  ; make arrays with the final results: x and y coordinates of edge identifications
+  ; for both the top and the bottom of the slit
+  slit_top_x = []
+  slit_top_y = []
+  slit_bottom_x = []
+  slit_bottom_y = []
 
-  ; make a 2D mask of the OH lines
-  mask_OH = bytarr(N_pixel_x)
-  mask_OH[w_OH] = 1
-  mask2D_OH = mask_OH # replicate(1, cutout_size)
+  ; make a binary mask of the cutout to store the pixels that belong identified lines
+  mask = bytarr(Nx, Ny)
 
-  ; get rid of all pixels that are not along a OH line
-  cutout[where(mask2D_OH eq 0, /null)] = 0.0
+  for i_line=0, n_elements(w_peaks)-1 do begin
 
+    ; this is the x coordinate of this emission line
+    x_line = w_peaks[i_line]
 
-  ; make a binary map of the emission lines
-  ; ---------------------------------------------------
+    ; check that this line has not already been identified with the previous line
+    if mask[x_line, Ny/2] eq 1 then continue
 
-  ; extract a spectrum from the fiducial "outside-slit" region
-  outside_spectrum = median(cutout[*,-cutout_size/4:-1], dimension=2)
+    ; minimum flux to be considered as part of the emission line
+    min_flux = threshold + 0.5*(ref_spectrum[x_line]-threshold)
 
-  ; this represent the zero-level. Subtract it from each column
-  cutout -= outside_spectrum # replicate(1, cutout_size)
+    ; check that the peak of the initial pixel is above the min flux (otherwise search2d does not work)
+    if cutout_zeroed[x_line, Ny/2] LT min_flux then continue
 
-  ; for each pixel column, take the ratio of each pixel to the fiducial sky value in the slit
-  sky_spectrum_2d = sky_spectrum # replicate(1, cutout_size)
-  flux_ratio = cutout / sky_spectrum_2d
+    ; make a copy of the cutout, using only the pixels around the line
+    cutout_thisline = cutout_zeroed
+    cutout_thisline[0:x_line-15,*]=min(cutout_zeroed)
+    cutout_thisline[x_line+15:-1,*]=min(cutout_zeroed)
 
-  ; now delete all pixel with flux less than 25% of what is found in the OH line of the corresponding pixel column
-  flux_ratio[ where(flux_ratio LT 0.25, /null) ] = 0.0
+    ; find the 2D region corresponding to the emission line
+    w_line = search2d( cutout_thisline, x_line, Ny/2, min_flux, max(cutout_zeroed) )
 
-  ; because of bad pixels, there might be some zeroes on the OH lines. Let's median smooth everything along the x axis
-  flux_ratio_sm = median(flux_ratio, 3, dimension=2)
+    ; store the region in the mask
+    mask[w_line] = 1
 
-  ; now let's set to 1 all the "bright" pixels, and we end up with a binary array
-  binary_mask = flux_ratio_sm
-  binary_mask[ where(binary_mask GT 0.0, /null) ] = 1.0
+    ; transform the 2D indices into 1D indices
+    index_y = w_line / Nx
+    index_x = w_line - (index_y * Nx)
 
+    ; sort pixels by x index using the histogram command
+    h = Histogram(index_x, min=min(index_x), binsize=1, reverse_indices=ri)
 
-  ; find the slit edges
-  ; ---------------------------------------------------
+    ; check that there are at least five pixel columns in this line
+    if n_elements(ri) LE n_elements(w_line)+5 then continue
 
-  ; here is my definition of an edge: you need at least X consecutive "bright" pixels just below the edge,
-  ; and at least X consecutive "dark" pixels above the edge.
-  ; set X:
-  filter_length = 5
+    ; get the running top and bottom edges of this line
+    edge_x = []
+    edge_top = []
+    edge_bottom = []
 
-  ; the first condition is: there are only ones among the last X pixels
-  ; easy way to do this is to "smear" the binary mask vertically
-  binary_mask_smeared_up = flame_getslits_trace_smear( binary_mask, filter_length, /up)
+    ; for each pixel column identify the top and bottom edges (skip first and last column)
+    for x=0,n_elements(ri)-n_elements(w_line)-3 do begin
+      w_x = ri[ ri[x]:ri[x+1]-1 ] ; these are the pixels in the regions in this column
+      edge_x = [ edge_x, index_x[w_x[0]] ] ; store the x coordinate of this column
+      edge_top = [ edge_top, max(index_y[w_x]) ]
+      edge_bottom = [ edge_bottom, min(index_y[w_x]) ]
+    endfor
 
-  ; if the sum is less than 1+1+1+... X times, then there was a zero
-  condition_A = binary_mask_smeared_up*0.0
-  condition_A[where(binary_mask_smeared_up eq 5.0, /null)] = 1.0
+    ; only take the outermost pixels and save their x and y coordinates
+    top_ref = (edge_top[sort(edge_top)])[-3]      ; use the third pixel from the top as a reference
+    w_top = where(edge_top GE top_ref, /null)     ; select all pixels at or above the reference pixel
+    slit_top_x = [ slit_top_x, edge_x[w_top] ]    ; store the x coordinate of the selected pixels
+    slit_top_y = [ slit_top_y, edge_top[w_top] ]  ; store the y coordinate of the selected pixels
 
-  ; the second condition is: there are only zeroes among the next X pixels
-  binary_mask_smeared_down = flame_getslits_trace_smear( binary_mask, filter_length, /down)
+    ; same thing for the bottom edge
+    bottom_ref = (edge_bottom[sort(edge_bottom)])[2]
+    w_bottom = where(edge_bottom LE bottom_ref, /null)
+    slit_bottom_x = [ slit_bottom_x, edge_x[w_bottom] ]
+    slit_bottom_y = [ slit_bottom_y, edge_bottom[w_bottom] ]
 
-  ; if the sum is not zero, then there was a one
-  condition_B = binary_mask_smeared_down*0.0
-  condition_B[where(binary_mask_smeared_down eq 0.0, /null)] = 1.0
-
-  ; finally, at the edge you have one pixel satisying condition A, and the next one satisfying condition_B
-  both_conditions = condition_A * shift(condition_B, [0,-1])
-
-  ; select all the candidate "edge" points
-  candidate_edge_ind =  where(both_conditions, /null)
-
-  ; split into x and y coordinates
-  candidate_edge_xy = array_indices(binary_mask, candidate_edge_ind)
-  candidate_edge_x = reform( candidate_edge_xy[0,*] )
-  candidate_edge_y = reform( candidate_edge_xy[1,*] )
-
-  ; make axis of x-coordinate
-  x_axis = indgen(N_pixel_x)
-
-  ; make axis of y coordinates for the edges
-  y_edge = fltarr(N_pixel_x)
-
-  ; at each x coordinate, see if there are edge candidates and if more than one,
-  ; take the one with the lowest y coordinate (i.e. the one more toward the slit)
-  for i_x=0L,N_pixel_x-1 do begin
-    w = where( candidate_edge_x eq i_x, /null )
-    if w NE !NULL then y_edge[i_x] = min( candidate_edge_y[w] )
   endfor
 
-  ; exclude those artificial edges at the edge of the cutout
-  w_borders = where( y_edge LT filter_length+1 or y_edge GT cutout_size-filter_length-1, /null)
-  y_edge[w_borders] = 0.0
+  ; enlarge by one pixel the edges, otherwise they are very strict
+  slit_top_y += 1
+  slit_bottom_y -= 1
 
-  ; count how many unique OH lines are there
-  w_uniq = where( w_OH-1 - shift(w_OH,1) NE 0, /null) ; get rid of consecutive pixels
-  Nlines = n_elements(w_uniq)
 
-  if Nlines LT 9 then begin
+  ; output the identifications for the top and the bottom
+  ; ---------------------------------------------------
 
-    message, 'I found only ' + strtrim(Nlines,2) + $
-      ' OH lines! Edge tracing should be based on sky background.', /informational
+  slitid_top = dblarr(Nx) + !values.d_nan
+  slitid_top[slit_top_x] =  min(approx_edges) - ymargin + slit_top_y  ; add back the y coordinate of the edge of the cutout
 
-  endif else begin
+  slitid_bottom = dblarr(Nx) + !values.d_nan
+  slitid_bottom[slit_bottom_x] =  min(approx_edges) - ymargin + slit_bottom_y
 
-    print, strtrim(Nlines,2) + ' OH lines found. Tracing edge...'
-    if keyword_set(top) then print, 'top edge at about ' + strtrim(approx_edge, 2)
-    if keyword_set(bottom) then print, 'bottom edge at about ' + strtrim(approx_edge, 2)
-
-    ; select the good edge measurements
-    w_ok = cgsetintersection( w_OH, where( y_edge ne 0.0, /null ) )
-
-    ; set all the non-good edge measurements to NaNs
-    y_edge[ cgsetdifference( indgen(N_pixel_x), w_ok ) ] = !values.d_NaN
-
-  endelse
-
-  ; transform into real y coordinates (not just within the cutout anymore)
-  if keyword_set(bottom) then $
-    real_y_edge = cutout_bottom_ycoord + cutout_size - float(y_edge) $
-  else $
-    real_y_edge = cutout_bottom_ycoord + float(y_edge)
-
-  ; return array with the y-coordinates of the edges
-  return, real_y_edge
 
 END
 
@@ -534,21 +522,13 @@ PRO flame_getslits_multislit, fuel=fuel
     ; if the slit position were specified manually, then do not use the edges detected automatically
     if fuel.input.slit_position_file ne 'none' then approx_edges = [old_slits_struc.approx_bottom, old_slits_struc.approx_top]
 
-    ; split slit into three chunks and use cross-correlation to find slit edges
-    N_pixel_x = (size(image))[1]
-    ; edges_left = flame_getslits_crosscorr( image[0:N_pixel_x/3-1, *], approx_edges[0], approx_edges[1])
-    ; edges_center = flame_getslits_crosscorr( image[N_pixel_x/3 : N_pixel_x*2/3-1, *], approx_edges[0], approx_edges[1])
-    ; edges_right = flame_getslits_crosscorr( image[N_pixel_x*2/3 : -1, *], approx_edges[0], approx_edges[1])
-    edges_center = approx_edges
-
     if fuel.settings.trace_slit_with_skylines eq 0 then begin
       ; identify top and bottom edge using sky background or flat lamp
-      slitid_top = flame_getslits_trace_continuum(image, edges_center[1], /top )
-      slitid_bottom = flame_getslits_trace_continuum(image, edges_center[0], /bottom )
+      slitid_top = flame_getslits_trace_continuum(image, approx_edges[1], /top )
+      slitid_bottom = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
     endif else begin
-      ; identify top and bottom edge using OH lines (and in this case use the rectified image)
-      slitid_top = flame_getslits_trace_skylines(rectified_image, edges_center[1], /top )
-      slitid_bottom = flame_getslits_trace_skylines(rectified_image, edges_center[0], /bottom )
+      ; identify top and bottom edge using emission lines
+      flame_getslits_trace_emlines, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
     endelse
 
     ; calculate the slit height
@@ -614,6 +594,7 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
   ; write a ds9 region files that shows the slit edges
   ; if /raw is set then the individual "raw" measurements of the slit identifications
   ; are shown, as opposed to the polynomial fit
+  ; note: adding +1 to the coordinate to account for different notation of IDL vs ds9
 
   ; name of the region file
   if keyword_set(raw) then region_filename = 'slits_raw.reg' else $
@@ -624,6 +605,14 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
 
   ; number of horizontal pixel in one frame
   N_pix_x = (size( readfits((fuel.util.science.corr_files)[0]) ) )[1]
+
+  ; y coordinate of the center of the top edge
+  top_edges = dblarr(n_elements(slits))
+  for i_slit=0, n_elements(slits)-1 do $
+    top_edges[i_slit] = poly(N_pix_x/2, slits[i_slit].bottom_poly)
+
+  ; assign alternating colors to slits (alternate by position, not slit number)
+  slit_color = (['green', 'red'])[sort(top_edges) mod 2]
 
   ; open file
   openw, lun, fuel.util.intermediate_dir + region_filename, /get_lun
@@ -644,21 +633,15 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
       bottom_x = where( finite(slits[i_slit].slitid_bottom), /null )
       bottom_y = slits[i_slit].slitid_bottom[bottom_x]
 
-      ; alternate colors for clarity
-      color_string = (['green', 'red'])[i_slit mod 2]
-
-      ; radius of each point, in pixels
-      radius = '2'
-
       ; write the line corresponding to each point for the top edge
       if top_x ne !NULL then for i=0, n_elements(top_x)-1 do $
-        printf, lun, 'circle(' + strtrim(top_x[i],2) + ',' + strtrim(top_y[i],2) + ',' + radius + $
-        ') # color=' + color_string
+        printf, lun, 'point(' + strtrim(top_x[i]+1,2) + ',' + strtrim(top_y[i]+1,2) + $
+        ') # point=cross color=' + slit_color[i_slit]
 
       ; write the line corresponding to each point for the bottom edge
       if bottom_x ne !NULL then for i=0, n_elements(bottom_x)-1 do $
-        printf, lun, 'circle(' + strtrim(bottom_x[i],2) + ',' + strtrim(bottom_y[i],2) + ',' + radius + $
-        ') # color=' + color_string
+        printf, lun, 'point(' + strtrim(bottom_x[i]+1,2) + ',' + strtrim(bottom_y[i]+1,2) + $
+        ') # point=cross color=' + slit_color[i_slit]
 
 
     endif else begin    ; show the polynomial fit to the slit edges --------------------------------
@@ -670,8 +653,8 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
       bottom_y = poly(bottom_x, slits[i_slit].bottom_poly)
 
       ; concatenate top and bottom points
-      all_x = [top_x, reverse(bottom_x)]
-      all_y = [top_y, reverse(bottom_y)]
+      all_x = [top_x, reverse(bottom_x)] +1
+      all_y = [top_y, reverse(bottom_y)] +1
 
       ; make the string with all the points
       all_points = ''
@@ -679,11 +662,8 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
       ; add the last two points without the final comma
       all_points += strtrim(all_x[-1],2) + ',' + cgnumber_formatter(all_y[-1], decimals=1)
 
-      ; alternate colors for clarity
-      color_string = (['green', 'red'])[i_slit mod 2]
-
       ; write the line corresponding to this slit
-      printf, lun, 'polygon(' + all_points + ') # color=' + color_string + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + ' - ' + slits[i_slit].name + '}'
+      printf, lun, 'polygon(' + all_points + ') # color=' + slit_color[i_slit] + ' text={SLIT ' + strtrim(slits[i_slit].number,2) + ' - ' + slits[i_slit].name + '}'
 
     endelse
 
