@@ -533,33 +533,6 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 ;*******************************************************************************
-;
-; FUNCTION match_arc_lines, wavecal_coefficients, arc_lines=arc_lines, model_lines=model_lines
-; ;
-; ; mpfit will minimize this output and find the best-fit coefficients
-; ;
-;
-; 	arc_lambda = poly(arc_lines, wavecal_coefficients)
-;
-; 	arc_lambda_residual = arc_lambda*0.0
-; 	for i=0, n_elements(arc_lambda)-1 do begin
-;
-; 		; for each arc line, find the closest model line
-; 		!NULL = min( abs(arc_lambda[i] - model_lines), w_match, /nan )
-;
-; 		arc_lambda_residual[i] = arc_lambda[i] - model_lines[w_match]
-;
-; 	endfor
-;
-; 	; for those lines that are not very close, max out at a fixed value
-; 	arc_lambda_residual[where(arc_lambda_residual GT 0.1, /null)] = 0.1
-;
-; 	return, arc_lambda_residual
-;
-; END
-
-
-;*******************************************************************************
 
 
 FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, rough_arcflux=rough_arcflux
@@ -684,32 +657,6 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 		model_lambda=model_lambda, model_flux=model_flux)
 
 	cgPS_close
-
- ;
- ; ; --------------------------------------------------------------------------------------------
- ; ; here we try to use a different method: match the lines without building a fake spectrum
- ;
- ; ; keep only those lines within a reasonable wavelength range
- ; model_lines = all_lines[ where(all_lines GT wide_range[0] and all_lines LT wide_range[1], /null) ]
- ;
- ; ; match arc_lines to model_lines
- ;
- ; args = {arc_lines:arc_lines, model_lines:model_lines }
- ;
- ; starting_coefficients = [ mean(this_slit.range_lambda0, /nan), $
- ; 	mean(this_slit.range_delta_lambda, /nan), 0.0 ]
- ;
- ; ; set constraints on the coefficients
- ; parinfo = replicate({limits:[0.D,0]}, 3)
- ; parinfo[0].limits = this_slit.range_lambda0
- ; parinfo[1].limits = this_slit.range_delta_lambda
- ;
- ; ; fit the data and find the coefficients for the lambda calibration
- ; wavecal_coeff = mpfit('match_arc_lines', starting_coefficients, functargs=args, $
- ; 	parinfo=parinfo, bestnorm=bestnorm, best_resid=best_resid, /quiet, status=status)
- ;
- ; ; --------------------------------------------------------------------------------------------
-
 
 	; output the observed sky spectrum used for the wavecal
 	rough_arcflux = arc_spectrum
