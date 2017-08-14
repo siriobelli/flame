@@ -311,6 +311,17 @@ PRO flame_getslits_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_t
 
   endfor
 
+  ; remove detections at the top edge of the cutout
+  w_ok = where( slit_top_y LT (size(cutout))[2]-1, /null )
+  slit_top_x = slit_top_x[w_ok]
+  slit_top_y = slit_top_y[w_ok]
+
+  ; again but for the bottom edge
+  w_ok = where( slit_bottom_y GT 0, /null )
+  slit_bottom_x = slit_bottom_x[w_ok]
+  slit_bottom_y = slit_bottom_y[w_ok]
+
+
   ; enlarge by one pixel the edges, otherwise they are very strict
   slit_top_y += 1
   slit_bottom_y -= 1
