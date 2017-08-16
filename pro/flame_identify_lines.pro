@@ -80,51 +80,47 @@ END
 
 PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 	approx_wavecal=approx_wavecal, linewidth=linewidth, $
-	line_list=line_list_in, line_trust=line_trust_in, $
-  line_xref = line_xref, $
+  reflines=reflines, check_shift=check_shift, $
 	speclines=speclines, wavecal=wavecal, plot_title=plot_title
 
 	;
-	; Given a 1D sky spectrum, it finds an accurate wavelength solution
-	; by fitting the sky emission lines and comparing them to a line list. It outputs
-	; the wavelength axis and the Gaussian parameters of each sky line.
-	; It needs an approximate wavelength solution and linewidth to identify the sky emission lines.
-	;
+  ; Given a 1D sky spectrum, identify and measure a set of emission lines.
+  ; Output the wavelength axis and the Gaussian parameters of each line.
+	; It needs an approximate wavelength solution and linewidth and a list
+  ; of emission line wavelengths.
 	;
 	; x: (input) array with the pixel x-coordinate
 	; y: (input) array with the observed sky in one pixel row
 	; approx_wavecal: (input) array with the approximate wavelength for each x
 	; linewidth: (input and output) approximate sigma of unresolved sky lines, which will be updated. NB:in pixels
-	; line_list: (input) array of expected wavelengths of usable OH lines
-  ; line_trust: (input, optional) array of flags: 1 if the line can be used for the wavelength calibration. If not specified, use all lines
-  ; line_xref: (input, optional) array of measured x-coordinates for the emission lines, from the reference (i.e. central) spectrum
+  ; reflines: (input) array of structures to be used as reference for the line identification:
+  ;           reflines.lambda: wavelength of the lines to be identified
+  ;           reflines.trust_lambda: if zero, consider the wavelength value for this line as approximate
+  ;           reflines.x, measured x-coordinates for the emission lines in the reference spectrum
+  ; check_shift: (input, optional) if set, the x-positions of the identified lines are compared to the x positions of the reference lines.
 	; speclines: (output) array of structures with parameters for each OH line
 	; wavecal: (output) array with the wavelength solution
 	; plot_title : (input) string to print as title of the plot
 	;
 
-  ; if line_trust is not provided, then trust all lines
-  if ~keyword_set(line_trust_in) then $
-    line_trust_in = replicate(1, n_elements(line_list_in))
-
 	; convert linewidth to micron
 	linewidth_um = linewidth * median( approx_wavecal - shift(approx_wavecal, 1) )
 
-	; identify the OH lines that are in this wavelength range
-	w_lines = where(line_list_in GT min(approx_wavecal, /nan) $
-		AND line_list_in LT max(approx_wavecal, /nan), /null )
+	; identify the emission lines that are in this wavelength range
+	w_lines = where(reflines.lambda GT min(approx_wavecal, /nan) $
+		AND reflines.lambda LT max(approx_wavecal, /nan), /null )
 
-	; make sure there are OH lines here
+	; make sure there are some lines here
 	if w_lines EQ !NULL then begin
-    print, 'Warning: wavelength range does not contain OH lines'
+    print, 'Warning: wavelength range does not contain emission lines'
     speclines = !NULL
     wavecal = !NULL
     return
   endif
 
-	; keep only the OH lines of interest
-	line_list = line_list_in[w_lines]
-  line_trust = line_trust_in[w_lines]
+	; keep only the emission lines of interest
+	line_list = reflines[w_lines].lambda
+  line_trust = reflines[w_lines].trust_lambda
 
   ; check that there are at least three trustable lines
   if n_elements(where(line_trust eq 1, /null)) LT 3 then $
@@ -195,15 +191,15 @@ PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
 
   ; compare the detections to the reference positions,
   ; to make sure that the fit did not jump to an adjacent emission line
-  if keyword_set(line_xref) then begin
+  if keyword_set(check_shift) then begin
 
     ; find the reference x position for all the detected lines
     epsilon = 0.01* min( abs(line_list-shift(line_list,1)) , /nan)  ; maximum distance for matching float numbers
-    match, line_list, speclines.lambda, w_linelist, w_speclines, epsilon=epsilon
+    match, reflines.lambda, speclines.lambda, w_reflines, w_speclines, epsilon=epsilon
 
     ; check that lines are not too far from the (shifted) reference position
-    xshift = speclines[w_speclines].x - line_xref[w_linelist]
-    w_ok = where( abs( xshift - median(xshift) ) LT 5.0*linewidth, /null)
+    xshift = speclines[w_speclines].x - reflines[w_reflines].x
+    w_ok = where( abs( xshift - median([xshift], /even) ) LT 5.0*linewidth, /null)
 
     ; select only the good lines
     if w_ok EQ !NULL then return
@@ -375,8 +371,11 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 
   ; load line list
 	readcol, linelist_filename, line_list, line_trust, format='D,I', /silent
-  ;line_list = [line_list, 1.2783600]
-  ;line_trust = [line_trust, 0]
+
+  ; make a dummy speclines structure with the line list
+  reflines_initial = replicate({lambda:0.0, trust_lambda:0, x:0.0}, n_elements(line_list))
+  reflines_initial.lambda = line_list
+  reflines_initial.trust_lambda = line_trust
 
   ; calcolate typical wavelength step of one pixel
   lambda_step = median( approx_lambda_axis - shift(approx_lambda_axis, 1) )
@@ -403,13 +402,9 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   ; re-iteratively identify lines and improve wavelength solution
   while delta_Nlines GT 0 and i_loop LT 10 do begin
 
-    ; for this initial fits, use only the lines that we can trust
-    line_list_trust = line_list[where(line_trust eq 1, /null)]
-
     ; fit the emission lines and find the wavelength solution
   	flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=central_skyspec, $
-  		approx_wavecal=lambda_axis, linewidth=linewidth, $
-  		line_list=line_list_trust, $
+  		approx_wavecal=lambda_axis, linewidth=linewidth, reflines=reflines_initial, $
   		speclines=speclines_thisloop, wavecal=lambda_axis_output, plot_title='central rows / ' + strtrim(i_loop,2)
 
     ; update the wavelength solution
@@ -422,19 +417,11 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 
   endwhile
 
-  w_l = where(line_list_trust GT lambda_axis[4] and line_list_trust LT lambda_axis[-5], /null)
+  w_l = where(reflines_initial.lambda GT lambda_axis[4] and reflines_initial.lambda LT lambda_axis[-5], /null)
   print, 'Identified ', strtrim(Nlines, 2), ' out of ', strtrim(n_elements(w_l), 2), ' lines present in the line list.'
 
-  ; now repeat the fitting but include also lines we should not trust
-	flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=central_skyspec, $
-		approx_wavecal=lambda_axis, linewidth=linewidth, $
-		line_list=line_list, line_trust=line_trust, $
-		speclines=speclines_ref, wavecal=lambda_axis_output, plot_title='central rows / ' + strtrim(i_loop,2)
-
   ; consider only the lines that have been identified here and use them as reference
-  line_list = speclines_ref[sort(speclines_ref.lambda)].lambda
-  line_trust = speclines_ref[sort(speclines_ref.lambda)].trust_lambda
-  line_xref =  speclines_ref[sort(speclines_ref.lambda)].x
+  reflines = speclines_thisloop
 
 
   ; fit all the pixel rows
@@ -472,7 +459,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 		; fit the emission lines and find the wavelength solution
 		flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=this_row, $
 			approx_wavecal=wavelength_axis_guess, linewidth=linewidth, $
-			line_list=line_list, line_trust=line_trust, line_xref = line_xref, $
+			reflines=reflines, check_shift=1, $
 			speclines=speclines_thisrow, wavecal=wavelength_axis_for_this_row, plot_title='row '+strtrim(i_row,2)
 
 		; if sky lines were not found, then skip to next row
