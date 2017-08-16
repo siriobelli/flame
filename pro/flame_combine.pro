@@ -182,6 +182,8 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 ; the input files must be written by flame_combine_stack and have four extensions
 ; if combined_filename is specified, then the ABcombined image is also written,
 ; using the gamma coordinate to align
+; NB: if the height of the two frames do not match, extra pixels will be added on top
+; of the shortest frame
 ;
 
 	; read in the two files
@@ -200,11 +202,40 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	exptime2 = mrdfits(filename2, 3, /silent)
 
 
-	; combine the data
+	; make the sizes compatible
 	; ----------------------------------------------------------------------------
 
-	if (size(im1))[1] ne (size(im1))[1] or (size(im1))[2] ne (size(im1))[2] then $
-		message, filename1 + ' and ' + filename2 + ' have different dimensions'
+	height1 = (size(im1))[2]
+	height2 = (size(im2))[2]
+
+	if height1 NE height2 then begin
+
+		print, 'Warning: combining two frames with different number of pixels on the y side: '
+		print, filename1
+		print, filename2
+
+		; if file2 is taller, then trim it
+		if height2 GT height1 then begin
+			im2 = im2[*,0:height1-1]
+			err2 = err2[*,0:height1-1]
+			sig2 = sig2[*,0:height1-1]
+			exptime2 = exptime2[*,0:height1-1]
+		endif
+
+		; if file2 is shorter, then expand it
+		if height2 LT height1 then begin
+			padding = dblarr( (size(im1))[1], height1-height2 ) + !values.d_nan
+			im2 = [ im2, padding ]
+			err2 = [ err2, padding ]
+			sig2 = [ sig2, padding ]
+			exptime2 = [ exptime2, padding ]
+		endif
+
+	endif
+
+
+	; combine the data
+	; ----------------------------------------------------------------------------
 
 	; make the difference image
 	imdiff = im1-im2
@@ -237,13 +268,15 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 
 	; get the range of gamma values for the two frames
 	gamma_min1 = sxpar(hdr1, 'CRVAL2')
-	gamma_max1 = sxpar(hdr1, 'CRVAL2') + sxpar(hdr1, 'NAXIS2')
+	gamma_max1 = gamma_min1 + height1
 	gamma_min2 = sxpar(hdr2, 'CRVAL2')
-	gamma_max2 = sxpar(hdr2, 'CRVAL2') + sxpar(hdr2, 'NAXIS2')
+	gamma_max2 = gamma_min2 + height1
 
-	; if there is no overlap in the gamma ranges, then we are done
-	if max([gamma_max1, gamma_max2]) - min([gamma_min1, gamma_min2]) GT $
-		(gamma_max1-gamma_min1) + (gamma_max2-gamma_min2) then return
+	; calculate the overlap in the range of gamma values between the two frames
+	overlap = min([gamma_max1, gamma_max2]) - max([gamma_min1, gamma_min2])
+
+	; if the overlap is negative (no overlap) or less than 10% of the height, then we are done
+	if overlap LT 0.1 * height1 then return
 
 	; calculate the gamma range for the double-combined frame
 	gamma_min = min([gamma_min1, gamma_min2])
