@@ -622,8 +622,12 @@ PRO flame_getslits_writeds9, fuel=fuel, raw=raw
   for i_slit=0, n_elements(slits)-1 do $
     top_edges[i_slit] = poly(N_pix_x/2, slits[i_slit].bottom_poly)
 
+  ; get the rank order of each slit
+  rank = intarr(n_elements(top_edges))
+  rank[sort(top_edges)] = indgen(n_elements(top_edges))
+
   ; assign alternating colors to slits (alternate by position, not slit number)
-  slit_color = (['green', 'red'])[sort(top_edges) mod 2]
+  slit_color = (['green', 'red'])[rank mod 2]
 
   ; open file
   openw, lun, fuel.util.intermediate_dir + region_filename, /get_lun
