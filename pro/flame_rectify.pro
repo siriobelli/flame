@@ -54,6 +54,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	SXADDPAR, Header, 'CRPIX2', 1
 	SXADDPAR, Header, 'CRVAL2', gamma_min
 	SXADDPAR, Header, 'CDELT2', 1.0
+	SXADDPAR, Header, 'GAMMA00', rectification.gamma_coeff[0,0], 'First element of rect. matrix; added by FLAME'
 
 	; delete WCS keywords
 	SXDELPAR, Header, 'CTYPE2'
