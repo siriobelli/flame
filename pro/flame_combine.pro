@@ -8,7 +8,9 @@
 PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	sigma_clip=sigma_clip
 ;
-; read in FITS files and mean-stack them after a sigma clipping.
+; Read in FITS files and mean-stack them after a sigma clipping.
+; Alignment is done using the gamma coordinate, which is the vertical wcs coordinate
+; NB: the grid of the first filename is assumed for the output file
 ; write multi-HDU output FITS file:
 ; HDU 0: stacked spectrum
 ; HDU 1: error spectrum
@@ -31,37 +33,20 @@ PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	lambda_min = sxpar(header0, 'CRVAL1')
 	lambda_step = sxpar(header0, 'CDELT1')
 	N_x = sxpar(header0, 'NAXIS1')
+	N_y = sxpar(header0, 'NAXIS2')
 	gamma_min = sxpar(header0, 'CRVAL2')
-	gamma_max = sxpar(header0, 'CRVAL2') + sxpar(header0, 'NAXIS2')
-
-	; for each frame, read header and compare the grid
-	for i_frame=1, N_frames-1 do begin
-
-		header = headfits(filenames[i_frame])
-
-		; check that they have the same lambda axis
-		if (sxpar(header, 'CRVAL1')-lambda_min)/lambda_min GT 0.001 then message, 'wavelength axes not identical'
-		if (sxpar(header, 'CDELT1')-lambda_step)/lambda_step GT 0.001 then message, 'wavelength axes not identical'
-
-		; get the new extreme values for the gamma range
-		if sxpar(header, 'CRVAL2') LT gamma_min then gamma_min = sxpar(header, 'CRVAL2')
-		if sxpar(header, 'CRVAL2') + sxpar(header, 'NAXIS2') GT gamma_max then gamma_max = sxpar(header, 'CRVAL2') + sxpar(header, 'NAXIS2')
-
-	endfor
-
-	; check that final gamma range is reasonable
-	if gamma_max - gamma_min GT 3000 then message, 'vertical dimension of the combined image is too large'
+	gamma_max = gamma_min + N_y - 1
 
 	; make big cube containing all images
-	im_cube = dblarr( N_frames, N_x, gamma_max-gamma_min+1 )
+	im_cube = dblarr( N_frames, N_x, N_y )
 	im_cube[*] = !values.d_nan
 
 	; cube for the error spectra
-	error_cube = dblarr( N_frames, N_x, gamma_max-gamma_min+1 )
+	error_cube = dblarr( N_frames, N_x, N_y )
 	error_cube[*] = !values.d_nan
 
 	; cube for the exptime
-	exptime_cube = dblarr( N_frames, N_x, gamma_max-gamma_min+1 )
+	exptime_cube = dblarr( N_frames, N_x, N_y )
 	exptime_cube[*] = !values.d_nan
 
 
@@ -74,22 +59,39 @@ PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 		; read in image and header
 		im = mrdfits(filenames[i_frame], 0, header, /silent)
 
-		; determine the spatial shift needed to align this with the cube
-		y_start = sxpar(header, 'CRVAL2') - gamma_min
-		y_end = y_start + sxpar(header, 'NAXIS2') - 1
+		; check that the lambda axis is the same as for the first file
+		if (sxpar(header, 'CRVAL1')-lambda_min)/lambda_min GT 0.001 then message, 'wavelength axes not identical'
+		if (sxpar(header, 'CDELT1')-lambda_step)/lambda_step GT 0.001 then message, 'wavelength axes not identical'
 
-		; insert the image at the right place in the cube
-		im_cube[i_frame, *, y_start:y_end] = im
+		; read in the spatial grid
+		N_y_i = sxpar(header, 'NAXIS2')
+		gamma_min_i = sxpar(header, 'CRVAL2')
+		gamma_max_i = gamma_min_i + N_y_i - 1
+
+		; determine if the vertical dimensions are on the same grid
+		shift = gamma_min_i - gamma_min
+		if shift ne fix(shift) then message, 'Before stacking the files need to be resampled along the spatial direction!'
+
+		; determine the starting and ending pixels for the proper alignment of the frame
+		if gamma_min_i GE gamma_min then bot_i = 0 else bot_i = gamma_min-gamma_min_i
+		if gamma_min_i GE gamma_min then bot_ref = gamma_min_i-gamma_min else bot_ref = 0
+		if gamma_max_i GE gamma_max then top_i = gamma_max-gamma_min_i  else top_i = gamma_max_i-gamma_min_i
+		if gamma_max_i GE gamma_max then top_ref = gamma_max-gamma_min else top_ref = gamma_max_i-gamma_min
+
+		; add the image to the cube
+		im_cube[i_frame, *, bot_ref:top_ref] = im[*, bot_i:top_i]
 
 		; if present, read the error spectrum
 		fits_info, filenames[i_frame], N_ext=N_ext, /silent
-		if N_ext GE 1 then error_cube[i_frame, *, y_start:y_end] = $
-		 	mrdfits(filenames[i_frame], 1, /silent)
+		if N_ext GE 1 then begin
+			err = mrdfits(filenames[i_frame], 1, /silent)
+			error_cube[i_frame, *, bot_ref:top_ref] = err[*, bot_i:top_i]
+		endif
 
 		; make map of exposure time
 		exptime = sxpar(header, 'EXPTIME')
 		map_exptime = im*0.0 + exptime ; account for NaNs
-		exptime_cube[i_frame, *, y_start:y_end] = map_exptime
+		exptime_cube[i_frame, *, bot_ref:top_ref] = map_exptime[*, bot_i:top_i]
 
 	endfor
 
@@ -225,10 +227,10 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 		; if file2 is shorter, then expand it
 		if height2 LT height1 then begin
 			padding = dblarr( (size(im1))[1], height1-height2 ) + !values.d_nan
-			im2 = [ im2, padding ]
-			err2 = [ err2, padding ]
-			sig2 = [ sig2, padding ]
-			exptime2 = [ exptime2, padding ]
+			im2 = [ [im2], [padding] ]
+			err2 = [ [err2], [padding] ]
+			sig2 = [ [sig2], [padding] ]
+			exptime2 = [ [exptime2], [padding] ]
 		endif
 
 	endif
@@ -306,6 +308,14 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	dbl_errdiff = sqrt( total(cube_errdiff, 1, /nan) )
 	dbl_sigdiff = sqrt( total(cube_sigdiff, 1, /nan) )
 	dbl_exptimediff = total(cube_exptimediff, 1, /nan)
+
+	; set to NaNs pixels with exptime=0
+	w_nan = where(dbl_exptimediff eq 0.0, /null)
+	if w_nan NE !NULL then begin
+		dbl_imdiff[w_nan] = !values.d_nan
+		dbl_errdiff[w_nan] = !values.d_nan
+		dbl_sigdiff[w_nan] = !values.d_nan
+	endif
 
 	; update the header
 	sxaddpar, hdr1, 'CRVAL2', gamma_min
@@ -560,6 +570,102 @@ PRO flame_combine_multislit, fuel=fuel
 END
 
 
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+PRO flame_combine_mask, fuel
+	;
+	; combine the flux of all reduced slits into one large FITS file and do the same for the SNR map
+	; NB: data will be resampled, this output should not be used for science
+	;
+
+	; select all the slits that were reduced
+	w_slits = where(fuel.slits.skip eq 0, /null)
+	if w_slits EQ !NULL then return
+	slits = fuel.slits[w_slits]
+
+	; sort the slits by y position on the mask
+	slits = slits[sort(slits.approx_top + slits.approx_bottom)]
+
+	; empty arrays with the lambda scale of all frames
+	lambda_min = []
+	lambda_step = []
+	N_x = []
+
+	; read all headers and get the wavelength scales
+	for i_slit=0, n_elements(slits)-1 do begin
+		header = headfits(slits[i_slit].output_file)
+		lambda_min = [lambda_min, sxpar(header, 'CRVAL1')]
+		lambda_step = [lambda_step, sxpar(header, 'CDELT1')]
+		N_x = [N_x, sxpar(header, 'NAXIS1')]
+	endfor
+
+	; calculate the lambda_max for each slit
+	lambda_max = lambda_min + (N_x-1)*lambda_step
+
+	; get the wavelength properties of the output grid
+	lambda_0 = min([lambda_min])
+	lambda_1 = max([lambda_max])
+	lambda_delta = median([lambda_step])
+
+	; make wavelength grid for the output file
+	new_lambda_axis = lambda_0 + lambda_delta * dindgen((lambda_1-lambda_0)/lambda_delta+1)
+
+	; make the one-pixel row to insert between slits
+	separation_row = dblarr(n_elements(new_lambda_axis)) + !values.d_nan
+
+	; empty final maps
+	flux_map = separation_row
+	snr_map = separation_row
+
+	; loop through the slits
+	for i_slit=0, n_elements(slits)-1 do begin
+
+		; read in the data and the error and calculate snr
+		flux = mrdfits(slits[i_slit].output_file, 0, /silent)
+		error = mrdfits(slits[i_slit].output_file, 1, /silent)
+		snr = flux/error
+
+		; make the original wavelength grid
+		lambda_axis = lambda_min[i_slit] + lambda_step[i_slit] * dindgen( (size(flux))[1] )
+
+		; set edges to NaNs to avoid crazy extrapolations
+		flux[0:2,*] = !values.d_nan
+		flux[-3:-1,*] = !values.d_nan
+		snr[0:2,*] = !values.d_nan
+		snr[-3:-1,*] = !values.d_nan
+
+		; resample on new lambda grid
+		flux_resampled = dblarr( n_elements(new_lambda_axis), (size(flux))[2] )
+		snr_resampled = flux_resampled
+		for i_row=0, (size(flux))[2]-1 do flux_resampled[*,i_row] = interpol(flux[*,i_row], lambda_axis, new_lambda_axis )
+		for i_row=0, (size(snr))[2]-1 do snr_resampled[*,i_row] = interpol(snr[*,i_row], lambda_axis, new_lambda_axis )
+
+		; add to the final map
+		flux_map = [ [flux_map], [flux_resampled], [separation_row] ]
+		snr_map = [ [snr_map], [snr_resampled], [separation_row] ]
+
+	endfor
+
+	; add wavelength calibration to the header
+	SXADDPAR, header, 'CRPIX1', 1
+	SXADDPAR, header, 'CRVAL1', lambda_0
+	SXADDPAR, header, 'CDELT1', lambda_delta
+
+	; output flux map
+	output_filename = fuel.util.output_dir + 'combined_flux.fits'
+	writefits, output_filename, flux_map, header
+	print, output_filename, ' written'
+
+	; output SNR map
+	output_filename = fuel.util.output_dir + 'combined_SNR.fits'
+	writefits, output_filename, snr_map, header
+	print, output_filename, ' written'
+
+
+END
 
 ;*******************************************************************************
 ;*******************************************************************************
@@ -600,6 +706,9 @@ PRO flame_combine, fuel
 
 	; if there is more than one slit, it may be necessary to combine two different slits together
 	if n_elements(where(fuel.slits.skip eq 0, /null)) GT 1 and fuel.input.AB_subtraction then flame_combine_multislit, fuel=fuel
+
+	; combine the SNR map of all slits that were reduced into one large FITS file
+ 	flame_combine_mask, fuel
 
 
 	flame_util_module_end, fuel
