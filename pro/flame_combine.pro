@@ -96,19 +96,19 @@ PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	endfor
 
 
-	; sigma-clipping and stacking
+	; sigma-clipping
 	; ----------------------------------------------------------------------------
 
 	; calculate median at each pixel of the image
 	median_im = median(im_cube, dimension=1)
 
-	; calculate standard deviation at each pixel of the image
-	sigma_im = stddev(im_cube, dimension=1, /nan)
-
 	; make a cube with the corresponding median at each (pixel,frame) position
 	median_cube = im_cube
 	median_cube[*]=0.0
 	for i_frame=0,N_frames-1 do median_cube[i_frame, *, *] = median_im
+
+	; calculate standard deviation at each pixel of the image
+	sigma_im = stddev(im_cube, dimension=1, /nan)
 
 	; make a cube with the corresponding sigma at each (pixel,frame) position
 	sigma_cube = im_cube
@@ -129,6 +129,13 @@ PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	error_cube[where(mask_cube, /null)] = !values.d_nan
 	exptime_cube[where(mask_cube, /null)] = !values.d_nan
 
+	; make a cube that flags pixels that are actually good
+	goodpix_cube = byte(im_cube*0.0)
+	goodpix_cube = finite(im_cube)
+
+	; for each pixel of the final image, how many frames did actually contribute?
+	im_goodpix = total(goodpix_cube, 1)
+
 
 	; make stack and output files
 	; ----------------------------------------------------------------------------
@@ -141,6 +148,13 @@ PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 
 	; make final map of exptime
 	exptime_stack = total(exptime_cube, 1, /nan)
+
+	; require the contribution of at least half of the frames for a pixel to be valid
+	w_void = where(im_goodpix LE 0.5*N_frames)
+	im_stack[w_void] = !values.d_nan
+	error_stack[w_void] = !values.d_nan
+	sigma_im[w_void] = !values.d_nan
+	exptime_stack[w_void] = 0.0
 
 	; make header array with the correct grid
 	sxaddpar, header0, 'EXTNAME', 'DATA'
