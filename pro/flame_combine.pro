@@ -147,6 +147,7 @@ PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	sxaddpar, header0, 'CRVAL2', gamma_min
 	sxaddpar, header0, 'NAXIS2', gamma_max-gamma_min+1
 	sxaddpar, header0, 'CRDELT2', 1.0
+	; leave the YCUTOUT value of the first frame in the header
 
 	; write out FITS file with stack
 	writefits, output_filename, im_stack, header0
@@ -184,8 +185,8 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 ; the input files must be written by flame_combine_stack and have four extensions
 ; if combined_filename is specified, then the ABcombined image is also written,
 ; using the gamma coordinate to align
-; NB: if the height of the two frames do not match, extra pixels will be added on top
-; of the shortest frame
+; NB: the alignment is done in the "observed" frame using the YCUTOUT keyword
+; from the FITS header
 ;
 
 	; read in the two files
@@ -204,58 +205,53 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	exptime2 = mrdfits(filename2, 3, /silent)
 
 
-	; make the sizes compatible
+	; align the two frames
 	; ----------------------------------------------------------------------------
 
-	height1 = (size(im1))[2]
-	height2 = (size(im2))[2]
+	; read the y coordinate of the (0,0) pixel for each frame
+	ymin1 = round(sxpar(hdr1, 'YCUTOUT'))
+	ymin2 = round(sxpar(hdr2, 'YCUTOUT'))
 
-	if height1 NE height2 then begin
+	; read the y coordinate of the (0,Ny) pixel for each frame
+	ymax1 = ymin1 + sxpar(hdr1, 'NAXIS2') - 1
+	ymax2 = ymin2 + sxpar(hdr2, 'NAXIS2') - 1
 
-		print, 'Warning: combining two frames with different number of pixels on the y side: '
-		print, filename1
-		print, filename2
+	; determine the starting and ending pixels for the proper alignment of the frame
+	if ymin2 GE ymin1 then bot2 = 0 else bot2 = ymin1-ymin2
+	if ymin2 GE ymin1 then bot1 = ymin2-ymin1 else bot1 = 0
+	if ymax2 GE ymax1 then top2 = ymax1-ymin2  else top2 = ymax2-ymin2
+	if ymax2 GE ymax1 then top1 = ymax1-ymin1 else top1 = ymax2-ymin1
 
-		; if file2 is taller, then trim it
-		if height2 GT height1 then begin
-			im2 = im2[*,0:height1-1]
-			err2 = err2[*,0:height1-1]
-			sig2 = sig2[*,0:height1-1]
-			exptime2 = exptime2[*,0:height1-1]
-		endif
-
-		; if file2 is shorter, then expand it
-		if height2 LT height1 then begin
-			padding = dblarr( (size(im1))[1], height1-height2 ) + !values.d_nan
-			im2 = [ [im2], [padding] ]
-			err2 = [ [err2], [padding] ]
-			sig2 = [ [sig2], [padding] ]
-			exptime2 = [ [exptime2], [padding] ]
-		endif
-
-	endif
+	; read the gamma coordinate (to be used later on)
+	gamma_min1 = sxpar(hdr1, 'CRVAL2')
+	gamma_min2 = sxpar(hdr2, 'CRVAL2')
 
 
 	; combine the data
 	; ----------------------------------------------------------------------------
 
 	; make the difference image
-	imdiff = im1-im2
+	imdiff = im1[*,bot1:top1] - im2[*,bot2:top2]
 
 	; combine the noise
-	errdiff = sqrt( err1^2 + err2^2 )
+	errdiff = sqrt( err1[*,bot1:top1]^2 + err2[*,bot2:top2]^2 )
 
 	; combine the sigma
-	sigdiff = sqrt( sig1^2 + sig2^2 )
+	sigdiff = sqrt( sig1[*,bot1:top1]^2 + sig2[*,bot2:top2]^2 )
 
 	; add the exptime (0.5 factor because we are not really adding the signal)
-	exptimediff = 0.5*(exptime1 + exptime2)
+	exptimediff = 0.5*(exptime1[*,bot1:top1] + exptime2[*,bot2:top2])
 
 
 	; output file
 	; ----------------------------------------------------------------------------
 
-	writefits, output_filename, imdiff, hdr1
+	; make the header for the combined spectrum
+	hdr_diff = hdr1
+	if ymin1 ne 0 then sxaddpar, hdr_diff, 'YCUTOUT', sxpar(hdr_diff, 'YCUTOUT')+bot1
+	if ymin1 ne 0 then sxaddpar, hdr_diff, 'CRVAL2', sxpar(hdr_diff, 'CRVAL2')+bot1
+
+	writefits, output_filename, imdiff, hdr_diff
 	writefits, output_filename, errdiff, err_hdr, /append
 	writefits, output_filename, sigdiff, sig_hdr, /append
 	writefits, output_filename, exptimediff, exptime_hdr, /append
@@ -268,42 +264,43 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	; if the keyword is not provided, then skip
 	if ~keyword_set(combined_filename) then return
 
-	; get the range of gamma values for the two frames
-	gamma_min1 = sxpar(hdr1, 'CRVAL2')
-	gamma_max1 = gamma_min1 + height1
-	gamma_min2 = sxpar(hdr2, 'CRVAL2')
-	gamma_max2 = gamma_min2 + height1
+	; what is the nod amplitude?
+	nod = gamma_min1-gamma_min2
 
-	; calculate the overlap in the range of gamma values between the two frames
-	overlap = min([gamma_max1, gamma_max2]) - max([gamma_min1, gamma_min2])
+	; height of the A-B image
+	Ny = (size(imdiff))[2]
 
-	; if the overlap is negative (no overlap) or less than 10% of the height, then we are done
-	if overlap LT 0.1 * height1 then return
+	; if the nod amplitude is zero then something is wrong
+	if nod eq 0 then message, 'Nod amplitude cannot be zero'
 
-	; calculate the gamma range for the double-combined frame
-	gamma_min = min([gamma_min1, gamma_min2])
-	gamma_max = max([gamma_max1, gamma_max2])
+	; if the nod amplitude is almost the same as the frame height, then we are done
+	if abs(nod+0.0) GT 0.9*Ny then return
 
 	; make an empty cube for the stacking
-	cube_imdiff = dblarr( 2, (size(imdiff))[1], gamma_max-gamma_min+1 )
+	cube_imdiff = dblarr( 2, (size(imdiff))[1], Ny + abs(nod) )
 	cube_imdiff[*] = !values.d_nan
 	cube_errdiff = cube_imdiff
 	cube_sigdiff = cube_imdiff
 	cube_exptimediff = cube_imdiff
 
-	; add the difference image, aligning the gamma of the first frame
-	cube_imdiff[0,*,gamma_min1-gamma_min:gamma_max1-gamma_min-1] = imdiff
-	cube_errdiff[0,*,gamma_min1-gamma_min:gamma_max1-gamma_min-1] = errdiff^2
-	cube_sigdiff[0,*,gamma_min1-gamma_min:gamma_max1-gamma_min-1] = sigdiff^2
-	cube_exptimediff[0,*,gamma_min1-gamma_min:gamma_max1-gamma_min-1] = exptimediff
+	; determine the amount of vertical shifting
+	shiftA=0
+	shiftB=0
+	if nod GT 0 then shiftA+=nod else shiftB+=abs(nod)
 
-	; then add the NEGATIVE difference image, aligning the gamma of the SECOND frame
-	cube_imdiff[1,*,gamma_min2-gamma_min:gamma_max2-gamma_min-1] = -imdiff
-	cube_errdiff[1,*,gamma_min2-gamma_min:gamma_max2-gamma_min-1] = errdiff^2
-	cube_sigdiff[1,*,gamma_min2-gamma_min:gamma_max2-gamma_min-1] = sigdiff^2
-	cube_exptimediff[1,*,gamma_min2-gamma_min:gamma_max2-gamma_min-1] = exptimediff
+	; add the difference image in the first layer of the cube
+	cube_imdiff[0,*,0+shiftA:Ny-1+shiftA] = imdiff
+	cube_errdiff[0,*,0+shiftA:Ny-1+shiftA] = errdiff^2
+	cube_sigdiff[0,*,0+shiftA:Ny-1+shiftA] = sigdiff^2
+	cube_exptimediff[0,*,0+shiftA:Ny-1+shiftA] = exptimediff
 
-	; finally stack the cube
+	; add the negative of the difference image in the second layer of the cube
+	cube_imdiff[1,*,0+shiftB:Ny-1+shiftB] = -imdiff
+	cube_errdiff[1,*,0+shiftB:Ny-1+shiftB] = errdiff^2
+	cube_sigdiff[1,*,0+shiftB:Ny-1+shiftB] = sigdiff^2
+	cube_exptimediff[1,*,0+shiftB:Ny-1+shiftB] = exptimediff
+
+	; finally stack the cubes
 	dbl_imdiff = total(cube_imdiff, 1, /nan)
 	dbl_errdiff = sqrt( total(cube_errdiff, 1, /nan) )
 	dbl_sigdiff = sqrt( total(cube_sigdiff, 1, /nan) )
@@ -317,11 +314,13 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 		dbl_sigdiff[w_nan] = !values.d_nan
 	endif
 
-	; update the header
-	sxaddpar, hdr1, 'CRVAL2', gamma_min
+	; make the header for the double-combined spectrum
+	hdr_dbl = hdr1
+	if shiftA ne 0 then sxaddpar, hdr_dbl, 'YCUTOUT', sxpar(hdr_dbl, 'YCUTOUT')+shiftA
+	if shiftA ne 0 then sxaddpar, hdr_dbl, 'CRVAL2', sxpar(hdr_dbl, 'CRVAL2')+shiftA
 
 	; write out FITS file
-	writefits, combined_filename, dbl_imdiff, hdr1
+	writefits, combined_filename, dbl_imdiff, hdr_dbl
 	writefits, combined_filename, dbl_errdiff, err_hdr, /append
 	writefits, combined_filename, dbl_sigdiff, sig_hdr, /append
 	writefits, combined_filename, dbl_exptimediff, exptime_hdr, /append

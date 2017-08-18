@@ -34,6 +34,12 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	gamma_max = floor( max(gamma_2d, /nan)+0.5 )
 	Ny = gamma_max - gamma_min
 
+	; calculate the *absolute* y coordinate (i.e. in the raw frame) corresponding to gamma=gamma_min at x=0
+	; if gamma is not linear in y then throw an error
+	if rectification.gamma_coeff[1,0] eq 1.0 and (size(rectification.gamma_coeff))[1] eq 2 then $
+		abs_y_gamma_min = gamma_min - rectification.gamma_coeff[0,0] + slit.yrange_cutout[0] $
+		else message, 'Non-linear vertical rectification not supported'
+
 	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
 	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
 
@@ -54,7 +60,7 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	SXADDPAR, Header, 'CRPIX2', 1
 	SXADDPAR, Header, 'CRVAL2', gamma_min
 	SXADDPAR, Header, 'CDELT2', 1.0
-	SXADDPAR, Header, 'GAMMA00', rectification.gamma_coeff[0,0], 'First element of rect. matrix; added by FLAME'
+	SXADDPAR, Header, 'YCUTOUT', abs_y_gamma_min, 'Y coordinate of the first pixel; added by FLAME'
 
 	; delete WCS keywords
 	SXDELPAR, Header, 'CTYPE2'
