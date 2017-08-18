@@ -717,12 +717,14 @@ PRO flame_wavecal_rough, fuel
     	*(fuel.slits[i_slit].rough_arclambda) = rough_arclambda
 			*(fuel.slits[i_slit].rough_arcflux) = rough_arcflux
 
-		endif
+		endif else begin
 
-		; find rough calibration using integrated sky spectrum
-		rough_skylambda = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyflux=rough_skyflux)
-    *(fuel.slits[i_slit].rough_skylambda) = rough_skylambda
-		*(fuel.slits[i_slit].rough_skyflux) = rough_skyflux
+			; find rough calibration using integrated sky spectrum
+			rough_skylambda = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyflux=rough_skyflux)
+	    *(fuel.slits[i_slit].rough_skylambda) = rough_skylambda
+			*(fuel.slits[i_slit].rough_skyflux) = rough_skyflux
+
+		endelse
 
 
   endfor
