@@ -256,14 +256,18 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	lambda_0 = slit.outlambda_min
 	delta_lambda = slit.outlambda_delta
 	Nx = slit.outlambda_Npix
-	Ny = N_imy
 
 	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
 	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
 
+	; find the range of gamma values in the image
+	gamma_min = round( min(gamma_2d, /nan) )
+	gamma_max = round( max(gamma_2d, /nan) )
+	Ny = gamma_max-gamma_min
+
 	; resample image onto new grid using griddata
 	triangulate, lambdax_2d, gamma_2d, triangles
-	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, 0.0], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
+	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
 
 	; now stack the rectified image into a 1D spectrum
 	spec1d = median(new_im, dimension=2)
