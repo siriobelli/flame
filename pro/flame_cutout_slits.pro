@@ -51,7 +51,7 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   ; add the vertical coordinate (relative to the reference star!) to the FITS header
   SXADDPAR, Header, 'CTYPE2', 'LINEAR'
 	SXADDPAR, Header, 'CUNIT2', 'PIXEL'
-	SXADDPAR, Header, 'CRPIX2', 0
+	SXADDPAR, Header, 'CRPIX2', 1
 	SXADDPAR, Header, 'CRVAL2', slit_structure.yrange_cutout[0] - yref
 	SXADDPAR, Header, 'CDELT2', 1.0
 

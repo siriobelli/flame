@@ -39,7 +39,7 @@ PRO flame_checkdata_refstar, fuel
 	; get the wavelength calibration from the header
  	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
 	lambda_axis = sxpar(header, 'CRVAL1') + sxpar(header,'CDELT1') * $
-		( findgen(sxpar(header,'NAXIS1')) - sxpar(header,'CRPIX1') + 1d )
+		( findgen(sxpar(header,'NAXIS1')) )
 
 
  	; median profile and fit
@@ -296,7 +296,7 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	; get the wavelength calibration from the header
  	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
 	lambda_axis = sxpar(header, 'CRVAL1') + sxpar(header,'CDELT1') * $
-		( findgen(sxpar(header,'NAXIS1')) - sxpar(header,'CRPIX1') + 1d )
+		( findgen(sxpar(header,'NAXIS1')) )
 
 	; for now we only support micron
 	if lambda_unit ne 'micron' then message, lambda_unit + ' not supported!'
