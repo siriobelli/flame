@@ -265,7 +265,8 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	if ~keyword_set(combined_filename) then return
 
 	; what is the nod amplitude?
-	nod = gamma_min1-gamma_min2
+	nod = (gamma_min1-ymin1) - (gamma_min2-ymin2)
+	print, 'Nod amplitude: ' + strtrim(nod, 2) + ' rectified pixels'
 
 	; height of the A-B image
 	Ny = (size(imdiff))[2]
@@ -315,7 +316,7 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	endif
 
 	; make the header for the double-combined spectrum
-	hdr_dbl = hdr1
+	hdr_dbl = hdr_diff
 	if shiftA ne 0 then sxaddpar, hdr_dbl, 'YCUTOUT', sxpar(hdr_dbl, 'YCUTOUT')+shiftA
 	if shiftA ne 0 then sxaddpar, hdr_dbl, 'CRVAL2', sxpar(hdr_dbl, 'CRVAL2')+shiftA
 
