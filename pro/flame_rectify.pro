@@ -27,7 +27,8 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	y_2d = replicate(1, N_imx) # indgen(N_imy)
 
 	; create 2D arrays containing the rectified coordinates of each pixel
-	flame_util_transform_direct, rectification, x=x_2d, y=y_2d, lambda=lambda_2d, gamma=gamma_2d
+	lambda_2d = flame_util_transform_coord(x_2d, y_2d, rectification.lambda_coeff )
+	gamma_2d = flame_util_transform_coord(x_2d, y_2d, rectification.gamma_coeff )
 
 	; define grid on the gamma axis - note that the grid points are integer numbers
 	gamma_min = floor( min(gamma_2d, /nan) )

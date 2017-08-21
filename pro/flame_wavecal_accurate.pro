@@ -49,7 +49,7 @@ END
 FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax, lambda_polyorder=lambda_polyorder
 	;
 	; This function is used for finding the best-fit coefficients
-	; describing the wavelength of each pixek in the observed frame
+	; describing the wavelength of each pixel in the observed frame
 	;
 	; The coefficients are: [P00, P01, P02, P03, P10, P11, P12, P13, P20, ..... PNN]
 	; and the lambdax calibration is of the form SUM(Pij*x^i*y^j)
@@ -157,6 +157,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 
 
 	; fit the observed speclines and find the best-fit lambda coefficients --------------------------------------------
+	; note that we do the fitting in the lambdax space, with lambdax=0 at lambda_min and lambdax=1 at the next pixel and so on
 
 	; number of speclines we are using
 	Ngoodpix = n_elements(speclines)+1
@@ -173,7 +174,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		args = {speclines:speclines, lambdax:OH_lambdax, lambda_polyorder:[polyorder_x, polyorder_y] }
 
 		; fit the data and find the coefficients for the lambda calibration
-		lambda_coeff1d = mpfit('lambda_calibration', starting_coefficients_l, functargs=args, $
+		lambdax_coeff1d = mpfit('lambda_calibration', starting_coefficients_l, functargs=args, $
 			bestnorm=bestnorm_l, best_resid=best_resid_l, /quiet, status=status_l)
 
 		; check that mpfit worked
@@ -191,7 +192,12 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	print, ''
 
 	; convert the coefficients to a 2D matrix
-	lambda_coeff = reform(lambda_coeff1d, polyorder_y+1, polyorder_x+1)
+	lambdax_coeff = reform(lambdax_coeff1d, polyorder_y+1, polyorder_x+1)
+
+	; convert from lambdax to lambda
+	lambda_coeff = lambdax_coeff * delta_lambda
+	lambda_coeff[0,0] = lambda_coeff[0,0] + lambda_0
+
 
 
 	; find the gamma coefficients -------------------------------------------------------
@@ -211,8 +217,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
 	for ix=0, N_imx-1 do $
 		for iy=0, N_imy-1 do begin
-			flame_util_transform_direct, *cutout.rectification, x=ix, y=iy, lambda=lambda, gamma=gamma
-			wavelength_solution[ix, iy] = lambda
+			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, (*cutout.rectification).lambda_coeff )
 		endfor
 
 	; write the accurate solution to a FITS file
@@ -250,7 +255,8 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	y_2d = replicate(1, N_imx) # indgen(N_imy)
 
 	; create 2D arrays containing the rectified coordinates of each pixel
-	flame_util_transform_direct, *slit.arc_cutout.rectification, x=x_2d, y=y_2d, lambda=lambda_2d, gamma=gamma_2d
+	lambda_2d = flame_util_transform_coord(x_2d, y_2d, (*slit.arc_cutout.rectification).lambda_coeff )
+	gamma_2d = flame_util_transform_coord(x_2d, y_2d, (*slit.arc_cutout.rectification).gamma_coeff )
 
 	; get the parameters for the output grid
 	lambda_0 = slit.outlambda_min
@@ -516,10 +522,8 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 
 	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
 	for ix=0, N_imx-1 do $
-		for iy=0, N_imy-1 do begin
-			flame_util_transform_direct, *cutout.rectification, x=ix, y=iy, lambda=lambda, gamma=gamma
-			wavelength_solution[ix, iy] = lambda
-		endfor
+		for iy=0, N_imy-1 do $
+			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, (*cutout.rectification).lambda_coeff )
 
 	; write the accurate solution to a FITS file
 	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
@@ -569,8 +573,8 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	endfor
 
 	; calculate the gamma coordinate of each OHline detection
-	flame_util_transform_direct, *cutout.rectification, x=speclines.x, y=speclines.y, $
-		lambda=OHlambda, gamma=OHgamma
+	OHlambda = flame_util_transform_coord(speclines.x, speclines.y, (*cutout.rectification).lambda_coeff )
+	OHgamma = flame_util_transform_coord(speclines.x, speclines.y, (*cutout.rectification).gamma_coeff )
 
 	; sort by gamma
 	sorted_gamma = OHgamma[sort(OHgamma)]
@@ -611,11 +615,8 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 
 	; calculate the gamma coordinate for each observed pixel, row by row
 	gamma_coordinate = im * 0.0
-	for i_row=0, N_pixel_y-1 do begin
-		flame_util_transform_direct, *cutout.rectification, x=dindgen(N_pixel_x), y=replicate(i_row, N_pixel_x), $
-			lambda=lambda_row, gamma=gamma_row
-		gamma_coordinate[*,i_row] = gamma_row
-	endfor
+	for i_row=0, N_pixel_y-1 do gamma_coordinate[*,i_row] = $
+		flame_util_transform_coord(dindgen(N_pixel_x), replicate(i_row, N_pixel_x), (*cutout.rectification).gamma_coeff )
 
 	; calculate the illumination correction at each pixel
 	illumination_correction = poly(gamma_coordinate-gamma_min, poly_coeff)
@@ -724,7 +725,7 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	; plot the residuals of the wavelength solution
 
 	; calculate the wavelength solution at the location of the speclines
-	flame_util_transform_direct, *cutout.rectification, x=speclines.x, y=speclines.y, lambda=lambda_model, gamma=gamma_model
+	lambda_model = flame_util_transform_coord(speclines.x, speclines.y, (*cutout.rectification).lambda_coeff )
 
 	; show the residuals
 	cgplot, speclines.x, 1d4 * (speclines.lambda-lambda_model), psym=16, $

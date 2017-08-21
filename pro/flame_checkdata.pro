@@ -490,8 +490,7 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 		if speclines EQ !NULL then continue
 
 		; calculate residuals
-		flame_util_transform_direct, *this_slit.cutouts[i_frame].rectification, $
-			x=speclines.x, y=speclines.y, lambda=lambda, gamma=gamma
+		lambda = flame_util_transform_coord(speclines.x, speclines.y, (*this_slit.cutouts[i_frame].rectification).lambda_coeff )
 
 		line_frame = [line_frame, replicate(i_frame, n_elements(speclines))]
 		line_width = [line_width, speclines.sigma]
