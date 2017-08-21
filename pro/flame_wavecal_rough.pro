@@ -133,6 +133,18 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
     ; coefficients for this loop, assuming the reference lambda
     this_coeff = [ lambda_ref, pix_scale_grid[i1], a2_grid[i2], a3_grid[i3] ]
 
+		; check that the wavelength solution is not double valued - in that case skip this loop
+		if this_coeff[3] NE 0.0 then begin
+			x_sol1 = ( -this_coeff[2] + sqrt(thiscoeff[2]^2 - 3*this_coeff[1]*this_coeff[3]) ) / (3.0*this_coeff[3])
+			x_sol2 = ( -this_coeff[2] - sqrt(thiscoeff[2]^2 - 3*this_coeff[1]*this_coeff[3]) ) / (3.0*this_coeff[3])
+			if x_sol1 GT 0.0 and x_sol1 LT N_skypix then continue
+			if x_sol2 GT 0.0 and x_sol2 LT N_skypix then continue
+		endif else $
+			if this_coeff[2] NE 0.0 then begin
+				x_sol = -0.5*this_coeff[1]/this_coeff[2]
+				if x_sol GT 0.0 and x_sol LT N_skypix then continue
+			endif
+
     ; calculate the lambda axis corresponding to these coefficients
     lambda_axis = poly(indgen(N_skypix), this_coeff )
 
@@ -181,10 +193,6 @@ PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambd
       ; normalize model
       y -= median(y)
       y /= max(y, /nan)
-
-      ; cgplot, sky_linear, title=cgnumber_formatter(this_coeff[1], decimals=4)
-      ; cgplot, y, /overplot, color='red'
-      ; wait, 0.000001
 
       ; calculate cross-correlation (total of product divided by variance)
       cross[k] = total( sky_linear * y, /nan ) / sqrt( total(sky_linear^2, /nan) * total(y^2, /nan) )
