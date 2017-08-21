@@ -199,15 +199,16 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	lambda_coeff[0,0] = lambda_coeff[0,0] + lambda_0
 
 
-
 	; find the gamma coefficients -------------------------------------------------------
 
 	gamma_coeff = flame_wavecal_gamma(fuel=fuel, slit=slit, this_diagnostics=this_diagnostics)
 
 
-	; save into slit structure - copy also the lambda_min and lambda_step parameters
-	*cutout.rectification = {lambda_coeff:lambda_coeff, gamma_coeff:gamma_coeff, $
-		lambda_min:slit.outlambda_min, lambda_delta:slit.outlambda_delta}
+	; save and output -------------------------------------------------------
+
+	; save into slit structure
+	*cutout.lambda_coeff = lambda_coeff
+	*cutout.gamma_coeff = gamma_coeff
 
 	; finally, output the actual wavelength calibration as a 2D array
 
@@ -217,7 +218,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
 	for ix=0, N_imx-1 do $
 		for iy=0, N_imy-1 do begin
-			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, (*cutout.rectification).lambda_coeff )
+			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, *cutout.lambda_coeff )
 		endfor
 
 	; write the accurate solution to a FITS file
@@ -255,8 +256,8 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	y_2d = replicate(1, N_imx) # indgen(N_imy)
 
 	; create 2D arrays containing the rectified coordinates of each pixel
-	lambda_2d = flame_util_transform_coord(x_2d, y_2d, (*slit.arc_cutout.rectification).lambda_coeff )
-	gamma_2d = flame_util_transform_coord(x_2d, y_2d, (*slit.arc_cutout.rectification).gamma_coeff )
+	lambda_2d = flame_util_transform_coord(x_2d, y_2d, *slit.arc_cutout.lambda_coeff )
+	gamma_2d = flame_util_transform_coord(x_2d, y_2d, *slit.arc_cutout.gamma_coeff )
 
 	; get the parameters for the output grid
 	lambda_0 = slit.outlambda_min
@@ -499,21 +500,20 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	; --------------------------------------------------
 
 	; start with the rectification form the arcs
-	rectification = *slit.arc_cutout.rectification
+	lambda_coeff = *slit.arc_cutout.lambda_coeff
 
 	; apply a constant wavelength shift
-	rectification.lambda_coeff[0,0] = rectification.lambda_coeff[0,0] - lambda_shift/delta_lambda
+	lambda_coeff[0,0] = lambda_coeff[0,0] - lambda_shift/delta_lambda
 
 
 	; find the gamma coefficients -------------------------------------------------------
 
 	gamma_coeff = flame_wavecal_gamma(fuel=fuel, slit=slit, this_diagnostics=this_diagnostics)
 
-	rectification.gamma_coeff = gamma_coeff
 
-
-	; save into slit structure - copy also the lambda_min and lambda_step parameters
-	*cutout.rectification = rectification
+	; save into slit structure
+	*cutout.lambda_coeff = lambda_coeff
+	*cutout.gamma_coeff = gamma_coeff
 
 	; finally, output the actual wavelength calibration as a 2D array
 
@@ -523,7 +523,7 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
 	for ix=0, N_imx-1 do $
 		for iy=0, N_imy-1 do $
-			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, (*cutout.rectification).lambda_coeff )
+			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, *cutout.lambda_coeff )
 
 	; write the accurate solution to a FITS file
 	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
@@ -573,8 +573,8 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	endfor
 
 	; calculate the gamma coordinate of each OHline detection
-	OHlambda = flame_util_transform_coord(speclines.x, speclines.y, (*cutout.rectification).lambda_coeff )
-	OHgamma = flame_util_transform_coord(speclines.x, speclines.y, (*cutout.rectification).gamma_coeff )
+	OHlambda = flame_util_transform_coord(speclines.x, speclines.y, *cutout.lambda_coeff )
+	OHgamma = flame_util_transform_coord(speclines.x, speclines.y, *cutout.gamma_coeff )
 
 	; sort by gamma
 	sorted_gamma = OHgamma[sort(OHgamma)]
@@ -616,7 +616,7 @@ PRO flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
 	; calculate the gamma coordinate for each observed pixel, row by row
 	gamma_coordinate = im * 0.0
 	for i_row=0, N_pixel_y-1 do gamma_coordinate[*,i_row] = $
-		flame_util_transform_coord(dindgen(N_pixel_x), replicate(i_row, N_pixel_x), (*cutout.rectification).gamma_coeff )
+		flame_util_transform_coord(dindgen(N_pixel_x), replicate(i_row, N_pixel_x), *cutout.gamma_coeff )
 
 	; calculate the illumination correction at each pixel
 	illumination_correction = poly(gamma_coordinate-gamma_min, poly_coeff)
@@ -725,7 +725,7 @@ PRO flame_wavecal_plots, slit=slit, cutout=cutout
 	; plot the residuals of the wavelength solution
 
 	; calculate the wavelength solution at the location of the speclines
-	lambda_model = flame_util_transform_coord(speclines.x, speclines.y, (*cutout.rectification).lambda_coeff )
+	lambda_model = flame_util_transform_coord(speclines.x, speclines.y, *cutout.lambda_coeff )
 
 	; show the residuals
 	cgplot, speclines.x, 1d4 * (speclines.lambda-lambda_model), psym=16, $
@@ -841,7 +841,7 @@ PRO flame_wavecal_accurate, fuel
 				if fuel.util.arc.n_frames GT 0 then begin
 
 					; copy the arc wavelength solution to all cutouts
-					*fuel.slits[i_slit].cutouts[i_frame].rectification = *fuel.slits[i_slit].arc_cutout.rectification
+					*fuel.slits[i_slit].cutouts[i_frame].lambda_coeff = *fuel.slits[i_slit].arc_cutout.lambda_coeff
 
 					; use the arcs wavelength solution, find a wavelength shift, and save to current frame
 					flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $

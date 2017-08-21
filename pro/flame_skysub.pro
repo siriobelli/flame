@@ -24,7 +24,7 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	y_2d = replicate(1, N_lambda_pix) # indgen(N_spatial_pix)
 
 	; create 2D array containing wavelength at each pixel
-	wavelength_solution = flame_util_transform_coord(x_2d, y_2d, (*cutout.rectification).lambda_coeff )
+	wavelength_solution = flame_util_transform_coord(x_2d, y_2d, *cutout.lambda_coeff )
 
 
 	;**************

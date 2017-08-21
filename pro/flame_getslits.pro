@@ -448,19 +448,22 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
     cutout = { $
       filename: '', $ ; this one has the corr frame
       illcorr_applied: 0, $ ; flag: 1 if illumination correction is applied to cutout.filename
-      rectification: ptr_new(), $
+      lambda_coeff: ptr_new(), $
+      gamma_coeff: ptr_new(), $
       speclines: ptr_new() }
 
     ; replicate for each of the frames
     cutouts = replicate(cutout, fuel.util.science.n_frames)
 
     ; initialize the pointers
-    cutouts.rectification = ptrarr(fuel.util.science.n_frames, /allocate_heap)
+    cutouts.lambda_coeff = ptrarr(fuel.util.science.n_frames, /allocate_heap)
+    cutouts.gamma_coeff = ptrarr(fuel.util.science.n_frames, /allocate_heap)
     cutouts.speclines = ptrarr(fuel.util.science.n_frames, /allocate_heap)
 
     ; again for the arc cutout
     arc_cutout = cutout
-    arc_cutout.rectification = ptr_new(/allocate_heap)
+    arc_cutout.lambda_coeff = ptr_new(/allocate_heap)
+    arc_cutout.gamma_coeff = ptr_new(/allocate_heap)
     arc_cutout.speclines = ptr_new(/allocate_heap)
 
     ; add new fields to slit structure

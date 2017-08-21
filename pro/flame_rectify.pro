@@ -1,7 +1,7 @@
 
 
 
-PRO flame_rectify_one, filename=filename, rectification=rectification, output_name=output_name, slit=slit
+PRO flame_rectify_one, filename=filename, lambda_coeff=lambda_coeff, gamma_coeff=gamma_coeff, output_name=output_name, slit=slit
 
 	print, 'rectifying ', filename
 
@@ -27,8 +27,8 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 	y_2d = replicate(1, N_imx) # indgen(N_imy)
 
 	; create 2D arrays containing the rectified coordinates of each pixel
-	lambda_2d = flame_util_transform_coord(x_2d, y_2d, rectification.lambda_coeff )
-	gamma_2d = flame_util_transform_coord(x_2d, y_2d, rectification.gamma_coeff )
+	lambda_2d = flame_util_transform_coord(x_2d, y_2d, lambda_coeff )
+	gamma_2d = flame_util_transform_coord(x_2d, y_2d, gamma_coeff )
 
 	; define grid on the gamma axis - note that the grid points are integer numbers
 	gamma_min = floor( min(gamma_2d, /nan) )
@@ -37,8 +37,8 @@ PRO flame_rectify_one, filename=filename, rectification=rectification, output_na
 
 	; calculate the *absolute* y coordinate (i.e. in the raw frame) corresponding to gamma=gamma_min at x=0
 	; if gamma is not linear in y then throw an error
-	if rectification.gamma_coeff[1,0] eq 1.0 and (size(rectification.gamma_coeff))[1] eq 2 then $
-		abs_y_gamma_min = gamma_min - rectification.gamma_coeff[0,0] + slit.yrange_cutout[0] $
+	if gamma_coeff[1,0] eq 1.0 and (size(gamma_coeff))[1] eq 2 then $
+		abs_y_gamma_min = gamma_min - gamma_coeff[0,0] + slit.yrange_cutout[0] $
 		else message, 'Non-linear vertical rectification not supported'
 
 	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
@@ -118,15 +118,15 @@ PRO flame_rectify, fuel
 				filename = flame_util_replace_string(this_cutout.filename, '_corr', '_illcorr')
 
 			; rectify observed frame
-			flame_rectify_one, filename=filename, rectification=(*this_cutout.rectification), $
+			flame_rectify_one, filename=filename, lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
 				output_name = flame_util_replace_string(filename, '.fits', '_rectified.fits'), slit=this_slit
 
 			; rectify sky model
-			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skymodel.fits'), rectification=(*this_cutout.rectification), $
+			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skymodel.fits'), lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
 				output_name = flame_util_replace_string(filename, '.fits', '_skymodel_rectified.fits'), slit=this_slit
 
 			; rectify sky-subtracted frame
-			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skysub.fits'), rectification=(*this_cutout.rectification), $
+			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skysub.fits'), lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
 				output_name = flame_util_replace_string(filename, '.fits', '_skysub_rectified.fits'), slit=this_slit
 
 		endfor
