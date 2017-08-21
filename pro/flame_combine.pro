@@ -5,8 +5,7 @@
 ;*******************************************************************************
 
 
-PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
-	sigma_clip=sigma_clip
+PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_filename
 ;
 ; Read in FITS files and mean-stack them after a sigma clipping.
 ; Alignment is done using the gamma coordinate, which is the vertical wcs coordinate
@@ -121,8 +120,8 @@ PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	; and now make a mask that indicates those pixels that are more than sigma_clip off from the median
 	mask_cube = fix(im_cube)
 	mask_cube[*] = 0
-	if keyword_set(sigma_clip) then $
-		mask_cube[where( abs(deviation) GT sigma_clip, /null )] = 1
+	if fuel.settings.combine_sigma_clip GT 0.0 then $
+		mask_cube[where( abs(deviation) GT fuel.settings.combine_sigma_clip, /null )] = 1
 
 	; turn masked pixels into NaNs
 	im_cube[where(mask_cube, /null)] = !values.d_nan
@@ -149,8 +148,8 @@ PRO flame_combine_stack, filenames=filenames, output_filename=output_filename, $
 	; make final map of exptime
 	exptime_stack = total(exptime_cube, 1, /nan)
 
-	; require the contribution of at least half of the frames for a pixel to be valid
-	w_void = where(im_goodpix LE 0.5*N_frames)
+	; require a minimum contribution in terms of number of frames for a pixel to be valid
+	w_void = where(im_goodpix LE fuel.settings.combine_min_framefrac*N_frames)
 	im_stack[w_void] = !values.d_nan
 	error_stack[w_void] = !values.d_nan
 	sigma_im[w_void] = !values.d_nan
@@ -387,8 +386,8 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	sky_filenames = flame_util_replace_string(filenames, '.fits', '_skymodel_rectified.fits')
 
 	; stack and get the sky spectrum
-	flame_combine_stack, filenames=sky_filenames, $
-		output_filename = filename_prefix + '_sky.fits', sigma_clip=sigma_clip
+	flame_combine_stack, fuel=fuel, filenames=sky_filenames, $
+		output_filename = filename_prefix + '_sky.fits'
 
 
 	; stack all A, B, and X frames
@@ -400,39 +399,39 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	if w_X ne !NULL then begin
 
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
-		flame_combine_stack, filenames=stack_X_filenames, $
-			output_filename=filename_prefix + '_X.fits', sigma_clip=sigma_clip
+		flame_combine_stack, fuel=fuel, filenames=stack_X_filenames, $
+			output_filename=filename_prefix + '_X.fits'
 		fuel.slits[i_slit].output_file = filename_prefix + '_X.fits'
 
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
-		flame_combine_stack, filenames=stack_X_skysub_filenames, $
-			output_filename=filename_prefix + '_skysub_X.fits', sigma_clip=sigma_clip
+		flame_combine_stack, fuel=fuel, filenames=stack_X_skysub_filenames, $
+			output_filename=filename_prefix + '_skysub_X.fits'
 
 	endif
 
 	if w_B ne !NULL then begin
 
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
-		flame_combine_stack, filenames=stack_B_filenames, $
-		 	output_filename=filename_prefix + '_B.fits', sigma_clip=sigma_clip
+		flame_combine_stack, fuel=fuel, filenames=stack_B_filenames, $
+		 	output_filename=filename_prefix + '_B.fits'
 		fuel.slits[i_slit].output_file = filename_prefix + '_B.fits'
 
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
-		flame_combine_stack, filenames=stack_B_skysub_filenames, $
-		 	output_filename=filename_prefix + '_skysub_B.fits', sigma_clip=sigma_clip
+		flame_combine_stack, fuel=fuel, filenames=stack_B_skysub_filenames, $
+		 	output_filename=filename_prefix + '_skysub_B.fits'
 
 	endif
 
 	if w_A ne !NULL then begin
 
 		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
-		flame_combine_stack, filenames=stack_A_filenames, $
-			output_filename=filename_prefix + '_A.fits', sigma_clip=sigma_clip
+		flame_combine_stack, fuel=fuel, filenames=stack_A_filenames, $
+			output_filename=filename_prefix + '_A.fits'
 		fuel.slits[i_slit].output_file = filename_prefix + '_A.fits'
 
 		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
-		flame_combine_stack, filenames=stack_A_skysub_filenames, $
-			output_filename=filename_prefix + '_skysub_A.fits', sigma_clip=sigma_clip
+		flame_combine_stack, fuel=fuel, filenames=stack_A_skysub_filenames, $
+			output_filename=filename_prefix + '_skysub_A.fits'
 
 	endif
 

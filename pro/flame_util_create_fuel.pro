@@ -136,6 +136,9 @@ FUNCTION flame_util_create_fuel, input
       readcol, input.dither_file, dither_blind_positions, format='D'
     endelse
 
+  ; if we are nodding, then we want to discard pixels with data from few frames.
+  ; otherwise the ABcombined frame will be noisy
+  if input.AB_subtraction then combine_min_framefrac = 0.49 else combine_min_framefrac = 0.2
 
   ; create the fuel structure ----------------------------------------------------------
 
@@ -179,6 +182,7 @@ FUNCTION flame_util_create_fuel, input
     shift_arcs_Nmin_lines: 1, $
     skysub_plot_range: [0.4, 0.6], $
     combine_sigma_clip : 2.0, $
+    combine_min_framefrac : combine_min_framefrac, $
     debugging:0 $
    }
 
