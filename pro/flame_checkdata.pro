@@ -466,7 +466,7 @@ END
 PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 ;
 ; For a given slit, show the distribution of line widhts and wavelength residuals
-; of all speclines identifications, as a function of frame number, with the goal of
+; of all speclines identifications (ony the ones we can trust), as a function of frame number, with the goal of
 ; identifying problematic frames
 ;
 
@@ -476,6 +476,7 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 	;----------------------------------------------------------------------------------
 
 	line_frame = []
+	line_lambda = []
 	line_width = []
 	line_resid = []
 
@@ -486,6 +487,9 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 	for i_frame=0, Nfr-1 do begin
 		speclines = *this_slit.cutouts[i_frame].speclines
 
+		; select only lines we can trust
+		speclines = speclines[where(speclines.trust_lambda, /null)]
+
 		; check that there are speclines measured
 		if speclines EQ !NULL then continue
 
@@ -493,9 +497,9 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 		lambda = flame_util_transform_coord(speclines.x, speclines.y, *this_slit.cutouts[i_frame].lambda_coeff )
 
 		line_frame = [line_frame, replicate(i_frame, n_elements(speclines))]
+		line_lambda = [line_lambda, speclines.lambda]
 		line_width = [line_width, speclines.sigma]
 		line_resid = [line_resid, 1d4*(lambda-speclines.lambda)]	; in angstrom
-
 
 	endfor
 
@@ -535,7 +539,42 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
   endwhile
 
 
-	; plot 1: line widths
+	; plot 1: residuals vs wavelength
+	;----------------------------------------------------------------------------------
+
+	; calculate reasonable range for plot
+	resid_sorted = line_resid[sort(line_resid)]
+	resid_range = [ resid_sorted[0.05*Nlines], resid_sorted[0.95*Nlines] ]
+	resid_range += [-1.0, 1.0] * 0.5*(resid_range[1]-resid_range[0])
+
+	; plot distribution of residuals
+	cgplot, line_lambda, line_resid, psym=16, symsize=0.4, charsize=1, color='blk4', $
+		yra=resid_range, /ysty, ytit='residuals (angstrom)', xtit='wavelength (micron)'
+
+	; overplot median for each emission line
+  uniq_lambda = line_lambda[UNIQ(line_lambda, SORT(line_lambda))]
+	for i_line=0, n_elements(uniq_lambda)-1 do begin
+
+		; select speclines that belong to this frame
+		line_resid_0 = line_resid[ where(line_lambda eq uniq_lambda[i_line], /null) ]
+
+		; find percentiles to plot
+		resid_sorted = line_resid_0[sort(line_resid_0)]
+		top68 = resid_sorted[0.84*n_elements(resid_sorted)]
+		bottom_68 = resid_sorted[0.16*n_elements(resid_sorted)]
+
+		; overplot median and 68 percentile
+		cgplot, [ uniq_lambda[i_line] ], [ median(line_resid_0) ], $
+		/overplot, psym=16, color='red', $
+		/err_clip, err_yhigh=top68-median(line_resid_0), err_ylow=median(line_resid_0)-bottom_68
+
+	endfor
+
+	cgplot, [0.5*min(line_lambda), 2.0*max(line_lambda)], [0, 0], /overplot, thick=3, linestyle=2
+
+
+
+	; plot 2: line widths vs frame number
 	;----------------------------------------------------------------------------------
 
 	; calculate reasonable range for plot
@@ -568,7 +607,7 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 	endfor
 
 
-	; plot 2: residuals
+	; plot 3: residuals vs frame number
 	;----------------------------------------------------------------------------------
 
 	; calculate reasonable range for plot
