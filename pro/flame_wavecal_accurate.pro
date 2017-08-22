@@ -46,7 +46,7 @@ END
 ;*******************************************************************************
 
 
-FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax, lambda_polyorder=lambda_polyorder
+FUNCTION lambda_calibration, coefficients, speclines=speclines, theoretical_lambdax=theoretical_lambdax, lambda_polyorder=lambda_polyorder
 	;
 	; This function is used for finding the best-fit coefficients
 	; describing the wavelength of each pixel in the observed frame
@@ -73,16 +73,27 @@ FUNCTION lambda_calibration, coefficients, speclines=speclines, lambdax=lambdax,
 
 	; for the lines that can be used for the wavelength calibration,
 	; calculate the deviation from the theoretical lambda
-	dev[w_trust] = lambdax[w_trust] - predicted_lambdax[w_trust]
+	dev[w_trust] = theoretical_lambdax[w_trust] - predicted_lambdax[w_trust]
 
-	; for the lines with unreliable lambda, calculate the deviation from the median
+	; for the lines with unreliable lambda, calculate the relative deviation, i.e. the deviation from the median
 	; value of all the other detections of the same line (this helps with the rectification)
-	if n_elements(w_donttrust) GT 0 then $
-		for i_line=0, n_elements(w_donttrust)-1 do $
-			dev[i_line] = predicted_lambdax[i_line] - median(predicted_lambdax[where(speclines.lambda eq speclines[i_line].lambda, /null)])
+	if n_elements(w_donttrust) GT 0 then begin
+
+		; extract a unique list of wavelengths that we should not trust
+  	line_lambdas = speclines[w_donttrust].lambda
+  	uniq_lambdas = line_lambdas[UNIQ(line_lambdas, SORT(line_lambdas))]
+
+		; for these, calculate the deviation from the median expected lambdax instead of theoretical_lambdax
+		uniq_median = uniq_lambdas*0.0
+		for i=0, n_elements(uniq_lambdas)-1 do begin
+			w_thisline = where(speclines.lambda eq uniq_lambdas[i], /null)
+			dev[w_thisline] = predicted_lambdax[w_thisline] - median(predicted_lambdax[w_thisline])
+		endfor
+
+	endif
 
 	; return deviation of true lambdax from predicted value
-	return, lambdax - predicted_lambdax
+	return, dev
 
 END
 
@@ -171,7 +182,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		; save old number of good speclines
 		Ngoodpix = n_elements(speclines)
 
-		args = {speclines:speclines, lambdax:OH_lambdax, lambda_polyorder:[polyorder_x, polyorder_y] }
+		args = {speclines:speclines, theoretical_lambdax:OH_lambdax, lambda_polyorder:[polyorder_x, polyorder_y] }
 
 		; fit the data and find the coefficients for the lambda calibration
 		lambdax_coeff1d = mpfit('lambda_calibration', starting_coefficients_l, functargs=args, $
@@ -182,6 +193,9 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 
 		w_outliers = where( abs(best_resid_l) GT 3.0*stddev(best_resid_l), complement=w_goodpix, /null)
 		print, strtrim( n_elements(w_outliers), 2) + ' outliers rejected. ', format='(a,$)'
+
+		; cgplot, speclines.x, best_resid_l, psym=16, xtit='x pixel', ytit='residual', charsize=1
+		; cgplot, [0,1d4], [0,0], /overplot
 
 		; keep only the non-outliers
 		speclines = speclines[w_goodpix]
