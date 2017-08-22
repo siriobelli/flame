@@ -5,10 +5,11 @@
 ;*******************************************************************************
 
 
-PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_filename
+PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_filename, noalign=noalign
 ;
 ; Read in FITS files and mean-stack them after a sigma clipping.
-; Alignment is done using the gamma coordinate, which is the vertical wcs coordinate
+; Alignment is done using the gamma coordinate, which is the vertical wcs coordinate,
+; unless the option /noalign is set.
 ; NB: the grid of the first filename is assumed for the output file
 ; write multi-HDU output FITS file:
 ; HDU 0: stacked spectrum
@@ -67,15 +68,27 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 		gamma_min_i = sxpar(header, 'CRVAL2')
 		gamma_max_i = gamma_min_i + N_y_i - 1
 
-		; determine if the vertical dimensions are on the same grid
-		shift = gamma_min_i - gamma_min
-		if shift ne fix(shift) then message, 'Before stacking the files need to be resampled along the spatial direction!'
+		if keyword_set(noalign) then begin
 
-		; determine the starting and ending pixels for the proper alignment of the frame
-		if gamma_min_i GE gamma_min then bot_i = 0 else bot_i = gamma_min-gamma_min_i
-		if gamma_min_i GE gamma_min then bot_ref = gamma_min_i-gamma_min else bot_ref = 0
-		if gamma_max_i GE gamma_max then top_i = gamma_max-gamma_min_i  else top_i = gamma_max_i-gamma_min_i
-		if gamma_max_i GE gamma_max then top_ref = gamma_max-gamma_min else top_ref = gamma_max_i-gamma_min
+			; do not align, simply cut out the top if needed
+			bot_i = 0
+			bot_ref = 0
+			top_i = min([N_y,N_y_i])-1
+			top_ref = min([N_y,N_y_i])-1
+
+		endif else begin
+
+			; determine if the vertical dimensions are on the same grid
+			shift = gamma_min_i - gamma_min
+			if shift ne fix(shift) then message, 'Before stacking the files need to be resampled along the spatial direction!'
+
+			; determine the starting and ending pixels for the proper alignment of the frame
+			if gamma_min_i GE gamma_min then bot_i = 0 else bot_i = gamma_min-gamma_min_i
+			if gamma_min_i GE gamma_min then bot_ref = gamma_min_i-gamma_min else bot_ref = 0
+			if gamma_max_i GE gamma_max then top_i = gamma_max-gamma_min_i  else top_i = gamma_max_i-gamma_min_i
+			if gamma_max_i GE gamma_max then top_ref = gamma_max-gamma_min else top_ref = gamma_max_i-gamma_min
+
+		endelse
 
 		; add the image to the cube
 		im_cube[i_frame, *, bot_ref:top_ref] = im[*, bot_i:top_i]
@@ -91,6 +104,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 		exptime = sxpar(header, 'EXPTIME')
 		map_exptime = im*0.0 + exptime ; account for NaNs
 		exptime_cube[i_frame, *, bot_ref:top_ref] = map_exptime[*, bot_i:top_i]
+
 
 	endfor
 
@@ -387,7 +401,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	; stack and get the sky spectrum
 	flame_combine_stack, fuel=fuel, filenames=sky_filenames, $
-		output_filename = filename_prefix + '_sky.fits'
+		output_filename = filename_prefix + '_sky.fits', /noalign
 
 
 	; stack all A, B, and X frames
