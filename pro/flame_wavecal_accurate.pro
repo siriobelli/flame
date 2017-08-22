@@ -133,18 +133,15 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; this is the y-coordinate of the bottom pixel row in the cutout
 	first_pixel = ceil(ymin_edge)
 
-	; specline coordinates
+	; get measured speclines
 	speclines = *cutout.speclines
-	OH_lambda = speclines.lambda
-	OH_x = speclines.x
-	OH_y = speclines.y
 
 	; output lambda axis
 	lambda_0 = slit.outlambda_min
 	delta_lambda = slit.outlambda_delta
 
-	; translate every OH detection into the new coordinate system
-	OH_lambdax = (OH_lambda - lambda_0)/delta_lambda
+	; translate every detection into the new coordinate system
+	theoretical_lambdax = (speclines.lambda - lambda_0)/delta_lambda
 
 
 	; guess the lambda coefficients -------------------------------------------------------
@@ -170,6 +167,9 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; fit the observed speclines and find the best-fit lambda coefficients --------------------------------------------
 	; note that we do the fitting in the lambdax space, with lambdax=0 at lambda_min and lambdax=1 at the next pixel and so on
 
+	; make a copy of all the speclines, before rejection
+	speclines_all = speclines
+
 	; number of speclines we are using
 	Ngoodpix = n_elements(speclines)+1
 
@@ -182,28 +182,67 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		; save old number of good speclines
 		Ngoodpix = n_elements(speclines)
 
-		args = {speclines:speclines, theoretical_lambdax:OH_lambdax, lambda_polyorder:[polyorder_x, polyorder_y] }
+		args = {speclines:speclines, theoretical_lambdax:theoretical_lambdax, lambda_polyorder:[polyorder_x, polyorder_y] }
 
 		; fit the data and find the coefficients for the lambda calibration
 		lambdax_coeff1d = mpfit('lambda_calibration', starting_coefficients_l, functargs=args, $
-			bestnorm=bestnorm_l, best_resid=best_resid_l, /quiet, status=status_l)
+			bestnorm=bestnorm_l, best_resid=best_resid, /quiet, status=status_l)
 
 		; check that mpfit worked
 		if status_l LE 0 then message, 'mpfit did not find a good solution'
 
-		w_outliers = where( abs(best_resid_l) GT 3.0*stddev(best_resid_l), complement=w_goodpix, /null)
+		w_outliers = where( abs(best_resid) GT 3.0*stddev(best_resid), complement=w_goodpix, /null)
 		print, strtrim( n_elements(w_outliers), 2) + ' outliers rejected. ', format='(a,$)'
-
-		; cgplot, speclines.x, best_resid_l, psym=16, xtit='x pixel', ytit='residual', charsize=1
-		; cgplot, [0,1d4], [0,0], /overplot
 
 		; keep only the non-outliers
 		speclines = speclines[w_goodpix]
-		OH_lambdax = OH_lambdax[w_goodpix]
+		theoretical_lambdax = theoretical_lambdax[w_goodpix]
 
 	ENDWHILE
 
+	; -------------------------------------------------------
+	; plot the individual detections on a 2D view of the slit
+	cgplot, speclines_all.x, speclines_all.y, psym=16, xtit='x pixel', ytitle='y pixel on this slit', $
+	title='emission line detections', charsize=1, layout=[1,2,1], symsize=0.5, color='red5'
+
+	; these are the speclines that were not rejected
+	cgplot, speclines.x, speclines.y, psym=16, symsize=0.6, /overplot
+
+
+	; show the line widths
+	cgplot, speclines_all.x, speclines_all.sigma, psym=16, xtit='x pixel', ytitle='line width (pixel)', $
+	charsize=1, layout=[1,2,2], symsize=0.5, yra=[ min(speclines_all.sigma), max(speclines_all.sigma) ], /ysty, color='red5'
+
+	; these are the speclines that were not rejected
+	cgplot, speclines.x, speclines.sigma, psym=16, symsize=0.6, /overplot
+
+	; mark the median value
+	cgplot, [0, 2*max(speclines_all.x)], median(speclines_all.sigma) + [0,0], /overplot, thick=3, linestyle=2
+
+
+	; -------------------------------------------------------
+	; plot the residuals of the wavelength solution
+
+	; first we need to calculate the residuals for the full list of speclines, including the rejected ones
+	best_resid_all = lambda_calibration(lambdax_coeff1d, speclines=speclines_all, $
+		theoretical_lambdax=(speclines_all.lambda - lambda_0)/delta_lambda, lambda_polyorder=[polyorder_x, polyorder_y])
+
+	; show the residuals
+	cgplot, speclines_all.x, best_resid_all*delta_lambda*1d4, psym=16, $
+		xtit='x pixel', ytitle='delta lambda (angstrom)', $
+		title='Residuals of the wavelength solution (stddev: ' + $
+			cgnumber_formatter( stddev( best_resid*delta_lambda*1d4, /nan), decimals=3) + $
+			' angstrom)', charsize=1, thick=3, symsize=0.5, color='red5'
+
+	; these are the speclines that were not rejected
+	cgplot, speclines.x, best_resid*delta_lambda*1d4, psym=16, symsize=0.6, /overplot
+
+	; mark the zero
+	cgplot, [0, 2*max(speclines_all.x)], [0,0], /overplot, thick=3, linestyle=2
+
 	print, ''
+
+	; -------------------------------------------------------
 
 	; convert the coefficients to a 2D matrix
 	lambdax_coeff = reform(lambdax_coeff1d, polyorder_y+1, polyorder_x+1)
@@ -410,7 +449,7 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 		cgplot, lambda1d, spec1d, charsize=ch, xsty=1, xtit='', ytit='observed flux', title='measuring shift between sky lines and arcs wavelength solution', $
 			position = [0.15, 0.65, 0.95, 0.96], xtickformat="(A1)", xra=[lambda1d[0], lambda1d[-1]], /nodata
 
-		; show the OH lines that were identified
+		; show the sky lines that were identified
 		for i_line=0, n_elements(line_meas)-1 do cgplot, line_meas[i_line] + [0,0], [-2,2]*max(abs(spec1d)), /overplot, color='red'
 
 		; show the spectrum on top, for clarity
@@ -666,135 +705,6 @@ END
 ;*******************************************************************************
 
 
-PRO flame_wavecal_plots, slit=slit, cutout=cutout
-
-	speclines = *cutout.speclines
-
-	; -------------------  select two example lines  -------------------------------
-
-		; sort by wavelength
-		sorted_lambdas = speclines[ sort(speclines.lambda) ].lambda
-
-		; find unique wavelengths
-		lambdas = sorted_lambdas[uniq(sorted_lambdas)]
-
-		; for each wavelength find number of detections, median x position and flux
-		lambdas_det = intarr(n_elements(lambdas))
-		lambdas_x = fltarr(n_elements(lambdas))
-		lambdas_peak = fltarr(n_elements(lambdas))
-		for i=0, n_elements(lambdas)-1 do begin
-			w0 = where(speclines.lambda eq lambdas[i], /null)
-			lambdas_det[i] = n_elements(w0)
-			if lambdas_det[i] LT 2 then continue
-			lambdas_x[i] = median(speclines[w0].x)
-			lambdas_peak[i] = median(speclines[w0].peak)
-		endfor
-
-		; find the center of the x-distribution of the speclines
-		x_center = 0.5*(max(lambdas_x) + min(lambdas_x))
-
-		; split into left and right sides
-		w_left = where(lambdas_x LT x_center, complement=w_right, /null)
-
-		; select lines that have a good number of detections
-		w_left_num = cgsetintersection(w_left, where(lambdas_det GE median(lambdas_det[w_left]), /null) )
-		w_right_num = cgsetintersection(w_right, where(lambdas_det GE median(lambdas_det[w_right]), /null) )
-
-		; pick the brightest ones
-		!NULL = max(lambdas_peak[w_left_num], w_chosen, /nan )
-		ind_line1 = w_left_num[w_chosen]
-		!NULL = max(lambdas_peak[w_right_num], w_chosen, /nan )
-		ind_line2 = w_right_num[w_chosen]
-
-		; select all the detections for these two lines
-		lambda1 = lambdas[ind_line1]
-		lambda2 = lambdas[ind_line2]
-		w_line1 = where(speclines.lambda eq lambda1, /null)
-		w_line2 = where(speclines.lambda eq lambda2, /null)
-
-		color1 = 'blu4'
-		color2 = 'red4'
-
-	; -------------------------------------------------------
-	; plot the individual detections on a 2D view of the slit
-	erase
-	cgplot, speclines.x, speclines.y, psym=16, xtit='x pixel', ytitle='y pixel on this slit', $
-	title='OH line detections', charsize=1, layout=[1,2,1], symsize=0.5
-
-	cgplot, speclines[w_line1].x, speclines[w_line1].y, /overplot, psym=16, symsize=0.6, color=color1
-	cgplot, speclines[w_line2].x, speclines[w_line2].y, /overplot, psym=16, symsize=0.6, color=color2
-
-
-	; show the line widths
-	cgplot, speclines.x, speclines.sigma, psym=16, xtit='x pixel', ytitle='line width (pixel)', $
-	charsize=1, layout=[1,2,2], symsize=0.5, yra = median(speclines.sigma)*[0.5, 1.5]
-
-	cgplot, speclines[w_line1].x, speclines[w_line1].sigma, /overplot, psym=16, symsize=0.6, color=color1
-	cgplot, speclines[w_line2].x, speclines[w_line2].sigma, /overplot, psym=16, symsize=0.6, color=color2
-
-	cgplot, [0, 2*max(speclines.x)], median(speclines.sigma) + [0,0], /overplot, thick=3, linestyle=2
-
-
-	; -------------------------------------------------------
-	; plot the residuals of the wavelength solution
-
-	; calculate the wavelength solution at the location of the speclines
-	lambda_model = flame_util_transform_coord(speclines.x, speclines.y, *cutout.lambda_coeff )
-
-	; show the residuals
-	cgplot, speclines.x, 1d4 * (speclines.lambda-lambda_model), psym=16, $
-		xtit='x pixel', ytitle='delta lambda (angstrom)', $
-		title='Residuals of the wavelength solution (stddev: ' + $
-			cgnumber_formatter( stddev( 1d4 * (speclines.lambda-lambda_model), /nan), decimals=3) + $
-			' angstrom)', charsize=1, thick=3
-
-	cgplot, speclines[w_line1].x, 1d4 * (speclines[w_line1].lambda-lambda_model[w_line1]), $
-		psym=16, /overplot, color=color1
-	cgplot, speclines[w_line2].x, 1d4 * (speclines[w_line2].lambda-lambda_model[w_line2]), $
-			psym=16, /overplot, color=color2
-
-	cgplot, [0, 2*max(speclines.x)], [0,0], /overplot, thick=3, linestyle=2
-
-
-
-	; -------------------------------------------------------
-	; plot the shift in wavelength as a function of spatial position
-
-	; measured coordinates for the selected lines
-	x1 = speclines[w_line1].x
-	y1 = speclines[w_line1].y
-	x2 = speclines[w_line2].x
-	y2 = speclines[w_line2].y
-
-	; find the reference pixel row
-	y_ref = median(y1)
-	x1_ref = x1[ (sort(abs(y1-y_ref)))[0] ]
-	x2_ref = x2[ (sort(abs(y2-y_ref)))[0] ]
-
-	; calculate relative offset to improve plot clarity
-	offset = stddev([x1-x1_ref, x2-x2_ref], /nan)
-
-	; plots
-	cgplot, [x1-x1_ref, x2-x2_ref+offset], [y1, y2], /nodata, charsize=1, $
-		xtit = 'horizontal shift from central row (pixels)', ytit='vertical pixel coordinate'
-	cgplot, x1-x1_ref, y1, psym=9, /overplot, color=color1
-	cgplot, x2-x2_ref+offset, y2, psym=9, /overplot, color=color2
-	;cgplot, [-1d4, 1d4], y_ref+[0,0], /overplot, thick=2
-
-	; legend
-	cgtext, 0.85, 0.25, 'line at ' + strtrim(lambda1, 2) + ' um', /normal, alignment=1.0, color=color1, charsize=1
-	cgtext, 0.85, 0.20, 'line at ' + strtrim(lambda2, 2) + ' um', /normal, alignment=1.0, color=color2, charsize=1
-	cgtext, 0.85, 0.15, '(offset by ' + cgnumber_formatter(offset, decimals=2) + ' pixels)', /normal, alignment=1.0, color=color2, charsize=1
-
-
-END
-
-
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
-
-
 
 PRO flame_wavecal_accurate, fuel
 
@@ -834,12 +744,9 @@ PRO flame_wavecal_accurate, fuel
 				arc_speclines = *this_slit.arc_cutout.speclines
 
 				; calculate the polynomial transformation between observed and rectified frame, for the arcs
+				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].arc_cutout.filename, '.fits', '_wavecal.ps'), /nomatch
 				flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.arc_cutout, $
 					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[0] 	; assume the dithering of the first frame
-
-				; show plots of the wavelength calibration and specline identification
-				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].arc_cutout.filename, '.fits', '_plots.ps'), /nomatch
-				flame_wavecal_plots, slit=this_slit, cutout=this_slit.arc_cutout
 				cgPS_close
 
 		endif
@@ -850,7 +757,7 @@ PRO flame_wavecal_accurate, fuel
 				; the speclines measured for this slit
 				speclines = *this_slit.cutouts[i_frame].speclines
 
-				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename, '.fits', '_plots.ps'), /nomatch
+				cgPS_open, flame_util_replace_string(fuel.slits[i_slit].cutouts[i_frame].filename, '.fits', '_wavecal.ps'), /nomatch
 
 				if fuel.util.arc.n_frames GT 0 then begin
 
@@ -866,9 +773,6 @@ PRO flame_wavecal_accurate, fuel
 					; calculate the polynomial transformation between observed and rectified frame
 					flame_wavecal_2D_calibration, fuel=fuel, slit=this_slit, cutout=this_slit.cutouts[i_frame], $
 						diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[i_frame]
-
-					; show plots of the wavelength calibration and specline identification
-					flame_wavecal_plots, slit=this_slit, cutout=this_slit.cutouts[i_frame]
 
 					; calculate and apply the illumination correction
 					flame_wavecal_illum_correction, fuel=fuel, i_slit=i_slit, i_frame=i_frame
