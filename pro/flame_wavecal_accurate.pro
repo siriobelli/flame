@@ -116,9 +116,6 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 ; that can be used to rectify the image
 ;
 
-	print, ''
-	print, 'Accurate 2D wavelength solution for ', cutout.filename
-
 	; read in file to calibrate
 	im = mrdfits(cutout.filename, 0, header, /silent)
 
@@ -202,12 +199,11 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 
 	; -------------------------------------------------------
 	; plot the individual detections on a 2D view of the slit
-	cgplot, speclines_all.x, speclines_all.y, psym=16, xtit='x pixel', ytitle='y pixel on this slit', $
+	cgplot, speclines_all.x, speclines_all.y, psym=16, xtit='x pixel', ytitle='y pixel in this cutout', $
 	title='emission line detections', charsize=1, layout=[1,2,1], symsize=0.5, color='red5'
 
 	; these are the speclines that were not rejected
 	cgplot, speclines.x, speclines.y, psym=16, symsize=0.6, /overplot
-
 
 	; show the line widths
 	cgplot, speclines_all.x, speclines_all.sigma, psym=16, xtit='x pixel', ytitle='line width (pixel)', $
@@ -239,8 +235,6 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 
 	; mark the zero
 	cgplot, [0, 2*max(speclines_all.x)], [0,0], /overplot, thick=3, linestyle=2
-
-	print, ''
 
 	; -------------------------------------------------------
 
@@ -753,6 +747,8 @@ PRO flame_wavecal_accurate, fuel
 
 
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
+
+				print, ''
 
 				; the speclines measured for this slit
 				speclines = *this_slit.cutouts[i_frame].speclines
