@@ -471,9 +471,9 @@
    2.2247809        1
    2.2312725        1
    2.2460264        1
-  2.25179267        1 #mdrp
+  2.25179267        0 #mdrp
    2.2690402        1
-  2.27421907        1 #mdrp
+  2.27421907        0 #mdrp
       2.2939        1 #byeye
   #2.3207370        1
   #2.3247104        1
@@ -482,21 +482,19 @@
   #2.3528533        1
    2.3800993        0
   #2.3836594        1
-  #2.391455         1 #mdrp
-  #2.404162         1 #mdrp
    2.3859770        1 #empirical
    2.3881495        1 #empirical
    2.3915043        1 #empirical
    2.3967402        0 #empirical
    2.4003725        0 #empirical
-   2.4061012        1 #empirical
+   2.4061012        0 #empirical
    2.4069779        1 #empirical
    2.4076996        1 #empirical
-   2.4098797        1 #empirical
+   2.4098797        0 #empirical
    2.4117630        0 #empirical
    2.4220569        1 #empirical
    2.4263780        1 #empirical
-   2.4472759        1 #empirical
+   2.4472759        0 #empirical
   #2.4480660        1 #empirical
    2.4502144        1 #empirical
    2.4513352        0 #empirical
