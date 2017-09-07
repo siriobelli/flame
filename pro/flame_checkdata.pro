@@ -487,6 +487,9 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 	for i_frame=0, Nfr-1 do begin
 		speclines = *this_slit.cutouts[i_frame].speclines
 
+		; check that there are speclines measured
+		if speclines EQ !NULL then continue
+
 		; select only lines we can trust
 		speclines = speclines[where(speclines.trust_lambda, /null)]
 
