@@ -15,6 +15,7 @@ FUNCTION flame_create_input
     dither_file: 'none', $
     slitflat_filelist: 'none', $
     slit_position_file: 'none', $
+    arc_offset: 0.0, $
     slitflat_offset: 0.0, $
     AB_subtraction: 1, $
     star_y_A: 0, $

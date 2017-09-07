@@ -4,12 +4,12 @@
 ;
 ;******************************************************************
 
-PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename, yref
+PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename, yref, vertical_shift=vertical_shift
 
   ; how much margin to leave beyond the slit edge, in pixels
   margin = 2
 
-  ; read in science frame
+  ; read in frame
   im = mrdfits(input_filename, 0, header, /silent)
 
   ; construct the coordinates for the pixels in the image
@@ -23,6 +23,12 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   ; calculate slit edges
   top_y = (poly(x_axis, slit_structure.bottom_poly) + slit_structure.height) # replicate(1, N_pix_x)
   bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_x)
+
+  ; add a vertical shift, if needed
+  if keyword_set(vertical_shift) then begin
+    top_y += vertical_shift
+    bottom_y += vertical_shift
+  endif
 
   ; select pixels belonging to this slit
   w_slit = where( pixel_y LT top_y - margin AND pixel_y GT bottom_y + margin, /null, complement=w_outside_slit)
@@ -149,7 +155,7 @@ PRO flame_cutout_oneslit, fuel, i_slit
     print,'*** Cutting out slit from master arc frame'
 
     output_filename = slitdir + 'arc_slit' + string(fuel.slits[i_slit].number,format='(I02)') + '.fits'
-    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.arc.master_file, output_filename, 0.0
+    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.arc.master_file, output_filename, 0.0, vertical_shift=fuel.input.arc_offset
     fuel.slits[i_slit].arc_cutout.filename = output_filename
 
   endif

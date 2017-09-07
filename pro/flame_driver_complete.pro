@@ -42,6 +42,9 @@
   ; text file containing the list of FITS files with arcs for wavelength calibration
   input.arc_filelist = 'none'
 
+  ; vertical offset, in pixel, between the science frames and the arcs
+  input.arc_offset = 0
+
   ; text file containing the list of FITS files for slit-flat field
   input.slitflat_filelist = 'none'
 
