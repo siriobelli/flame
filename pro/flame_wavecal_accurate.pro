@@ -550,7 +550,7 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	lambda_coeff = *slit.arc_cutout.lambda_coeff
 
 	; apply a constant wavelength shift
-	lambda_coeff[0,0] = lambda_coeff[0,0] - lambda_shift/delta_lambda
+	lambda_coeff[0,0] = lambda_coeff[0,0] - lambda_shift
 
 
 	; find the gamma coefficients -------------------------------------------------------
