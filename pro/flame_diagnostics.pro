@@ -411,7 +411,7 @@ PRO flame_diagnostics_plot, diagnostics
   if where( finite(diagnostics.flux), /null) NE !NULL then begin
 
     ; plot flux
-    cgplot, frame_seqnum, diagnostics.flux/median(diagnostics.flux), $
+    cgplot, frame_seqnum, diagnostics.flux/median([diagnostics.flux]), $
       _extra = extra_structure, xra=xra, /xsty, $
       ytit='flux / median', position=[x0,y1-delta_y,x1,y1], $
       xtickv = xtickv, xticks=n_elements(xtickv)-1, xminor=xminor, xticklen=0.04
@@ -488,7 +488,7 @@ PRO flame_diagnostics, fuel
 
   forprint, diagnostics.frame_num, '    ' + '    ' + cgnumber_formatter(diagnostics.offset_pos, decimals=2), $
     '    ' + cgnumber_formatter(diagnostics.seeing, decimals=2), '    ' + cgnumber_formatter(diagnostics.flux, decimals=1), $
-    '    ' + cgnumber_formatter(diagnostics.flux/median(diagnostics.flux), decimals=2), '    ' + cgnumber_formatter(diagnostics.position, decimals=1), $
+    '    ' + cgnumber_formatter(diagnostics.flux/median([diagnostics.flux]), decimals=2), '    ' + cgnumber_formatter(diagnostics.position, decimals=1), $
     textout=fuel.util.intermediate_dir + 'diagnostics.txt', $
     comment = '# frame number   offset    seeing    flux    normalized flux    position '
 

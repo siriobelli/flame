@@ -21,8 +21,11 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 	; number of frames
 	N_frames = n_elements(filenames)
 
-	; check that there is more than one frame
-	if N_frames LE 1 then message, 'cannot stack only one frame'
+	; check that there are frames
+	if N_frames EQ 0 then message, 'no frames to stack'
+
+	; if there is only one frame, then print a warning
+	if N_frames EQ 1 then print, 'Warning: stacking only one frame'
 
 
 	; construct the grid for the output image
