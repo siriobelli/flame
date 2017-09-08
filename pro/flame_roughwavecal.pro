@@ -268,7 +268,7 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 
-FUNCTION flame_wavecal_rough_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
+FUNCTION flame_roughwavecal_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 		 model_lambda=model_lambda, model_flux=model_flux, wavecal_coefficients=wavecal_coefficients, $
 		 wavecal_rough_R=wavecal_rough_R
 
@@ -436,7 +436,7 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skyflux=rough_skyflux
+FUNCTION flame_roughwavecal_oneslit, fuel=fuel, this_slit=this_slit, rough_skyflux=rough_skyflux
 	;
 	; Three steps:
 	; First, use a coarse, logarithmic grid with constant pixel scale (uniform wavelength solution)
@@ -523,7 +523,7 @@ FUNCTION flame_wavecal_rough_oneslit, fuel=fuel, this_slit=this_slit, rough_skyf
 	cgPS_open, ps_filename, /nomatch
 
 	; find the wavelength solution
-	wavecal_solution = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=sky, $
+	wavecal_solution = flame_roughwavecal_solution(fuel=fuel, this_slit=this_slit, sky=sky, $
 		model_lambda=model_lambda, model_flux=model_flux, wavecal_rough_R = fuel.settings.wavecal_rough_R)
 
 
@@ -543,7 +543,7 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, rough_arcflux=rough_arcflux
+FUNCTION flame_roughwavecal_oneslit_witharcs, fuel=fuel, this_slit=this_slit, rough_arcflux=rough_arcflux
 	;
 	; Same as above, but use arcs instead of skylines
 	;
@@ -661,7 +661,7 @@ FUNCTION flame_wavecal_rough_oneslit_witharcs, fuel=fuel, this_slit=this_slit, r
 	cgPS_open, ps_filename, /nomatch
 
 	; find the wavelength solution
-	wavecal_solution = flame_wavecal_rough_solution(fuel=fuel, this_slit=this_slit, sky=arc_simplespectrum, $
+	wavecal_solution = flame_roughwavecal_solution(fuel=fuel, this_slit=this_slit, sky=arc_simplespectrum, $
 		model_lambda=model_lambda, model_flux=model_flux)
 
 	cgPS_close
@@ -683,9 +683,9 @@ END
 
 
 
-PRO flame_wavecal_rough, fuel
+PRO flame_roughwavecal, fuel
 
-	flame_util_module_start, fuel, 'flame_wavecal_rough'
+	flame_util_module_start, fuel, 'flame_roughwavecal'
 
 
 	; extract the slits structures
@@ -721,14 +721,14 @@ PRO flame_wavecal_rough, fuel
 		if fuel.util.arc.n_frames GT 0 then begin
 
 			; find rough calibration using integrated arc spectrum
-			rough_arclambda = flame_wavecal_rough_oneslit_witharcs( fuel=fuel, this_slit=fuel.slits[i_slit], rough_arcflux=rough_arcflux)
+			rough_arclambda = flame_roughwavecal_oneslit_witharcs( fuel=fuel, this_slit=fuel.slits[i_slit], rough_arcflux=rough_arcflux)
     	*(fuel.slits[i_slit].rough_arclambda) = rough_arclambda
 			*(fuel.slits[i_slit].rough_arcflux) = rough_arcflux
 
 		endif else begin
 
 			; find rough calibration using integrated sky spectrum
-			rough_skylambda = flame_wavecal_rough_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyflux=rough_skyflux)
+			rough_skylambda = flame_roughwavecal_oneslit( fuel=fuel, this_slit=fuel.slits[i_slit], rough_skyflux=rough_skyflux)
 	    *(fuel.slits[i_slit].rough_skylambda) = rough_skylambda
 			*(fuel.slits[i_slit].rough_skyflux) = rough_skyflux
 

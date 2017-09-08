@@ -69,7 +69,7 @@
 
   flame_cutouts, fuel
 
-  flame_wavecal_rough, fuel
+  flame_roughwavecal, fuel
 
   flame_identify_lines, fuel
 
