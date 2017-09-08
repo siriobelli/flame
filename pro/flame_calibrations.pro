@@ -14,7 +14,7 @@
 
 
 
-PRO flame_correct_median_combine, filenames, outfilename
+PRO flame_calibrations_median_combine, filenames, outfilename
 
   ; utility to median-combine frames
 
@@ -54,7 +54,7 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_correct_master_dark, fuel
+FUNCTION flame_calibrations_master_dark, fuel
 
   ;
   ; Make the master dark by combining the dark frames provided by the user
@@ -100,7 +100,7 @@ FUNCTION flame_correct_master_dark, fuel
   ; case 3: use the frames provided by the user -------------------------------------
 
   ; median combine the dark frames
-  flame_correct_median_combine, fuel.util.dark.raw_files, master_file
+  flame_calibrations_median_combine, fuel.util.dark.raw_files, master_file
   print, 'master dark file created: ', master_file
 
   ; return the master dark
@@ -116,7 +116,7 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 
-FUNCTION flame_correct_master_pixelflat, fuel
+FUNCTION flame_calibrations_master_pixelflat, fuel
 
   ;
   ; Make the master pixel flat by combining the flat frames provided by the user
@@ -167,7 +167,7 @@ FUNCTION flame_correct_master_pixelflat, fuel
   median_pixelflat_file = fuel.util.intermediate_dir + 'median_pixelflat.fits'
 
   ; median combine the pixel flat field frames
-  flame_correct_median_combine, fuel.util.pixelflat.raw_files, median_pixelflat_file
+  flame_calibrations_median_combine, fuel.util.pixelflat.raw_files, median_pixelflat_file
 
   ; read the median combined pixel flat
   median_pixelflat = readfits(median_pixelflat_file, hdr)
@@ -205,7 +205,7 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_correct_badpixel, fuel, master_dark, master_pixelflat
+FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
 
   ;
   ; make badpixel mask using the master dark and/or pixel flat field
@@ -343,7 +343,7 @@ END
 ;*******************************************************************************
 ;*******************************************************************************
 
-PRO flame_correct_oneframe, fuel, filename_raw, filename_corr, $
+PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
     master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=lacosmic
 
   ; read in raw frame
@@ -434,20 +434,20 @@ END
 ;*******************************************************************************
 
 
-PRO flame_correct, fuel
+PRO flame_calibrations, fuel
 
-	flame_util_module_start, fuel, 'flame_correct'
+	flame_util_module_start, fuel, 'flame_calibrations'
 
   N_frames = fuel.util.science.n_frames
 
   ; create the master dark
-  master_dark = flame_correct_master_dark( fuel )
+  master_dark = flame_calibrations_master_dark( fuel )
 
   ; create the master pixel flat
-  master_pixelflat = flame_correct_master_pixelflat( fuel )
+  master_pixelflat = flame_calibrations_master_pixelflat( fuel )
 
   ; make bad pixel mask using darks and/or flats
-  badpixel_mask = flame_correct_badpixel( fuel, master_dark, master_pixelflat )
+  badpixel_mask = flame_calibrations_badpixel( fuel, master_dark, master_pixelflat )
 
 
   ; apply corrections to each frame ----------------------------------------------------------
@@ -511,7 +511,7 @@ PRO flame_correct, fuel
     endif
 
     ; apply corrections and create "corrected" file
-    flame_correct_oneframe, fuel, raw_filenames[i_frame], corr_filenames[i_frame], $
+    flame_calibrations_oneframe, fuel, raw_filenames[i_frame], corr_filenames[i_frame], $
       master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=fuel.settings.clean_individual_frames
 
   endfor
@@ -532,7 +532,7 @@ PRO flame_correct, fuel
           continue
         endif
 
-        flame_correct_oneframe, fuel, fuel.util.arc.raw_files[i_frame], fuel.util.arc.corr_files[i_frame], $
+        flame_calibrations_oneframe, fuel, fuel.util.arc.raw_files[i_frame], fuel.util.arc.corr_files[i_frame], $
           master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=0
 
       endfor
@@ -550,13 +550,13 @@ PRO flame_correct, fuel
     filenames_slitflat = fuel.util.slitflat.corr_files
 
   ; median-combine the frames to make the master slit flat
-  flame_correct_median_combine, filenames_slitflat, fuel.util.slitflat.master_file
+  flame_calibrations_median_combine, filenames_slitflat, fuel.util.slitflat.master_file
 
 
   ; create the master arc frame ----------------------------------------------
 
   if fuel.util.arc.n_frames gt 0 then $
-    flame_correct_median_combine, fuel.util.arc.corr_files, fuel.util.arc.master_file
+    flame_calibrations_median_combine, fuel.util.arc.corr_files, fuel.util.arc.master_file
 
 
 

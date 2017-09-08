@@ -146,7 +146,7 @@
 
   flame_quickstack, fuel
 
-  flame_correct, fuel
+  flame_calibrations, fuel
 
   flame_getslits, fuel
 
