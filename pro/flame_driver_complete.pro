@@ -156,7 +156,7 @@
 
   flame_findlines, fuel
 
-  flame_wavecal_accurate, fuel
+  flame_wavecal, fuel
 
   flame_skysub, fuel
 

@@ -700,9 +700,9 @@ END
 
 
 
-PRO flame_wavecal_accurate, fuel
+PRO flame_wavecal, fuel
 
-	flame_util_module_start, fuel, 'flame_wavecal_accurate'
+	flame_util_module_start, fuel, 'flame_wavecal'
 
 
 	; loop through all slits
