@@ -13,7 +13,7 @@
 ;*******************************************************************************
 
 
-PRO flame_identify_writeds9, speclines, filename=filename
+PRO flame_findlines_writeds9, speclines, filename=filename
 ;
 ; write a ds9 region file with all the emission line detections
 ;
@@ -78,7 +78,7 @@ END
 
 
 
-PRO flame_identify_fitskylines, fuel=fuel, x=x, y=y, $
+PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 	approx_wavecal=approx_wavecal, linewidth=linewidth, $
   reflines=reflines, check_shift=check_shift, $
 	speclines=speclines, wavecal=wavecal, plot_title=plot_title
@@ -288,7 +288,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
+PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
 	 slit=slit, rough_lambda=rough_lambda, rough_flux=rough_flux, linelist_filename=linelist_filename, $
 	 speclines=speclines, wavelength_solution=wavelength_solution
 
@@ -403,7 +403,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
   while delta_Nlines GT 0 and i_loop LT 10 do begin
 
     ; fit the emission lines and find the wavelength solution
-  	flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=central_skyspec, $
+  	flame_findlines_fitskylines, fuel=fuel, x=pix_axis, y=central_skyspec, $
   		approx_wavecal=lambda_axis, linewidth=linewidth, reflines=reflines_initial, $
   		speclines=speclines_thisloop, wavecal=lambda_axis_output, plot_title='central rows / ' + strtrim(i_loop,2)
 
@@ -457,7 +457,7 @@ PRO flame_identify_find_speclines, fuel=fuel, filename=filename, $
 		if i_row eq i0_bottom then wavelength_axis_guess = wavelength_solution_0
 
 		; fit the emission lines and find the wavelength solution
-		flame_identify_fitskylines, fuel=fuel, x=pix_axis, y=this_row, $
+		flame_findlines_fitskylines, fuel=fuel, x=pix_axis, y=this_row, $
 			approx_wavecal=wavelength_axis_guess, linewidth=linewidth, $
 			reflines=reflines, check_shift=1, $
 			speclines=speclines_thisrow, wavecal=wavelength_axis_for_this_row, plot_title='row '+strtrim(i_row,2)
@@ -506,7 +506,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=slit
+PRO flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=slit
 
 ;
 ; Set the wavelength grid that will be used for the rectified frame,
@@ -555,9 +555,9 @@ END
 
 
 
-PRO flame_identify_lines, fuel
+PRO flame_findlines, fuel
 
-	flame_util_module_start, fuel, 'flame_identify_lines'
+	flame_util_module_start, fuel, 'flame_findlines'
 
 
   ; avoid printing too much stuff (especially from GAUSSFIT)
@@ -602,7 +602,7 @@ PRO flame_identify_lines, fuel
       arc_filename = this_slit.arc_cutout.filename
 
   		; identify and measure the speclines
-  		flame_identify_find_speclines, fuel=fuel, filename=arc_filename, slit=this_slit, $
+  		flame_findlines_find_speclines, fuel=fuel, filename=arc_filename, slit=this_slit, $
       rough_lambda=*this_slit.rough_arclambda, rough_flux=*this_slit.rough_arcflux, $
       linelist_filename=fuel.util.intermediate_dir + 'linelist_arcs.txt', $
   			speclines=speclines, wavelength_solution=wavelength_solution
@@ -611,10 +611,10 @@ PRO flame_identify_lines, fuel
   		*this_slit.arc_cutout.speclines = speclines
 
   		; write a ds9 region file with the identified speclines
-  		flame_identify_writeds9, speclines, filename=flame_util_replace_string(arc_filename, '.fits', '_speclines.reg')
+  		flame_findlines_writeds9, speclines, filename=flame_util_replace_string(arc_filename, '.fits', '_speclines.reg')
 
 			; use the pixel-by-pixel wavelength solution of the arc frame to set the output grid in wavelength
-			flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
+			flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
 			fuel.slits[i_slit] = this_slit
 
 
@@ -628,7 +628,7 @@ PRO flame_identify_lines, fuel
   				slit_filename = fuel.slits[i_slit].cutouts[i_frame].filename
 
   				; identify and measure the speclines
-  				flame_identify_find_speclines, fuel=fuel, filename=slit_filename, slit=this_slit, $
+  				flame_findlines_find_speclines, fuel=fuel, filename=slit_filename, slit=this_slit, $
           rough_lambda=*this_slit.rough_skylambda, rough_flux=*this_slit.rough_skyflux, $
           linelist_filename=fuel.settings.linelist_filename, $
   					speclines=speclines, wavelength_solution=wavelength_solution
@@ -637,11 +637,11 @@ PRO flame_identify_lines, fuel
   				*this_slit.cutouts[i_frame].speclines = speclines
 
   				; write a ds9 region file with the identified speclines
-  				flame_identify_writeds9, speclines, filename=flame_util_replace_string(slit_filename, '.fits', '_speclines.reg')
+  				flame_findlines_writeds9, speclines, filename=flame_util_replace_string(slit_filename, '.fits', '_speclines.reg')
 
   				; use the pixel-by-pixel wavelength solution OF THE FIRST FRAME to set the output grid in wavelength
   				if i_frame eq 0 then begin
-  					flame_identify_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
+  					flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
   					fuel.slits[i_slit] = this_slit
   				endif
 

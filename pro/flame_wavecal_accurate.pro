@@ -3,7 +3,7 @@
 ; For each slit & frame, find a polynomial
 ; warping that describes the 2D transformation from observed frame
 ; to lambda-calibrated and vertically-rectified frame, using
-; the emission line measurements from flame_identify_lines
+; the emission line measurements from flame_findlines
 ;
 
 ;*******************************************************************************

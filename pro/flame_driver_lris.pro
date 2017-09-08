@@ -71,7 +71,7 @@
 
   flame_roughwavecal, fuel
 
-  flame_identify_lines, fuel
+  flame_findlines, fuel
 
   flame_wavecal_accurate, fuel
 
