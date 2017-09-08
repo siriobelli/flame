@@ -11,7 +11,7 @@
 ;*******************************************************************************
 
 
-PRO flame_wavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambda, model_flux=model_flux, $
+PRO flame_roughwavecal_crosscorr, observed_sky=observed_sky, model_lambda=model_lambda, model_flux=model_flux, $
 	 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, a3_grid=a3_grid, $
    R_smooth = R_smooth, plot_title=plot_title, $
 	 wavecal_coefficients=wavecal_coefficients
@@ -295,7 +295,7 @@ FUNCTION flame_roughwavecal_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 	  pix_scale_grid = range_delta_lambda[0] + $
 	    (range_delta_lambda[1]-range_delta_lambda[0])*dindgen(N1)/double(N1-1)
 
-	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
+	  flame_roughwavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=range_start_lambda, pix_scale_grid=pix_scale_grid, $
 	   R_smooth = R_smooth_1, plot_title='step 1: find pixel scale and zero-point', $
 		 wavecal_coefficients=wavecal_coefficients
@@ -333,7 +333,7 @@ FUNCTION flame_roughwavecal_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 		; print, 'a1: ', pix_scale_grid[0], pix_scale_grid[-1]
 		; print, 'a2: ', a2_grid[0], a2_grid[-1]
 
-	  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
+	  flame_roughwavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
 	   R_smooth = R_smooth_2, plot_title='step 2: use second-order polynomial', $
 		 wavecal_coefficients=wavecal_coefficients
@@ -360,7 +360,7 @@ FUNCTION flame_roughwavecal_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 			fullrange = wavecal_coefficients[1]*n_elements(sky)
 		  lambda0_range = wavecal_coefficients[0] + fullrange*[-0.05,0.05]
 
-		  flame_wavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
+		  flame_roughwavecal_crosscorr, observed_sky=sky, model_lambda=model_lambda, model_flux=model_flux, $
 			 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
 		   R_smooth = R_smooth_3, plot_title='step 3: use second-order polynomial', $
 			 wavecal_coefficients=wavecal_coefficients
@@ -405,13 +405,13 @@ FUNCTION flame_roughwavecal_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 		 (wavecal_coefficients[1]+2.0*wavecal_coefficients[2]) + wavecal_coefficients[2]*x_c^2
 
 		; cross-correlate the first half
-	  flame_wavecal_crosscorr, observed_sky=sky_1, model_lambda=model_lambda, model_flux=model_flux, $
+	  flame_roughwavecal_crosscorr, observed_sky=sky_1, model_lambda=model_lambda, model_flux=model_flux, $
 		 lambda0_range=lambda0_range, pix_scale_grid=pix_scale_grid, a2_grid=a2_grid, $
 	   R_smooth = R_smooth_3, plot_title='step 3: first half', $
 		 wavecal_coefficients=wavecal_coefficients_1
 
 		 ; cross-correlate the second half
- 	  flame_wavecal_crosscorr, observed_sky=sky_2, model_lambda=model_lambda, model_flux=model_flux, $
+ 	  flame_roughwavecal_crosscorr, observed_sky=sky_2, model_lambda=model_lambda, model_flux=model_flux, $
  		 lambda0_range=lambda0_range_2, pix_scale_grid=pix_scale_grid_2, a2_grid=a2_grid, $
  	   R_smooth = R_smooth_3, plot_title='step 3: second half', $
  		 wavecal_coefficients=wavecal_coefficients_2
