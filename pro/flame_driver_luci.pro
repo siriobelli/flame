@@ -59,11 +59,15 @@
 
   flame_cutouts, fuel
 
+  flame_spatialcal, fuel
+
   flame_roughwavecal, fuel
 
   flame_findlines, fuel
 
   flame_wavecal, fuel
+
+  flame_illumcorr, fuel
 
   flame_skysub, fuel
 

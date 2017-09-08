@@ -1,45 +1,9 @@
 ;
 ; Wavelength calibration.
 ; For each slit & frame, find a polynomial
-; warping that describes the 2D transformation from observed frame
-; to lambda-calibrated and vertically-rectified frame, using
-; the emission line measurements from flame_findlines
+; warping that describes the 2D transformation from observed frame (x,y)
+; to the lambda coordinate, using the emission line measurements from flame_findlines
 ;
-
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
-
-FUNCTION flame_wavecal_gamma, fuel=fuel, slit=slit, this_diagnostics=this_diagnostics
-	; return the polynomial coefficients that describe gamma(x,y)
-
-	; first, find the vertical offset to the reference star
-	w_this_offset = where(fuel.diagnostics.offset_pos eq this_diagnostics.offset_pos, /null)
-	ref_diagnostics = fuel.diagnostics[w_this_offset[0]]
-	vertical_offset = this_diagnostics.position - ref_diagnostics.position
-
-	; find the average x coordinate of the reference star trace
-	xref = mean(fuel.settings.star_x_range)
-
-	; set the size of the matrix: linear in y, and same degree as slit edge in x
-	N_y = 2
-	N_x = n_elements(slit.bottom_poly)
-
-	; make the matrix of coefficients
-	gamma_coeff = dblarr(N_y, N_x)
-
-	; by definition, dgamma/dy = 1
-	gamma_coeff[1,0] = 1.0
-
-	; use the definition of the bottom edge of the slit to build the gamma matrix
-	gamma_coeff[0,*] = -slit.bottom_poly
-
-	; but the zero point is such that gamma at xref is the vertical distance to the star trace
-	gamma_coeff[0,0] += slit.yrange_cutout[0] - this_diagnostics.position + poly(xref, slit.bottom_poly)
-
-	return, gamma_coeff
-
-END
 
 ;*******************************************************************************
 ;*******************************************************************************
@@ -108,11 +72,10 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		diagnostics=diagnostics, this_diagnostics=this_diagnostics
 
 ;
-; This routine calculates the 2D wavelength solution and y-rectification.
-; These are two mappings from the observed pixel coordinates to the rectified grid
-; lambdax, gamma, where lambdax is a pixel grid linear in lambda and gamma is the
-; vertical distance to the edge of the slit (taking into account warping and also vertical drift)
-; The result of this routine is a pair of coefficient sets, lambda_coeff and gamma_coeff, saved in fuel.slits,
+; This routine calculates the 2D wavelength solution,
+; which is a mapping from the observed pixel coordinates (x,y) to the rectified grid
+; lambdax, a pixel grid linear in lambda.
+; The result of this routine is the coefficient set lambda_coeff, saved in fuel.slits,
 ; that can be used to rectify the image
 ;
 
@@ -245,24 +208,15 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	lambda_coeff = lambdax_coeff * delta_lambda
 	lambda_coeff[0,0] = lambda_coeff[0,0] + lambda_0
 
-
-	; find the gamma coefficients -------------------------------------------------------
-
-	gamma_coeff = flame_wavecal_gamma(fuel=fuel, slit=slit, this_diagnostics=this_diagnostics)
-
-
-	; save and output -------------------------------------------------------
-
 	; save into slit structure
 	*cutout.lambda_coeff = lambda_coeff
-	*cutout.gamma_coeff = gamma_coeff
 
 	; finally, output the actual wavelength calibration as a 2D array
 
 	; create empty frame that will contain the wavelength solution
 	wavelength_solution = im * 0.0
 
-	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
+	; apply the polynomial transformation to calculate lambda at each point of the 2D grid
 	for ix=0, N_imx-1 do $
 		for iy=0, N_imy-1 do begin
 			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, *cutout.lambda_coeff )
@@ -552,22 +506,15 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	; apply a constant wavelength shift
 	lambda_coeff[0,0] = lambda_coeff[0,0] - lambda_shift
 
-
-	; find the gamma coefficients -------------------------------------------------------
-
-	gamma_coeff = flame_wavecal_gamma(fuel=fuel, slit=slit, this_diagnostics=this_diagnostics)
-
-
 	; save into slit structure
 	*cutout.lambda_coeff = lambda_coeff
-	*cutout.gamma_coeff = gamma_coeff
 
 	; finally, output the actual wavelength calibration as a 2D array
 
 	; create empty frame that will contain the wavelength solution
 	wavelength_solution = im * 0.0
 
-	; apply the polynomial transformation to calculate (lambda, gamma) at each point of the 2D grid
+	; apply the polynomial transformation to calculate lambda at each point of the 2D grid
 	for ix=0, N_imx-1 do $
 		for iy=0, N_imy-1 do $
 			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, *cutout.lambda_coeff )
@@ -600,7 +547,7 @@ PRO flame_wavecal, fuel
 
 		if this_slit.skip then continue
 
-	  print, 'Accurate wavelength calibration for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
+	  print, 'Wavelength calibration for slit ', strtrim(this_slit.number,2), ' - ', this_slit.name
 		print, ' '
 
 		; handle errors by ignoring that slit
