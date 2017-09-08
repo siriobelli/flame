@@ -167,9 +167,9 @@ END
 ;******************************************************************
 
 
-PRO flame_cutout_slits, fuel
+PRO flame_cutouts, fuel
 
-	flame_util_module_start, fuel, 'flame_cutout_slits'
+	flame_util_module_start, fuel, 'flame_cutouts'
 
 
   for i_slit=0, n_elements(fuel.slits)-1 do begin

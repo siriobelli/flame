@@ -150,7 +150,7 @@
 
   flame_getslits, fuel
 
-  flame_cutout_slits, fuel
+  flame_cutouts, fuel
 
   flame_wavecal_rough, fuel
 
