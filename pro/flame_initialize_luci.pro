@@ -1,4 +1,11 @@
 
+;
+; LUCI-specific routine that initializes the fuel structure
+;
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 FUNCTION flame_initialize_luci_resolution, instrument
@@ -55,7 +62,9 @@ camera = (strsplit(instrument.camera, /extract))[0]
 END
 
 
-;******************************************************************
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 FUNCTION flame_initialize_luci_waverange, instrument, slit_xmm
@@ -115,9 +124,12 @@ camera = (strsplit(instrument.camera, /extract))[0]
 END
 
 
-;******************************************************************
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
-FUNCTION flame_initialize_luci_settings, science_header
+
+FUNCTION flame_initialize_luci_instrument, science_header
 ;
 ; read the LUCI settings from the FITS header of a science frame
 ; and create the instrument structure
@@ -197,7 +209,11 @@ FUNCTION flame_initialize_luci_settings, science_header
 END
 
 
-;******************************************************************
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
 
 
 FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
@@ -238,7 +254,10 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
 END
 
 
-;******************************************************************
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 
@@ -408,16 +427,13 @@ return, slits
 END
 
 
-
-
-;******************************************************************
-
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 FUNCTION flame_initialize_luci, input
-  ;
-  ; LUCI-specific routine that initializes the fuel structure
-  ;
+
 
   print, ''
   print, 'Initializing LUCI data reduction'
@@ -434,7 +450,7 @@ FUNCTION flame_initialize_luci, input
   science_header = headfits(fuel.util.science.raw_files[0])
 
   ; read the instrument settings from the header
-  instrument = flame_initialize_luci_settings(science_header)
+  instrument = flame_initialize_luci_instrument(science_header)
 
 
   ; now read in the slits parameters from the FITS header
@@ -443,7 +459,7 @@ FUNCTION flame_initialize_luci, input
   if fuel.input.longslit then begin
 
     ; get the slit edges from the user
-    slits = flame_initialize_luci_longslit( header, instrument=instrument, input=fuel.input)
+    slits = flame_initialize_luci_longslit( science_header, instrument=instrument, input=fuel.input)
 
 
   ; MOS      ---------------------------------------------------------------------
@@ -457,26 +473,34 @@ FUNCTION flame_initialize_luci, input
 
   ; ---------------------   SETTINGS   --------------------------------------
 
-  ; use the sky background to trace the slit edges (works well on raw data)
-  fuel.settings.trace_slit_with_skylines = 1
-
-  ; do not split the spectrum into two when doing the rough wavecal
-  fuel.settings.wavecal_rough_split = 0
-
   ; if high resolution (ARGOS) observations, the use the R6000 list
-  if median(slits.approx_r) GT 4500.0 then $
+  if median([slits.approx_r]) GT 4500.0 then $
     fuel.settings.linelist_filename = fuel.util.flame_data_dir + 'sky_line_list_R6000.dat' $
   else $
     fuel.settings.linelist_filename = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
 
+  ; no need to run L.A.Cosmic on individual frames
+  fuel.settings.clean_individual_frames = 0
+
+  ; use the OH sky emission lines to trace the slit edges
+  fuel.settings.trace_slit_with_skylines = 1
 
   ; scale the wavecal_rough_R to the spectral resolution - useful for argos
   fuel.settings.wavecal_rough_R = [ 0.05*slits[0].approx_R > 500.0 , $
 		0.15*slits[0].approx_R > 1000.0 , slits[0].approx_R < 5000.0 ]
 
+  ; apply illumination correction using the OH lines
+  fuel.settings.illumination_correction = 1
+
+  ; do not split the spectrum into two when doing the rough wavecal
+  fuel.settings.wavecal_rough_split = 0
+
+  ; set the degree of the polynomials for the 2D wavelength solution
+  fuel.settings.wavesolution_order_x = 3
+  fuel.settings.wavesolution_order_y = 2
+
 
   ; -------------------------------------------------------------------------------
-
 
   ; save both instrument and slits in the fuel structure
   new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:instrument, diagnostics:fuel.diagnostics, slits:slits }
