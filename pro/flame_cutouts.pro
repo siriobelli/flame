@@ -21,8 +21,8 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   pixel_y = transpose(y_axis # replicate(1, N_pix_x))
 
   ; calculate slit edges
-  top_y = (poly(x_axis, slit_structure.bottom_poly) + slit_structure.height) # replicate(1, N_pix_x)
-  bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_x)
+  top_y = (poly(x_axis, slit_structure.bottom_poly) + slit_structure.height) # replicate(1, N_pix_y)
+  bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_y)
 
   ; add a vertical shift, if needed
   if keyword_set(vertical_shift) then begin
