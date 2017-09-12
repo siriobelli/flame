@@ -647,7 +647,7 @@ FUNCTION flame_roughwavecal_oneslit_witharcs, fuel=fuel, this_slit=this_slit, ro
   readcol, fuel.util.intermediate_dir + 'linelist_arcs.txt', all_lines
 
 	; select a reasonable range
-  wide_range = [ this_slit.range_lambda0[0], this_slit.range_lambda0[1] + this_slit.range_delta_lambda[1] * N_spectral_pix]
+  wide_range = [ this_slit.range_lambda0[0] - this_slit.range_delta_lambda[1] * 0.2*N_spectral_pix, this_slit.range_lambda0[1] + this_slit.range_delta_lambda[1] * 1.2*N_spectral_pix]
 	all_lines = all_lines[ where(all_lines GT wide_range[0] and all_lines LT wide_range[1], /null) ]
 
 	; make a simple theoretical spectrum from the line list (assuming all lines have equal intensity)
