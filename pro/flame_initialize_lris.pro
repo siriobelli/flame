@@ -1,6 +1,4 @@
-;
-; WHAT ABOUT CCDGAIN AND CCDSPEED???
-;
+
 ;******************************************************************
 
 FUNCTION flame_initialize_lris_red, science_header
@@ -41,11 +39,11 @@ FUNCTION flame_initialize_lris_red, science_header
   ; read filter
   filter = strtrim(fxpar(science_header, 'REDFILT'), 2)
 
-  ; ; read in read-out noise
+  ; read in read-out noise
   readnoise = 5.0
 
 
-  ; ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - -
+  ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - -
 
   ; pixel scale
   pixel_scale = 0.135  ; arcsec/pixel
@@ -92,6 +90,20 @@ FUNCTION flame_initialize_lris_red, science_header
   resolution_slit1arcsec = 0.7 / (6.0*dispersion)
 
 
+  ; effect of binning - - - - - - - - - - - - - - - - - - -
+
+  ; read binning
+  binning = fix( strsplit( strtrim(fxpar(science_header, 'BINNING'), 2), ',', /extract) )
+  spatial_binning = binning[0]
+  spectral_binning = binning[1]
+
+  ; spatial binning: change pixel scale
+  if spatial_binning ne 1 then pixel_scale *= float(spatial_binning)
+
+  ; spectral binning: change the dispersion value
+  if spectral_binning ne 1 then dispersion *= float(spectral_binning)
+
+
   ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - -
   default_badpixel_mask = 'none'
   default_dark = 'none'
@@ -117,6 +129,8 @@ FUNCTION flame_initialize_lris_red, science_header
     dispersion:dispersion, $
     lambda0:lambda0, $
     linearity_correction: linearity_correction, $
+    spatial_binning: spatial_binning, $
+    spectral_binning: spectral_binning, $
     default_badpixel_mask: default_badpixel_mask, $
     default_dark: default_dark, $
     default_pixelflat: default_pixelflat, $
@@ -165,11 +179,11 @@ FUNCTION flame_initialize_lris_blue, science_header
   ; read filter
   filter = strtrim(fxpar(science_header, 'BLUFILT'), 2)
 
-  ; ; read in read-out noise
+  ; read in read-out noise
   readnoise = 4.0 ; CHECK THIS
 
 
-  ; ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - -
+  ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - -
 
   ; pixel scale
   pixel_scale = 0.135  ; arcsec/pixel
@@ -212,8 +226,23 @@ FUNCTION flame_initialize_lris_blue, science_header
     else: message, 'grism ' + grism + 'not supported.'
   endcase
 
-  ; the FWHM is approximately six pixels, and assume lambda~4000A
+  ; the FWHM is approximately six unbinned pixels, and assume lambda~4000A
   resolution_slit1arcsec = 0.4 / (6.0*dispersion)
+
+
+  ; effect of binning - - - - - - - - - - - - - - - - - - -
+
+  ; read binning
+  binning = fix( strsplit( strtrim(fxpar(science_header, 'BINNING'), 2), ',', /extract) )
+  spatial_binning = binning[0]
+  spectral_binning = binning[1]
+
+  ; spatial binning: change pixel scale
+  if spatial_binning ne 1 then pixel_scale *= float(spatial_binning)
+
+  ; spectral binning: change the dispersion value
+  if spectral_binning ne 1 then dispersion *= float(spectral_binning)
+
 
   ; calibration files for when the user doesn't have them - - - - - - - - - - - - - - - - - - -
   default_badpixel_mask = 'none'
@@ -237,6 +266,8 @@ FUNCTION flame_initialize_lris_blue, science_header
     dispersion:dispersion, $
     lambda0:lambda0, $
     linearity_correction: linearity_correction, $
+    spatial_binning: spatial_binning, $
+    spectral_binning: spectral_binning, $
     default_badpixel_mask: default_badpixel_mask, $
     default_dark: default_dark, $
     default_pixelflat: default_pixelflat, $
