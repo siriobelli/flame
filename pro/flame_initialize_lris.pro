@@ -296,7 +296,92 @@ return, slits
 END
 
 
-;******************************************************************
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+PRO flame_initialize_lris_arcs, fuel
+
+  ; read first frame
+  arc_hdr = headfits(fuel.util.arc.raw_files[0])
+
+  ; old files did not have an explicit list of lamps
+  !NULL = sxpar(arc_hdr, 'MERCURY', count=count)
+
+  if count eq 0 then begin  ; old files
+
+    lamp_name = ['MERCURY', 'NEON', 'ARGON', 'CADMIUM', 'ZINC']
+    lamp_file = ['arc_Hg_air.txt', 'arc_Ne_air.txt', 'arc_Ar_air.txt', 'arc_Cd_air.txt', $
+      'arc_Zn_air.txt' ]
+
+    ; read lamp status from header
+    lamp_status = sxpar(arc_hdr, 'LAMPS', count=count)
+
+    ; check that the lamps keyword is in fact existing
+    if count eq 0 then message, 'Could not find arc lamps in the FITS header'
+
+    ; transform from string of 1,0 to array
+    lamp_status = strsplit(lamp_status, ',', /extract)
+
+    ; delete last entry which is the halogen lamp
+    lamp_status = lamp_status[0:4]
+
+  endif else begin  ; new files
+
+    lamp_name = ['MERCURY', 'NEON', 'ARGON', 'CADMIUM', 'ZINC', 'KRYPTON', 'XENON', 'FEARGON']
+    lamp_file = ['arc_Hg_air.txt', 'arc_Ne_air.txt', 'arc_Ar_air.txt', 'arc_Cd_air.txt', $
+      'arc_Zn_air.txt', 'arc_Kr_air.txt', 'arc_Xe_air.txt', 'arc_FeNe_air.txt' ]
+
+    ; read lamp status from header
+    lamp_status_string = strarr(n_elements(lamp_name))
+    for i=0, n_elements(lamp_name)-1 do lamp_status_string[i] = strtrim(sxpar(arc_hdr, lamp_name[i]), 2)
+
+    ; from string of 'on', 'off' to integer
+    lamp_status = intarr(n_elements(lamp_status_string))
+    lamp_status[where(lamp_status_string eq 'on', /null)] = 1
+
+  endelse
+
+  print, ''
+  print, 'Lamps used for the arc calibrations:'
+  forprint, lamp_name, lamp_status, format='(A10,A7)'
+
+  ; check that some are on
+  w_on = where(lamp_status eq 1, /null)
+  if w_on eq !NULL then message, 'arc frame was taken with no arc lamp on!'
+
+  ; load line lists for the lamps that were used
+  all_lines_air = []
+  for i=0, n_elements(w_on)-1 do begin
+    print, 'Loading line list ' + fuel.util.flame_data_dir + lamp_file[w_on[i]]
+    readcol, fuel.util.flame_data_dir + lamp_file[w_on[i]], arc_linelist
+    all_lines_air = [all_lines_air, arc_linelist]
+  endfor
+
+	; sort them by wavelength
+	all_lines_air = all_lines_air[sort(all_lines_air)]
+
+	; convert to vacuum
+	airtovac, all_lines_air, all_lines_vac
+
+	; convert to micron
+	all_lines = all_lines_vac*1d-4
+
+	; write out the linelist
+  forprint, all_lines, replicate(1, n_elements(all_lines)), $
+	 	textout=fuel.util.intermediate_dir + 'linelist_arcs.txt', comment='#  arc_lines  trust'
+
+  print, ''
+  print, 'Arc line list written to ', fuel.util.intermediate_dir + 'linelist_arcs.txt'
+
+
+END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
 
 
 FUNCTION flame_initialize_lris, input
@@ -359,52 +444,7 @@ FUNCTION flame_initialize_lris, input
 
   ; ---------------------   ARC LINE LIST    -----------------------------------
 
-  if fuel.util.arc.n_frames gt 0 then begin
-
-    ; read first frame
-    arc_hdr = headfits(fuel.util.arc.raw_files[0])
-
-    ; read lamp status from header
-    lamp_name = ['MERCURY', 'NEON', 'ARGON', 'CADMIUM', 'ZINC', 'KRYPTON', 'XENON', 'FEARGON']
-    lamp_file = ['arc_Hg_air.txt', 'arc_Ne_air.txt', 'arc_Ar_air.txt', 'arc_Cd_air.txt', $
-      'arc_Zn_air.txt', 'arc_Kr_air.txt', 'arc_Xe_air.txt', 'arc_FeNe_air.txt' ]
-    lamp_status = strarr(n_elements(lamp_name))
-    for i=0, n_elements(lamp_name)-1 do lamp_status[i] = strtrim(sxpar(arc_hdr, lamp_name[i]), 2)
-
-    print, ''
-    print, 'Lamps used for the arc calibrations:'
-    forprint, lamp_name, lamp_status, format='(A10,A7)'
-
-    ; check that some are on
-    w_on = where(lamp_status eq 'on', /null)
-    if w_on eq !NULL then message, 'arc frame was taken with no arc lamp on!'
-
-    ; load line lists for the lamps that were used
-    all_lines_air = []
-    for i=0, n_elements(w_on)-1 do begin
-      print, 'Loading line list ' + fuel.util.flame_data_dir + lamp_file[w_on[i]]
-      readcol, fuel.util.flame_data_dir + lamp_file[w_on[i]], arc_linelist
-      all_lines_air = [all_lines_air, arc_linelist]
-    endfor
-
-  	; sort them by wavelength
-  	all_lines_air = all_lines_air[sort(all_lines_air)]
-
-  	; convert to vacuum
-  	airtovac, all_lines_air, all_lines_vac
-
-  	; convert to micron
-  	all_lines = all_lines_vac*1d-4
-
-  	; write out the linelist
-    forprint, all_lines, replicate(1, n_elements(all_lines)), $
-  	 	textout=fuel.util.intermediate_dir + 'linelist_arcs.txt', comment='#  arc_lines  trust'
-
-    print, ''
-    print, 'Arc line list written to ', fuel.util.intermediate_dir + 'linelist_arcs.txt'
-
-  endif
-
+  if fuel.util.arc.n_frames gt 0 then flame_initialize_lris_arcs, fuel
 
 
   ; -----------------------------------------------------------------
