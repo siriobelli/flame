@@ -302,8 +302,8 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
   for i_slit=0, n_elements(slit_y)/2-1 do begin
 
   ; use the approximate wavelength parameters, and add a bit of uncertainty
-  range_lambda0 = instrument.lambda0 * [0.8, 1.20]
-  range_delta_lambda = instrument.dispersion * [0.9, 1.10]
+  range_lambda0 = instrument.lambda0 * [0.8, 1.20]  ; this depends on the horizontal position of the slit
+  range_delta_lambda = instrument.dispersion * [0.8, 1.2]
 
     this_slit = { $
       number:i_slit+1, $
