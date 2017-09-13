@@ -36,32 +36,6 @@ END
 ; ****************************************************************************************
 
 
-FUNCTION flame_getslits_trace_smear, array, filter_length, up=up, down=down
-  ;
-  ; little pretty function that "smears" a 2D array along the vertical direction.
-  ; the direction is set with /up and /down keywords (default is up)
-  ;
-
-  ; create the kernel
-  if keyword_set(down) then $
-    kernel = [ replicate(0, filter_length-1), replicate(1, filter_length) ] $
-  else $
-    kernel = [ replicate(1, filter_length), replicate(0, filter_length-1) ]
-
-  ; make it vertical
-  kernel = transpose(kernel)
-
-  ; smear
-  array_smeared = convol(array, kernel, /center)
-
-  return, array_smeared
-
-END
-
-
-; ****************************************************************************************
-
-
 FUNCTION flame_getslits_trace_continuum, image_in, approx_edge, top=top, bottom=bottom
 
   ; check keywords
@@ -243,11 +217,16 @@ PRO flame_getslits_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_t
   ; for both the top and the bottom of the slit
   slit_top_x = []
   slit_top_y = []
+  slit_top_height = []
   slit_bottom_x = []
   slit_bottom_y = []
+  slit_bottom_height = []
 
-  ; make a binary mask of the cutout to store the pixels that belong identified lines
+  ; make a binary mask of the cutout to store the pixels that belong to the identified lines
   mask = bytarr(Nx, Ny)
+
+  ; make an array with the height of each line
+  line_height = []
 
   for i_line=0, n_elements(w_peaks)-1 do begin
 
@@ -309,18 +288,31 @@ PRO flame_getslits_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_t
     slit_bottom_x = [ slit_bottom_x, edge_x[w_bottom] ]
     slit_bottom_y = [ slit_bottom_y, edge_bottom[w_bottom] ]
 
+    ; calculate the slit height along the y axis (i.e. does not account for tilt)
+    slit_height = top_ref - bottom_ref
+
+    ; store slit height for this line
+    line_height = [line_height, slit_height]
+
+    ; also store slit height in each top and bottom measurement
+    slit_top_height = [slit_top_height, replicate(slit_height, n_elements(w_top))]
+    slit_bottom_height = [slit_bottom_height, replicate(slit_height, n_elements(w_bottom))]
+
   endfor
 
-  ; remove detections at the top edge of the cutout
-  w_ok = where( slit_top_y LT (size(cutout))[2]-1, /null )
+  ; sigma-clip the values of slit heights to find the true heights
+  meanclip, line_height, mean_height, sigma_height, clipsig=2.0
+  if sigma_height LT 0.5 then sigma_height=0.5
+
+  ; remove detections at the edge of the cutout or with slit heights too far from the mean
+  w_ok = where( slit_top_y LT (size(cutout))[2]-1 and abs(slit_top_height-mean_height) LT 3.0*sigma_height, /null )
   slit_top_x = slit_top_x[w_ok]
   slit_top_y = slit_top_y[w_ok]
 
   ; again but for the bottom edge
-  w_ok = where( slit_bottom_y GT 0, /null )
+  w_ok = where( slit_bottom_y GT 0 and abs(slit_bottom_height-mean_height) LT 3.0*sigma_height, /null )
   slit_bottom_x = slit_bottom_x[w_ok]
   slit_bottom_y = slit_bottom_y[w_ok]
-
 
   ; enlarge by one pixel the edges, otherwise they are very strict
   slit_top_y += 1
