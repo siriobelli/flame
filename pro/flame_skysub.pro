@@ -106,7 +106,7 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 		sorted_deviations = pixel_deviations[w_bin[ sort(pixel_deviations[w_bin]) ]]
 
 		; calculate the threshold corresponding to the set percentile
-		threshold_deviation = sorted_deviations[ (1.0-0.5) * n_elements(sorted_deviations) ]
+		threshold_deviation = sorted_deviations[ (1.0-reject_fraction) * n_elements(sorted_deviations) ]
 
 		; mask the points above the threshold
 		pixel_mask[w_bin[ where(pixel_deviations[w_bin] GT threshold_deviation) ]] = 1
