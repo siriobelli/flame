@@ -31,6 +31,15 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; 2D B-spline *
 	;**************
 
+	; set the order of the B-spline
+	bspline_nord = fuel.settings.skysub_bspline_order
+
+	; set the fraction of bright pixels to reject
+	reject_fraction = fuel.settings.skysub_reject_fraction
+	if reject_fraction LT 0.0 or reject_fraction GT 1.0 then $
+		message, 'fuel.settings.skysub_reject_fraction must be between 0 and 1'
+
+	; make image with the pixel y coordinate
 	pixel_ycoord_2d = replicate(1, N_lambda_pix ) # indgen( N_spatial_pix )
 
 	; exclude bad pixels and the top and bottom 2 pixel rows
@@ -69,25 +78,56 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	rel_range = fuel.settings.skysub_plot_range
 	xrange=breakpoints[ [n_elements(breakpoints)*rel_range[0], n_elements(breakpoints)*rel_range[1]] ]
 
-	; plot all pixels in a small wavelength range
+	; plot all pixels in a small wavelength range, in gray
 	cgplot, pixel_wavelength, pixel_flux, psym=3, xtit='wavelength (micron)', $
-		xra=xrange, $
+		xra=xrange, color='blk3', $
 		title=(strsplit(slit_filename,'/', /extract))[-1]
 
-	; sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=4, $
-	; 	fullbkpt=breakpoints, x2=pixel_ycoord, npoly=1, $
-	; 	outmask=outmask, upper=4.0, lower=4.0 )
-
-	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=5, $
+	; calculate B-spline model of the sky
+	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=bspline_nord, $
 		fullbkpt=breakpoints, invvar=1.0/pixel_variance, $
-		outmask=outmask, upper=4.0, lower=4.0 )
+		outmask=outmask, upper=3.0, lower=3.0)
+
+	; calculate the deviations from the model
+	pixel_deviations = pixel_flux -  bspline_valu(pixel_wavelength, sset)
+
+	; remove half of the pixels, selecting the ones with the largest positive deviations
+
+	; make a mask array, 1 if the pixel is not to be used
+	pixel_mask = bytarr( n_elements(pixel_flux) )
+
+	for i_bin=0, n_elements(breakpoints)-2 do begin
+
+		; select the points within this bin
+		w_bin = where(pixel_wavelength GE breakpoints[i_bin] and pixel_wavelength LT breakpoints[i_bin+1], /null)
+		if w_bin EQ !NULL then continue
+
+		; sort the deviation values for the points within this bin
+		sorted_deviations = pixel_deviations[w_bin[ sort(pixel_deviations[w_bin]) ]]
+
+		; calculate the threshold corresponding to the set percentile
+		threshold_deviation = sorted_deviations[ (1.0-0.5) * n_elements(sorted_deviations) ]
+
+		; mask the points above the threshold
+		pixel_mask[w_bin[ where(pixel_deviations[w_bin] GT threshold_deviation) ]] = 1
+
+	endfor
+
+	; select points that are not masked out
+	w_good = where(pixel_mask eq 0, /null)
+
+	; plot them in black
+	cgplot, pixel_wavelength[w_good], pixel_flux[w_good], psym=3, /overplot, color='black'
+
+	; calculate B-spline model of the sky - now removing the masked points
+	sset = bspline_iterfit(pixel_wavelength[w_good], pixel_flux[w_good], nord=bspline_nord, $
+		fullbkpt=breakpoints, $
+		outmask=outmask, upper=2.0, lower=2.0)
 
 	; wavelength axis finely sampled
 	wl_axis = min(pixel_wavelength) + (max(pixel_wavelength) - min(pixel_wavelength)) * dindgen( N_lambda_pix * 10 ) / double(N_lambda_pix * 10)
 
 	; overplot the B-spline model at each row
-	; cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=0.0001), /overplot, color='red' ; bspline_valu bug: setting i_row=0 is interpreted as keyword not set
-	; for i_row=1, N_spatial_pix-1 do cgplot, wl_axis, bspline_valu(wl_axis, sset, x2=i_row), /overplot, color='red'
 	cgplot, wl_axis, bspline_valu(wl_axis, sset), /overplot, color='red'
 
 	; show pixels that were masked out
@@ -95,7 +135,6 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 		cgplot, pixel_wavelength[where(~outmask, /null)], pixel_flux[where(~outmask, /null)], /overplot, psym=16, color='blue'
 
 	; generate sky model for the whole slit
-	;sky_model = bspline_valu(wavelength_solution, sset, x2=pixel_ycoord_2d)
 	sky_model = bspline_valu(wavelength_solution, sset)
 
 	; avoid extrapolating the sky model outside the observed wavelength range

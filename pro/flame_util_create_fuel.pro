@@ -181,6 +181,8 @@ FUNCTION flame_util_create_fuel, input
     wavesolution_order_y: 2, $
     shift_arcs_Nmin_lines: 1, $
     skysub_plot_range: [0.4, 0.6], $
+    skysub_bspline_order: 4, $
+    skysub_reject_fraction: 0.5, $
     combine_sigma_clip : 2.0, $
     combine_min_framefrac : combine_min_framefrac, $
     debugging:0 $
