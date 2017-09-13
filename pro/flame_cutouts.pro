@@ -28,7 +28,7 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   if keyword_set(vertical_shift) then begin
     top_y += vertical_shift
     bottom_y += vertical_shift
-  endif
+  endif else vertical_shift = 0
 
   ; select pixels belonging to this slit
   w_slit = where( pixel_y LT top_y - margin AND pixel_y GT bottom_y + margin, /null, complement=w_outside_slit)
@@ -41,7 +41,7 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   w_slit2d = array_indices(im, w_slit)
 
   ; extract the slit as a rectangle
-  this_cutout = im[ * , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
+  this_cutout = im[ * , slit_structure.yrange_cutout[0]+vertical_shift : slit_structure.yrange_cutout[1]+vertical_shift ]
 
   ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
   this_cutout[*, 0] = !values.d_nan
