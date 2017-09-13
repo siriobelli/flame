@@ -162,6 +162,9 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 	; make the error spectrum
 	error_stack = sqrt( total(error_cube^2, 1, /nan)  ) / float( total(finite(mask_cube), 1))
 
+	; make a clean sigma image (i.e., excluding rejected pixels)
+	sigma_stack = stddev(im_cube, dimension=1, /nan)
+
 	; make final map of exptime
 	exptime_stack = total(exptime_cube, 1, /nan)
 
@@ -169,7 +172,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 	w_void = where(im_goodpix LE fuel.settings.combine_min_framefrac*N_frames)
 	im_stack[w_void] = !values.d_nan
 	error_stack[w_void] = !values.d_nan
-	sigma_im[w_void] = !values.d_nan
+	sigma_stack[w_void] = !values.d_nan
 	exptime_stack[w_void] = 0.0
 
 	; make header array with the correct grid
@@ -191,7 +194,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 
 	; add extension with the pixel standard deviation
 	sxaddpar, xten_hdr, 'EXTNAME', 'SIGMA'
-	writefits, output_filename, sigma_im, xten_hdr, /append
+	writefits, output_filename, sigma_stack, xten_hdr, /append
 
 	; add extension with exptime
 	sxaddpar, xten_hdr, 'EXTNAME', 'EXPTIME'
