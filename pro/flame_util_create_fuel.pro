@@ -169,6 +169,7 @@ FUNCTION flame_util_create_fuel, input
     clean_individual_frames : 0, $
     trace_slit_with_skylines : 0, $
     trace_slit_ymargin: 12, $
+    trace_slit_polydegree: 3, $
     wavecal_rough_R : [500, 1000, 3000], $
     illumination_correction : 1, $
     wavecal_rough_smooth_window: 20, $
