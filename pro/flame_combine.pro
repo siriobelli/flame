@@ -14,7 +14,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 ; write multi-HDU output FITS file:
 ; HDU 0: stacked spectrum
 ; HDU 1: error spectrum
-; HDU 2: sigma map [i.e., standard deviation of values for each pixel]
+; HDU 2: sigma map [i.e., standard deviation of values for each pixel, including correction for correlated noise]
 ; HDU 3: exptime map
 ;
 
@@ -163,7 +163,11 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 	error_stack = sqrt( total(error_cube^2, 1, /nan)  ) / float( total(finite(mask_cube), 1))
 
 	; make a clean sigma image (i.e., excluding rejected pixels)
-	sigma_stack = stddev(im_cube, dimension=1, /nan)
+	sigma_stack = stddev(im_cube, dimension=1, /nan) / sqrt(im_goodpix)
+
+	; correct for the correlated noise
+	; see Eq. 9 in Fruchter & Hook 2002, and also footnote 20 in Kriek et al. 2015
+	sigma_stack *= 1.5
 
 	; make final map of exptime
 	exptime_stack = total(exptime_cube, 1, /nan)
