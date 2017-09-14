@@ -421,11 +421,12 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
 		flame_combine_stack, fuel=fuel, filenames=stack_X_filenames, $
 			output_filename=filename_prefix + '_X.fits'
-		fuel.slits[i_slit].output_file = filename_prefix + '_X.fits'
 
 		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
 		flame_combine_stack, fuel=fuel, filenames=stack_X_skysub_filenames, $
 			output_filename=filename_prefix + '_skysub_X.fits'
+
+		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_X.fits'
 
 	endif
 
@@ -434,11 +435,12 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
 		flame_combine_stack, fuel=fuel, filenames=stack_B_filenames, $
 		 	output_filename=filename_prefix + '_B.fits'
-		fuel.slits[i_slit].output_file = filename_prefix + '_B.fits'
 
 		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
 		flame_combine_stack, fuel=fuel, filenames=stack_B_skysub_filenames, $
 		 	output_filename=filename_prefix + '_skysub_B.fits'
+
+		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B.fits'
 
 	endif
 
@@ -447,11 +449,12 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
 		flame_combine_stack, fuel=fuel, filenames=stack_A_filenames, $
 			output_filename=filename_prefix + '_A.fits'
-		fuel.slits[i_slit].output_file = filename_prefix + '_A.fits'
 
 		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
 		flame_combine_stack, fuel=fuel, filenames=stack_A_skysub_filenames, $
 			output_filename=filename_prefix + '_skysub_A.fits'
+
+		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A.fits'
 
 	endif
 
