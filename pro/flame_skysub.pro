@@ -34,9 +34,9 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; set the order of the B-spline
 	bspline_nord = fuel.settings.skysub_bspline_order
 
-	; set the fraction of bright pixels to reject
+	; set the fraction of pixels to reject
 	reject_fraction = fuel.settings.skysub_reject_fraction
-	if reject_fraction LT 0.0 or reject_fraction GT 1.0 then $
+	if reject_fraction LT 0.0 or reject_fraction GE 1.0 then $
 		message, 'fuel.settings.skysub_reject_fraction must be between 0 and 1'
 
 	; make image with the pixel y coordinate
@@ -72,7 +72,10 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	pixel_variance =  running_average_square - running_average^2
 
 	; use the wavelengths of all the pixels in the central row as breakpoints (or nodes) for the B-spline
-	breakpoints = wavelength_solution[*,N_spatial_pix/2]
+	wavepoints = wavelength_solution[*,N_spatial_pix/2]
+
+	; but set a breakpoint at every half pixel
+	breakpoints = rebin(wavepoints, 2*n_elements(wavepoints))
 
 	; set the range for the plot
 	rel_range = fuel.settings.skysub_plot_range
@@ -102,14 +105,15 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 		w_bin = where(pixel_wavelength GE breakpoints[i_bin] and pixel_wavelength LT breakpoints[i_bin+1], /null)
 		if w_bin EQ !NULL then continue
 
-		; sort the deviation values for the points within this bin
-		sorted_deviations = pixel_deviations[w_bin[ sort(pixel_deviations[w_bin]) ]]
+		; sort the absolute value of the deviations for the points within this bin
+		pixel_absdeviations = abs(pixel_deviations)
+		sorted_deviations = pixel_absdeviations[w_bin[ sort(pixel_absdeviations[w_bin]) ]]
 
-		; calculate the threshold corresponding to the set percentile
-		threshold_deviation = sorted_deviations[ (1.0-reject_fraction) * (n_elements(sorted_deviations)-1) ]
+		; calculate the threshold corresponding to the set percentile level
+		max_absdeviation = sorted_deviations[ (1.0-reject_fraction) * (n_elements(sorted_deviations)-1) ]
 
 		; mask the points above the threshold
-		pixel_mask[w_bin[ where(pixel_deviations[w_bin] GT threshold_deviation) ]] = 1
+		pixel_mask[w_bin[ where(pixel_absdeviations[w_bin] GT max_absdeviation) ]] = 1
 
 	endfor
 
