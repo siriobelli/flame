@@ -91,10 +91,10 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 		fullbkpt=breakpoints, invvar=1.0/pixel_variance, $
 		outmask=outmask, upper=3.0, lower=3.0)
 
-	; calculate the deviations from the model
-	pixel_deviations = pixel_flux -  bspline_valu(pixel_wavelength, sset)
+	; calculate the absolute deviations from the model
+	pixel_deviations = abs(pixel_flux - bspline_valu(pixel_wavelength, sset))
 
-	; remove half of the pixels, selecting the ones with the largest positive deviations
+	; remove the pixels with the largest absolute deviations
 
 	; make a mask array, 1 if the pixel is not to be used
 	pixel_mask = bytarr( n_elements(pixel_flux) )
@@ -106,14 +106,13 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 		if w_bin EQ !NULL then continue
 
 		; sort the absolute value of the deviations for the points within this bin
-		pixel_absdeviations = abs(pixel_deviations)
-		sorted_deviations = pixel_absdeviations[w_bin[ sort(pixel_absdeviations[w_bin]) ]]
+		sorted_deviations = pixel_deviations[w_bin[ sort(pixel_deviations[w_bin]) ]]
 
 		; calculate the threshold corresponding to the set percentile level
-		max_absdeviation = sorted_deviations[ (1.0-reject_fraction) * (n_elements(sorted_deviations)-1) ]
+		max_deviation = sorted_deviations[ (1.0-reject_fraction) * (n_elements(sorted_deviations)-1) ]
 
 		; mask the points above the threshold
-		pixel_mask[w_bin[ where(pixel_absdeviations[w_bin] GT max_absdeviation) ]] = 1
+		pixel_mask[w_bin[ where(pixel_deviations[w_bin] GT max_deviation) ]] = 1
 
 	endfor
 
