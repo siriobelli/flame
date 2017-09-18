@@ -156,8 +156,8 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, output_filename=output_
 	; make stack and output files
 	; ----------------------------------------------------------------------------
 
-	; stack the frames
-	im_stack =	mean(im_cube, dimension=1, /nan)
+	; mean-stack the frames
+	im_stack = mean(im_cube, dimension=1, /nan)
 
 	; make the error spectrum
 	error_stack = sqrt( total(error_cube^2, 1, /nan)  ) / float( total(finite(mask_cube), 1))
@@ -276,8 +276,10 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	; combine the sigma
 	sigdiff = sqrt( sig1[*,bot1:top1]^2 + sig2[*,bot2:top2]^2 )
 
-	; add the exptime (0.5 factor because we are not really adding the signal)
-	exptimediff = 0.5*(exptime1[*,bot1:top1] + exptime2[*,bot2:top2])
+	; add the exptime - take the mean of A and B
+	exptimediff1 = exptime1[*,bot1:top1]
+	exptimediff2 = exptime2[*,bot2:top2]
+	exptimediff = 0.5*(exptimediff1 + exptimediff2)
 
 
 	; output file
@@ -328,20 +330,23 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 
 	; add the difference image in the first layer of the cube
 	cube_imdiff[0,*,0+shiftA:Ny-1+shiftA] = imdiff
-	cube_errdiff[0,*,0+shiftA:Ny-1+shiftA] = errdiff^2
-	cube_sigdiff[0,*,0+shiftA:Ny-1+shiftA] = sigdiff^2
-	cube_exptimediff[0,*,0+shiftA:Ny-1+shiftA] = exptimediff
+	cube_errdiff[0,*,0+shiftA:Ny-1+shiftA] = errdiff
+	cube_sigdiff[0,*,0+shiftA:Ny-1+shiftA] = sigdiff
+	cube_exptimediff[0,*,0+shiftA:Ny-1+shiftA] = exptimediff1
 
 	; add the negative of the difference image in the second layer of the cube
 	cube_imdiff[1,*,0+shiftB:Ny-1+shiftB] = -imdiff
-	cube_errdiff[1,*,0+shiftB:Ny-1+shiftB] = errdiff^2
-	cube_sigdiff[1,*,0+shiftB:Ny-1+shiftB] = sigdiff^2
-	cube_exptimediff[1,*,0+shiftB:Ny-1+shiftB] = exptimediff
+	cube_errdiff[1,*,0+shiftB:Ny-1+shiftB] = errdiff
+	cube_sigdiff[1,*,0+shiftB:Ny-1+shiftB] = sigdiff
+	cube_exptimediff[1,*,0+shiftB:Ny-1+shiftB] = exptimediff2
+
+	; weights for stacking
+	cube_weights = (1.0/cube_errdiff^2)
 
 	; finally stack the cubes
-	dbl_imdiff = total(cube_imdiff, 1, /nan)
-	dbl_errdiff = sqrt( total(cube_errdiff, 1, /nan) )
-	dbl_sigdiff = sqrt( total(cube_sigdiff, 1, /nan) )
+	dbl_imdiff = total(cube_imdiff*cube_weights, 1, /nan) / total(cube_weights, 1, /nan)
+	dbl_errdiff = sqrt( total(cube_errdiff^2, 1, /nan) )
+	dbl_sigdiff = sqrt( total(cube_sigdiff^2, 1, /nan) )
 	dbl_exptimediff = total(cube_exptimediff, 1, /nan)
 
 	; set to NaNs pixels with exptime=0
