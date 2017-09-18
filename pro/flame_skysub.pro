@@ -75,16 +75,7 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	wavepoints = wavelength_solution[*,N_spatial_pix/2]
 
 	; but set a breakpoint at every half pixel
-	breakpoints = rebin(wavepoints, 2*n_elements(wavepoints))
-
-	; set the range for the plot
-	rel_range = fuel.settings.skysub_plot_range
-	xrange=breakpoints[ [n_elements(breakpoints)*rel_range[0], n_elements(breakpoints)*rel_range[1]] ]
-
-	; plot all pixels in a small wavelength range, in gray
-	cgplot, pixel_wavelength, pixel_flux, psym=3, xtit='wavelength (micron)', $
-		xra=xrange, color='blk3', $
-		title=(strsplit(slit_filename,'/', /extract))[-1]
+	breakpoints = wavepoints
 
 	; calculate B-spline model of the sky
 	sset = bspline_iterfit(pixel_wavelength, pixel_flux, nord=bspline_nord, $
@@ -119,7 +110,18 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; select points that are not masked out
 	w_good = where(pixel_mask eq 0, /null)
 
-	; plot them in black
+	; set the range for the plot
+	rel_range = fuel.settings.skysub_plot_range
+	xrange=breakpoints[ [n_elements(breakpoints)*rel_range[0], n_elements(breakpoints)*rel_range[1]] ]
+
+	; plot all pixels in a small wavelength range
+	cgplot, pixel_wavelength[w_good], pixel_flux[w_good], psym=3, color='blk3', /nodata, $
+		xtit='wavelength (micron)', xra=xrange, title=(strsplit(slit_filename,'/', /extract))[-1]
+
+	; plot all pixels in gray
+	cgplot, pixel_wavelength, pixel_flux, psym=3, color='blk3', /overplot
+
+	; plot good points in black
 	cgplot, pixel_wavelength[w_good], pixel_flux[w_good], psym=3, /overplot, color='black'
 
 	; calculate B-spline model of the sky - now removing the masked points
