@@ -44,10 +44,19 @@ PRO flame_rectify_one, filename=filename, lambda_coeff=lambda_coeff, gamma_coeff
 	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
 	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
 
+	; make sure that the interpolation method is a valid string
+	if total(strlowcase(fuel.settings.interpolation_method) eq strlowcase(['InverseDistance', 'Kriging', 'Linear', $
+		'MinimumCurvature', 'ModifiedShepards', 'NaturalNeighbor', 'NearestNeighbor', 'Quintic']) ) NE 1 then begin
+		print, 'WARNING: interpolation_method not valid: ' + fuel.settings.interpolation_method
+		print, 'using NaturalNeighbor instead'
+		fuel.settings.interpolation_method = 'NaturalNeighbor'
+	endif
+
 	; resample image onto new grid using griddata
 	triangulate, lambdax_2d, gamma_2d, triangles
 	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
-	if Next GT 1 then new_im_sigma = griddata(lambdax_2d, gamma_2d, im_sigma, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /natural_neighbor, missing=!values.d_nan)
+	if Next GT 1 then new_im_sigma = griddata(lambdax_2d, gamma_2d, im_sigma, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], $
+		method=fuel.settings.interpolation_method, missing=!values.d_nan)
 
 	; add the wavelength calibration to the FITS header
 	SXADDPAR, Header, 'CTYPE1', 'AWAV    '

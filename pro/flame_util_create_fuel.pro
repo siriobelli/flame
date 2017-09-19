@@ -181,6 +181,7 @@ FUNCTION flame_util_create_fuel, input
     wavesolution_order_x: 3, $
     wavesolution_order_y: 2, $
     shift_arcs_Nmin_lines: 1, $
+    interpolation_method: 'NaturalNeighbor', $
     skysub_plot_range: [0.4, 0.6], $
     skysub_bspline_oversample: 1.0, $
     skysub_reject_fraction: 0.5, $
