@@ -1,7 +1,7 @@
 
 
 
-PRO flame_rectify_one, filename=filename, lambda_coeff=lambda_coeff, gamma_coeff=gamma_coeff, output_name=output_name, slit=slit
+PRO flame_rectify_one, fuel, filename, lambda_coeff=lambda_coeff, gamma_coeff=gamma_coeff, output_name=output_name, slit=slit
 
 	print, 'rectifying ', filename
 
@@ -45,8 +45,8 @@ PRO flame_rectify_one, filename=filename, lambda_coeff=lambda_coeff, gamma_coeff
 	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
 
 	; make sure that the interpolation method is a valid string
-	if total(strlowcase(fuel.settings.interpolation_method) eq strlowcase(['InverseDistance', 'Kriging', 'Linear', $
-		'MinimumCurvature', 'ModifiedShepards', 'NaturalNeighbor', 'NearestNeighbor', 'Quintic']) ) NE 1 then begin
+	if total(strlowcase(fuel.settings.interpolation_method) eq strlowcase(['Linear', 'NearestNeighbor', $
+		'NaturalNeighbor', 'Quintic']) ) NE 1 then begin
 		print, 'WARNING: interpolation_method not valid: ' + fuel.settings.interpolation_method
 		print, 'using NaturalNeighbor instead'
 		fuel.settings.interpolation_method = 'NaturalNeighbor'
@@ -54,7 +54,8 @@ PRO flame_rectify_one, filename=filename, lambda_coeff=lambda_coeff, gamma_coeff
 
 	; resample image onto new grid using griddata
 	triangulate, lambdax_2d, gamma_2d, triangles
-	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
+	new_im = griddata(lambdax_2d, gamma_2d, im, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], $
+		method=fuel.settings.interpolation_method, missing=!values.d_nan)
 	if Next GT 1 then new_im_sigma = griddata(lambdax_2d, gamma_2d, im_sigma, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], $
 		method=fuel.settings.interpolation_method, missing=!values.d_nan)
 
@@ -127,15 +128,15 @@ PRO flame_rectify, fuel
 				filename = flame_util_replace_string(this_cutout.filename, '_corr', '_illcorr')
 
 			; rectify observed frame
-			flame_rectify_one, filename=filename, lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
+			flame_rectify_one, fuel, filename, lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
 				output_name = flame_util_replace_string(filename, '.fits', '_rectified.fits'), slit=this_slit
 
 			; rectify sky model
-			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skymodel.fits'), lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
+			flame_rectify_one, fuel, flame_util_replace_string(filename, '.fits', '_skymodel.fits'), lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
 				output_name = flame_util_replace_string(filename, '.fits', '_skymodel_rectified.fits'), slit=this_slit
 
 			; rectify sky-subtracted frame
-			flame_rectify_one, filename=flame_util_replace_string(filename, '.fits', '_skysub.fits'), lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
+			flame_rectify_one, fuel, flame_util_replace_string(filename, '.fits', '_skysub.fits'), lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
 				output_name = flame_util_replace_string(filename, '.fits', '_skysub_rectified.fits'), slit=this_slit
 
 		endfor
