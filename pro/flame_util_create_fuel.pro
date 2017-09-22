@@ -184,7 +184,8 @@ FUNCTION flame_util_create_fuel, input
     interpolation_method: 'NaturalNeighbor', $
     skysub_plot_range: [0.4, 0.6], $
     skysub_bspline_oversample: 1.0, $
-    skysub_reject_fraction: 0.5, $
+    skysub_reject_fraction: 0.10, $
+    skysub_reject_loops: 3, $
     skysub_reject_window: 2.0, $
     combine_sigma_clip : 2.0, $
     combine_min_framefrac : combine_min_framefrac, $

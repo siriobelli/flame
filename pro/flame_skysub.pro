@@ -91,8 +91,12 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; make a mask array, 1 if the pixel is not to be used
 	pixel_mask = bytarr( n_elements(pixel_flux) )
 
+	; check the number of loops for rejection
+	if fuel.settings.skysub_reject_loops LT 0 or fuel.settings.skysub_reject_loops GT 15 then $
+		message, 'skysub_reject_loops must be between 0 and 15'
+
 	i_loop = 0
-  while i_loop LT 5 do begin
+  while i_loop LT fuel.settings.skysub_reject_loops do begin
 
 		; select good pixels
 		pixel_wavelength_ok = pixel_wavelength[where(pixel_mask eq 0, /null)]
@@ -101,7 +105,7 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 		; calculate B-spline model of the sky, using only good pixels
 		sset = bspline_iterfit(pixel_wavelength_ok, pixel_flux_ok, nord=bspline_nord, $
 			fullbkpt=breakpoints, $
-			outmask=outmask, upper=2.0, lower=3.0)
+			outmask=outmask, upper=5.0, lower=5.0)
 
 		; calculate the absolute deviations of all pixels
 		pixel_deviations = abs(pixel_flux - bspline_valu(pixel_wavelength, sset))
@@ -124,11 +128,13 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 			sorted_deviations = pixel_deviations_bin[ sort(pixel_deviations_bin) ]
 
 			; calculate the threshold corresponding to the set percentile level
-			alpha = 0.10
+			alpha = fuel.settings.skysub_reject_fraction
 			max_deviation = sorted_deviations[ (1.0-alpha) * (n_elements(sorted_deviations)-1) ]
+	;		min_deviation = sorted_deviations[ (alpha) * (n_elements(sorted_deviations)-1) ]
 
 			; mask the pixels in this bin that are outliers
 			pixel_mask[w_bin[where(pixel_deviations[w_bin] GT max_deviation, /null)]] = 1
+	;		pixel_mask[w_bin[where(pixel_deviations[w_bin] LT min_deviation, /null)]] = 1
 
 			; advance to next bin
 			bin_start += bin_size
@@ -141,6 +147,8 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 
 	; select points that are not masked out
 	w_good = where(pixel_mask eq 0, /null)
+
+	print, '*****  ', n_elements(w_good) / double(n_elements(pixel_mask))
 
 	; set the range for the plot
 	rel_range = fuel.settings.skysub_plot_range
@@ -164,7 +172,7 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; wavelength axis finely sampled
 	wl_axis = min(pixel_wavelength) + (max(pixel_wavelength) - min(pixel_wavelength)) * dindgen( N_lambda_pix * 10 ) / double(N_lambda_pix * 10)
 
-	; overplot the B-spline model at each row
+	; overplot the B-spline model
 	cgplot, wl_axis, bspline_valu(wl_axis, sset), /overplot, color='red'
 
 	; ; show pixels that were masked out
