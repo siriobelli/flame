@@ -92,30 +92,30 @@
 
   ; set this to zero if you want to use the sky background to trace the slit edges
   ; instead of the OH lines (e.g. in the K band or in the optical or with slit flats)
-  ; fuel.settings.trace_slit_with_skylines = 0
+  ; fuel.settings.trace_slit_with_emlines = 0
 
   ; change the spectral resolution used in the successive steps during wavecal_rough
-  ; fuel.settings.wavecal_rough_R = [500, 1000, 3000]
+  ; fuel.settings.roughwavecal_R = [500, 1000, 3000]
 
   ; identify cosmic rays using L.A.Cosmic in each science frame
   ; fuel.settings.clean_individual_frames = 1
 
   ; subtract sky continuum before wavecal_rough. This specifies the smoothing window
-  ; fuel.settings.wavecal_rough_smooth_window = 20
+  ; fuel.settings.roughwavecal_smooth_window = 20
 
   ; if the sky lines are weak, stack more than one pixel row when identifying lines
-  ;fuel.settings.identify_lines_stack_rows = 2
+  ;fuel.settings.findlines_stack_rows = 2
 
   ; change the window used to look for a spectral line, in units of expected line width
-  ;fuel.settings.identify_lines_linefit_window = 6.0
+  ;fuel.settings.findlines_linefit_window = 6.0
 
   ; change the minimum number of emission lines required for a valid wavelength
   ; solution in one pixel row during identify_lines
-  ; fuel.settings.identify_lines_Nmin_lines = 4
+  ; fuel.settings.findlines_Nmin_lines = 4
 
   ; change the polynomial degree of the wavelength solution for one pixel row
   ; during identify_lines
-  ; fuel.settings.identify_lines_poly_degree = 2
+  ; fuel.settings.findlines_poly_degree = 2
 
   ; change the degree of the 2D wavelength solution describing one entire cutout
   ; fuel.settings.wavesolution_order_x = 3

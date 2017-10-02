@@ -458,7 +458,7 @@ FUNCTION flame_initialize_lris, input
     fuel.util.flame_data_dir + 'sky_emission_model_optical.dat'
 
   ; use the sky background to trace the slit edges
-  fuel.settings.trace_slit_with_skylines = 0
+  fuel.settings.trace_slit_with_emlines = 0
 
   ; how much margin to allow for detecting slit vertical distortion
   fuel.settings.trace_slit_ymargin = 30
@@ -470,7 +470,7 @@ FUNCTION flame_initialize_lris, input
   fuel.settings.illumination_correction = 0
 
   ; split the spectrum into two when doing the rough wavecal
-  fuel.settings.wavecal_rough_split = 1
+  fuel.settings.roughwavecal_split = 1
 
 
   ; ---------------------   ARC LINE LIST    -----------------------------------

@@ -100,7 +100,7 @@ FUNCTION flame_initialize_mosfire, input
   ; ---------------------   SETTINGS   --------------------------------------
 
   ; do not split the spectrum into two when doing the rough wavecal
-  fuel.settings.wavecal_rough_split = 0
+  fuel.settings.roughwavecal_split = 0
 
   ; Use the R3000 line list
   fuel.settings.linelist_filename = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'

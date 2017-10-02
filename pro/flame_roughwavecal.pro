@@ -270,15 +270,15 @@ END
 
 FUNCTION flame_roughwavecal_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 		 model_lambda=model_lambda, model_flux=model_flux, wavecal_coefficients=wavecal_coefficients, $
-		 wavecal_rough_R=wavecal_rough_R
+		 roughwavecal_R=roughwavecal_R
 
 	range_delta_lambda = this_slit.range_delta_lambda
   range_start_lambda = this_slit.range_lambda0
 
-	if keyword_set(wavecal_rough_R) then begin
-		R_smooth_1 = wavecal_rough_R[0]
-		R_smooth_2 = wavecal_rough_R[1]
-		R_smooth_3 = wavecal_rough_R[2]
+	if keyword_set(roughwavecal_R) then begin
+		R_smooth_1 = roughwavecal_R[0]
+		R_smooth_2 = roughwavecal_R[1]
+		R_smooth_3 = roughwavecal_R[2]
 	endif
 
 
@@ -339,7 +339,7 @@ FUNCTION flame_roughwavecal_solution, fuel=fuel, this_slit=this_slit, sky=sky, $
 		 wavecal_coefficients=wavecal_coefficients
 
 
-		if ~fuel.settings.wavecal_rough_split then begin
+		if ~fuel.settings.roughwavecal_split then begin
 
 
 			print, ''
@@ -485,11 +485,11 @@ FUNCTION flame_roughwavecal_oneslit, fuel=fuel, this_slit=this_slit, rough_skyfl
 
 	; filter the sky spectrum: find the running minimum pixel value
 	;--------------------------------------------------------------
-	if fuel.settings.wavecal_rough_smooth_window GT 0 then begin
+	if fuel.settings.roughwavecal_smooth_window GT 0 then begin
 
 		; make a 2D matrix where at each value of x-pixel you have a column with all the neighhboring pixel values
 		matrix = []
-		for i_shift = -fuel.settings.wavecal_rough_smooth_window/2, fuel.settings.wavecal_rough_smooth_window/2 do $
+		for i_shift = -fuel.settings.roughwavecal_smooth_window/2, fuel.settings.roughwavecal_smooth_window/2 do $
 		 	matrix = [ [matrix], [shift(sky, i_shift)]]
 
 		; for each x-pixel take the minimum of all the neighboring pixel values
@@ -499,8 +499,8 @@ FUNCTION flame_roughwavecal_oneslit, fuel=fuel, this_slit=this_slit, rough_skyfl
 		sky -= sky_minfilter
 
 		; crop the edges
-		sky[0:fuel.settings.wavecal_rough_smooth_window/2] = 0
-		sky[-fuel.settings.wavecal_rough_smooth_window/2-1:*] = 0
+		sky[0:fuel.settings.roughwavecal_smooth_window/2] = 0
+		sky[-fuel.settings.roughwavecal_smooth_window/2-1:*] = 0
 
 	endif
 
@@ -524,7 +524,7 @@ FUNCTION flame_roughwavecal_oneslit, fuel=fuel, this_slit=this_slit, rough_skyfl
 
 	; find the wavelength solution
 	wavecal_solution = flame_roughwavecal_solution(fuel=fuel, this_slit=this_slit, sky=sky, $
-		model_lambda=model_lambda, model_flux=model_flux, wavecal_rough_R = fuel.settings.wavecal_rough_R)
+		model_lambda=model_lambda, model_flux=model_flux, roughwavecal_R = fuel.settings.roughwavecal_R)
 
 
   cgPS_close

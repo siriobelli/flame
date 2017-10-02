@@ -167,26 +167,26 @@ FUNCTION flame_util_create_fuel, input
     star_x_range: [1000, 1200], $
     star_y_window: 0, $
     clean_individual_frames : 0, $
-    trace_slit_with_skylines : 0, $
+    trace_slit_with_emlines : 0, $
     trace_slit_ymargin: 12, $
     trace_slit_polydegree: 3, $
-    wavecal_rough_R : [500, 1000, 3000], $
-    illumination_correction : 1, $
-    wavecal_rough_smooth_window: 20, $
-    wavecal_rough_split: 1, $
-    identify_lines_stack_rows: 0, $
-    identify_lines_poly_degree: 5, $
-    identify_lines_Nmin_lines: 6, $
-    identify_lines_linefit_window: 6.0, $       ; in units of expected linewidth
+    roughwavecal_R : [500, 1000, 3000], $
+    roughwavecal_smooth_window: 20, $
+    roughwavecal_split: 1, $
+    findlines_stack_rows: 0, $
+    findlines_poly_degree: 5, $
+    findlines_Nmin_lines: 6, $
+    findlines_linefit_window: 6.0, $       ; in units of expected linewidth
     wavesolution_order_x: 3, $
     wavesolution_order_y: 2, $
     shift_arcs_Nmin_lines: 1, $
-    interpolation_method: 'NaturalNeighbor', $
+    illumination_correction : 1, $
     skysub_plot_range: [0.4, 0.6], $
     skysub_bspline_oversample: 1.0, $
     skysub_reject_fraction: 0.10, $
     skysub_reject_loops: 3, $
     skysub_reject_window: 2.0, $
+    interpolation_method: 'NaturalNeighbor', $
     combine_sigma_clip : 2.0, $
     combine_min_framefrac : combine_min_framefrac, $
     debugging:0 $

@@ -483,17 +483,17 @@ FUNCTION flame_initialize_luci, input
   fuel.settings.clean_individual_frames = 0
 
   ; use the OH sky emission lines to trace the slit edges
-  fuel.settings.trace_slit_with_skylines = 1
+  fuel.settings.trace_slit_with_emlines = 1
 
-  ; scale the wavecal_rough_R to the spectral resolution - useful for argos
-  fuel.settings.wavecal_rough_R = [ 0.05*slits[0].approx_R > 500.0 , $
+  ; scale the roughwavecal_R to the spectral resolution - useful for argos
+  fuel.settings.roughwavecal_R = [ 0.05*slits[0].approx_R > 500.0 , $
 		0.15*slits[0].approx_R > 1000.0 , slits[0].approx_R < 5000.0 ]
 
   ; apply illumination correction using the OH lines
   fuel.settings.illumination_correction = 1
 
   ; do not split the spectrum into two when doing the rough wavecal
-  fuel.settings.wavecal_rough_split = 0
+  fuel.settings.roughwavecal_split = 0
 
   ; set the degree of the polynomials for the 2D wavelength solution
   fuel.settings.wavesolution_order_x = 3

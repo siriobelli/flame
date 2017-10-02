@@ -528,7 +528,7 @@ PRO flame_getslits_multislit, fuel=fuel
     ; if the slit position were specified manually, then do not use the edges detected automatically
     if fuel.input.slit_position_file ne 'none' then approx_edges = [old_slits_struc.approx_bottom, old_slits_struc.approx_top]
 
-    if fuel.settings.trace_slit_with_skylines eq 0 then begin
+    if fuel.settings.trace_slit_with_emlines eq 0 then begin
       ; identify top and bottom edge using sky background or flat lamp
       slitid_top = flame_getslits_trace_continuum(image, approx_edges[1], /top )
       slitid_bottom = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
