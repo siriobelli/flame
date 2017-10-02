@@ -130,11 +130,9 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 			; calculate the threshold corresponding to the set percentile level
 			alpha = fuel.settings.skysub_reject_fraction
 			max_deviation = sorted_deviations[ (1.0-alpha) * (n_elements(sorted_deviations)-1) ]
-	;		min_deviation = sorted_deviations[ (alpha) * (n_elements(sorted_deviations)-1) ]
 
 			; mask the pixels in this bin that are outliers
 			pixel_mask[w_bin[where(pixel_deviations[w_bin] GT max_deviation, /null)]] = 1
-	;		pixel_mask[w_bin[where(pixel_deviations[w_bin] LT min_deviation, /null)]] = 1
 
 			; advance to next bin
 			bin_start += bin_size
@@ -148,7 +146,8 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; select points that are not masked out
 	w_good = where(pixel_mask eq 0, /null)
 
-	print, '*****  ', n_elements(w_good) / double(n_elements(pixel_mask))
+	; print fraction of outliers rejected
+	print, cgnumber_formatter( (1.0 - n_elements(w_good)/double(n_elements(pixel_mask)))*100.0, decimals=2) + '% of pixels were discarded'
 
 	; set the range for the plot
 	rel_range = fuel.settings.skysub_plot_range
