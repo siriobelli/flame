@@ -464,13 +464,13 @@ FUNCTION flame_initialize_lris, input
   fuel.settings.trace_slit_ymargin = 30
 
   ; identify cosmic rays using L.A.Cosmic in each science frame
-  fuel.settings.clean_individual_frames = 1
+  fuel.settings.clean_individual_frames = 0
 
   ; do not apply illumination correction
   fuel.settings.illumination_correction = 0
 
   ; split the spectrum into two when doing the rough wavecal
-  fuel.settings.roughwavecal_split = 1
+  fuel.settings.roughwavecal_split = 0
 
 
   ; ---------------------   ARC LINE LIST    -----------------------------------

@@ -169,10 +169,10 @@ FUNCTION flame_util_create_fuel, input
     clean_individual_frames : 0, $
     trace_slit_with_emlines : 0, $
     trace_slit_ymargin: 12, $
-    trace_slit_polydegree: 3, $
+    trace_slit_polydegree: 2, $
     roughwavecal_R : [500, 1000, 3000], $
     roughwavecal_smooth_window: 20, $
-    roughwavecal_split: 1, $
+    roughwavecal_split: 0, $
     findlines_stack_rows: 0, $
     findlines_poly_degree: 5, $
     findlines_Nmin_lines: 6, $
