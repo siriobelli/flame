@@ -59,15 +59,19 @@ FUNCTION flame_calibrations_master_dark, fuel
   ;
   ; Make the master dark by combining the dark frames provided by the user
   ; or, if requested, by copying the default master dark file.
-  ; Return the frame or !NULL
+  ; Return the master frame or !NULL
   ;
 
+  print, ''
+  print, ''
+  print, 'dark frame'
+  print, '----------'
   print, ''
 
   ; read the file list specified by the user
   filelist = strlowcase( strtrim(fuel.input.dark_filelist, 2) )
 
-  ; this will be the output file name of the master dark
+  ; this will be the output file name of the master file
   master_file = fuel.util.dark.master_file
 
   ; case 1: do not use darks ---------------------------------------------
@@ -110,6 +114,48 @@ FUNCTION flame_calibrations_master_dark, fuel
 END
 
 
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+FUNCTION flame_calibrations_master_arc, fuel
+
+  ;
+  ; Make the master arcs by combining the arc frames provided by the user
+  ; Return the master frame or !NULL
+  ;
+
+  print, ''
+  print, ''
+  print, 'arcs'
+  print, '----------'
+  print, ''
+
+  ; read the file list specified by the user
+  filelist = strlowcase( strtrim(fuel.input.arc_filelist, 2) )
+
+  ; this will be the output file name of the master file
+  master_file = fuel.util.arc.master_file
+
+  ; case 1: do not use arcs ---------------------------------------------
+  if filelist eq '' or filelist eq 'none' or filelist eq 'default' then begin
+    print, 'arcs not used'
+    return, !NULL
+  endif
+
+  ; case 2: use the frames provided by the user -------------------------------------
+
+  ; median combine the arc frames
+  flame_calibrations_median_combine, fuel.util.arc.raw_files, master_file
+  print, 'master arc file created: ', master_file
+
+  ; return the master arcs
+  master = readfits(master_file, hdr)
+  return, master
+
+END
+
 
 
 ;*******************************************************************************
@@ -125,6 +171,10 @@ FUNCTION flame_calibrations_master_pixelflat, fuel
   ; Return the file name of the master pixel flat
   ;
 
+  print, ''
+  print, ''
+  print, 'pixel flat'
+  print, '-----------------'
   print, ''
 
   ; read the file list specified by the user
@@ -202,6 +252,101 @@ FUNCTION flame_calibrations_master_pixelflat, fuel
 
 END
 
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+FUNCTION flame_calibrations_master_illumflat, fuel
+
+  ;
+  ; Make the master illumination flat by combining the illumflat frames provided by the user
+  ; Return the master frame or !NULL
+  ;
+
+  print, ''
+  print, ''
+  print, 'illumination flat'
+  print, '-----------------'
+  print, ''
+
+  ; read the file list specified by the user
+  filelist = strlowcase( strtrim(fuel.input.illumflat_filelist, 2) )
+
+  ; this will be the output file name of the master file
+  master_file = fuel.util.illumflat.master_file
+
+  ; case 1: do not use illumflats ---------------------------------------------
+  if filelist eq '' or filelist eq 'none' or filelist eq 'default' then begin
+    print, 'illumination flat not used'
+    return, !NULL
+  endif
+
+  ; case 2: use the frames provided by the user -------------------------------------
+
+  ; median combine the arc frames
+  flame_calibrations_median_combine, fuel.util.illumflat.raw_files, master_file
+  print, 'master illumination flat file created: ', master_file
+
+  ; return the master illumination flat
+  master = readfits(master_file, hdr)
+  return, master
+
+END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+FUNCTION flame_calibrations_master_slitflat, fuel
+
+  ;
+  ; Make the master slit flat by combining the slitflat frames provided by the user
+  ; or using the science frames
+  ; Return the master frame
+  ;
+
+  print, ''
+  print, ''
+  print, 'slit flat'
+  print, '-----------------'
+  print, ''
+
+  ; read the file list specified by the user
+  filelist = strlowcase( strtrim(fuel.input.slitflat_filelist, 2) )
+
+  ; this will be the output file name of the master file
+  master_file = fuel.util.slitflat.master_file
+
+  ; case 1: slitflats not specified ---------------------------------------------
+  if filelist eq '' or filelist eq 'none' or filelist eq 'default' then begin
+
+    print, 'slitflat not specified; using science frames'
+
+    ; number of science frames
+    N_frames = fuel.util.science.n_frames
+
+    ; if there are three or more science frames, then use the central three as slit flats
+    if N_frames GE 3 then $
+      files = fuel.util.science.raw_files[fix(N_frames/2)-1:fix(N_frames/2)+1] $
+    ; otherwise use all of them
+    else files = fuel.util.science.raw_files
+
+    ; case 2: use the frames provided by the user -------------------------------------
+  endif else files =fuel.util.slitflat.raw_files
+
+  ; median combine the frames
+  flame_calibrations_median_combine, files, master_file
+  print, 'master slit flat file created: ', master_file
+
+  ; return the master slit flat
+  master = readfits(master_file, hdr)
+  return, master
+
+END
 
 
 ;*******************************************************************************
@@ -352,6 +497,8 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
 
   ; read in raw frame
   frame = readfits(filename_raw, header)
+  size_science = size(frame)
+
 
   ; CORRECTION 0: cosmic rays
   if keyword_set(lacosmic) then begin
@@ -369,18 +516,37 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
 
   endif
 
+
   ; CORRECTION 1: non-linearity
   frame_corr1 = poly(frame, fuel.instrument.linearity_correction )
 
+
   ; CORRECTION 2: pixel flat field
-  if master_pixelflat NE !NULL then $
-    frame_corr2 = frame_corr1 / master_pixelflat $
-    else frame_corr2 = frame_corr1
+  if master_pixelflat NE !NULL then begin
+
+    ; check that dimensions are right
+    if (size(master_pixelflat))[1] NE size_science[1] OR (size(master_pixelflat))[1] NE size_science[1] then $
+    message, 'Dimensions of pixel flat do not match dimensions of science frame!'
+
+    ; divide by pixel flat
+    frame_corr2 = frame_corr1 / master_pixelflat
+
+  endif else frame_corr2 = frame_corr1
+
 
   ; CORRECTION 3: bad pixels
   frame_corr3 = frame_corr2
-  if badpixel_mask NE !NULL then $
+  if badpixel_mask NE !NULL then begin
+
+    ; check that dimensions are right
+    if (size(badpixel_mask))[1] NE size_science[1] OR (size(badpixel_mask))[1] NE size_science[1] then $
+    message, 'Dimensions of bad pixel mask do not match dimensions of science frame!'
+
+    ; mask bad pixels
     frame_corr3[where(badpixel_mask, /null)] = !values.d_nan
+
+  endif
+
 
   ; CORRECTION 3b: trim the edges of the detector
 
@@ -414,6 +580,7 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
   ; change the flux units in the header
   fxaddpar, header, 'BUNIT', 'electrons per second', ' '
 
+
   ; ------------------------------------
   ; error spectrum
 
@@ -433,6 +600,7 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
 
 END
 
+
 ;*******************************************************************************
 ;*******************************************************************************
 ;*******************************************************************************
@@ -442,48 +610,37 @@ PRO flame_calibrations, fuel
 
 	flame_util_module_start, fuel, 'flame_calibrations'
 
+  ; number of science frames
   N_frames = fuel.util.science.n_frames
 
-  ; create the master dark
+
+  ; --------------------------
+  ; --- make master frames ---
+  ; --------------------------
+
+  ; create the master dark frame
   master_dark = flame_calibrations_master_dark( fuel )
+
+  ; create the master arc frame (!NULL because we don't need the master arc right now)
+  !NULL = flame_calibrations_master_arc( fuel )
 
   ; create the master pixel flat
   master_pixelflat = flame_calibrations_master_pixelflat( fuel )
+
+  ; create the master illumination flat
+  !NULL = flame_calibrations_master_illumflat( fuel )
+
+  ; create the master slit flat
+  !NULL = flame_calibrations_master_slitflat( fuel )
+
 
   ; make bad pixel mask using darks and/or flats
   badpixel_mask = flame_calibrations_badpixel( fuel, master_dark, master_pixelflat )
 
 
-  ; apply corrections to each frame ----------------------------------------------------------
-
-  ; science frames
-  raw_filenames = fuel.util.science.raw_files
-  corr_filenames = fuel.util.science.corr_files
-
-  ; dark frames
-  if fuel.util.dark.n_frames gt 0 then begin
-    raw_filenames = [raw_filenames, fuel.util.dark.raw_files]
-    corr_filenames = [corr_filenames, fuel.util.dark.corr_files]
-  endif
-
-  ; pixelflat frames
-  if fuel.util.pixelflat.n_frames gt 0 then begin
-    raw_filenames = [raw_filenames, fuel.util.pixelflat.raw_files]
-    corr_filenames = [corr_filenames, fuel.util.pixelflat.corr_files]
-  endif
-
-  ; illumflat frames
-  if fuel.util.illumflat.n_frames gt 0 then begin
-    raw_filenames = [raw_filenames, fuel.util.illumflat.raw_files]
-    corr_filenames = [corr_filenames, fuel.util.illumflat.corr_files]
-  endif
-
-  ; slitflat frames
-  if fuel.util.slitflat.n_frames gt 0 then begin
-    raw_filenames = [raw_filenames, fuel.util.slitflat.raw_files]
-    corr_filenames = [corr_filenames, fuel.util.slitflat.corr_files]
-  endif
-
+  ; -------------------------------------------
+  ; --- apply corrections to science frames ---
+  ; -------------------------------------------
 
   ; L.A. Cosmic notice
   if fuel.settings.clean_individual_frames then begin
@@ -500,7 +657,9 @@ PRO flame_calibrations, fuel
   endif
 
 
-  ; correct all frames ----------------------------------------------
+  ; filenames for science frames
+  raw_filenames = fuel.util.science.raw_files
+  corr_filenames = fuel.util.science.corr_files
 
   print, ''
   for i_frame=0, n_elements(raw_filenames)-1 do begin
@@ -508,8 +667,8 @@ PRO flame_calibrations, fuel
     print, ''
     print, 'Correcting frame ', raw_filenames[i_frame]
 
-    ; check if the corrected frame already exist
-    if file_test(corr_filenames[i_frame]) then begin
+    ; if running LACosmic, then check if the corrected frame already exist to save time
+    if fuel.settings.clean_individual_frames AND file_test(corr_filenames[i_frame]) then begin
       print, 'file already exists; skipping frame correction'
       continue
     endif
@@ -519,49 +678,6 @@ PRO flame_calibrations, fuel
       master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=fuel.settings.clean_individual_frames
 
   endfor
-
-
-  ; correct arc frames ----------------------------------------------
-
-    ; arc frames: apply correction but do not look for cosmic rays because arcs are very sharp
-    if fuel.util.arc.n_frames GT 0 then $
-      for i_frame=0, fuel.util.arc.n_frames-1 do begin
-
-        print, ''
-        print, 'Correcting frame ', fuel.util.arc.raw_files[i_frame]
-
-        ; check if the corrected frame already exist
-        if file_test(fuel.util.arc.corr_files[i_frame]) then begin
-          print, 'file already exists; skipping frame correction'
-          continue
-        endif
-
-        flame_calibrations_oneframe, fuel, fuel.util.arc.raw_files[i_frame], fuel.util.arc.corr_files[i_frame], $
-          master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=0
-
-      endfor
-
-
-  ; create the master slit flat ----------------------------------------------
-
-  ; if not specified by user, then use the three center-most science frames
-  if fuel.util.slitflat.n_frames eq 0 then begin
-
-    if N_frames GE 3 then filenames_slitflat = fuel.util.science.corr_files[fix(N_frames/2)-1:fix(N_frames/2)+1] $
-      else filenames_slitflat = fuel.util.science.corr_files[N_frames/2]
-
-  endif else $
-    filenames_slitflat = fuel.util.slitflat.corr_files
-
-  ; median-combine the frames to make the master slit flat
-  flame_calibrations_median_combine, filenames_slitflat, fuel.util.slitflat.master_file
-
-
-  ; create the master arc frame ----------------------------------------------
-
-  if fuel.util.arc.n_frames gt 0 then $
-    flame_calibrations_median_combine, fuel.util.arc.corr_files, fuel.util.arc.master_file
-
 
 
   flame_util_module_end, fuel
