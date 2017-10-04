@@ -313,9 +313,6 @@ FUNCTION flame_diagnostics_blind, fuel
   ; read pixel scale
   pixel_scale = fuel.instrument.pixel_scale    ; arcsec/pixel
 
-  ; check that dither blind positions were specified
-  if ~finite(fuel.util.dither_blind_positions[0]) then message, 'dither_file needs to be specified'
-
   ; create a template of the diagnostics structure
   diagnostics_tmp = { $
       frame_num: 0, $
@@ -336,13 +333,17 @@ FUNCTION flame_diagnostics_blind, fuel
   ; fill the frame_num field
   diagnostics.frame_num = frame_num
 
-  ; fill the dither position field (in pixels, not arcsec)
-  diagnostics.position = fuel.util.dither_blind_positions / pixel_scale
+  ; check if dither blind positions were specified
+  if fuel.util.dither_blind_positions NE !NULL then $
+    ; fill the dither position field (in pixels, not arcsec)
+    diagnostics.position = fuel.util.dither_blind_positions / pixel_scale $
+  else $
+    diagnostics.position = 0
 
   ; detect the As and the Bs
-  w_A = where( fuel.util.dither_blind_positions GT mean(fuel.util.dither_blind_positions, /nan), complement=w_B )
+  w_A = where( diagnostics.position GE mean(diagnostics.position, /nan), /NULL, complement=w_B )
   diagnostics[w_A].offset_pos = 'A'
-  diagnostics[w_B].offset_pos = 'B'
+  if w_B NE !NULL then diagnostics[w_B].offset_pos = 'B'
 
   ; read the airmass from the headers
   for i_frame=0, fuel.util.science.n_frames-1 do $
