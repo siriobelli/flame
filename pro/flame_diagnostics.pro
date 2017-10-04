@@ -340,10 +340,15 @@ FUNCTION flame_diagnostics_blind, fuel
   else $
     diagnostics.position = 0
 
-  ; detect the As and the Bs
-  w_A = where( diagnostics.position GE mean(diagnostics.position, /nan), /NULL, complement=w_B )
-  diagnostics[w_A].offset_pos = 'A'
-  if w_B NE !NULL then diagnostics[w_B].offset_pos = 'B'
+  ; if A-B nodding, then find As and Bs
+  if fuel.input.AB_subtraction then begin
+
+    ; detect the As and the Bs
+    w_A = where( diagnostics.position GE mean(diagnostics.position, /nan), /NULL, complement=w_B )
+    diagnostics[w_A].offset_pos = 'A'
+    if w_B NE !NULL then diagnostics[w_B].offset_pos = 'B'
+
+  endif else diagnostics.offset_pos = 'A'
 
   ; read the airmass from the headers
   for i_frame=0, fuel.util.science.n_frames-1 do $
