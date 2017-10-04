@@ -172,11 +172,15 @@ FUNCTION flame_calibrations_master_pixelflat, fuel
   ; read the median combined pixel flat
   median_pixelflat = readfits(median_pixelflat_file, hdr)
 
+  ; dimensions of the pixel flat
+  Nx = (size(median_pixelflat))[1]
+  Ny = (size(median_pixelflat))[2]
+
   ; create horizontal and vertical profiles (the trick is to normalize each row first)
-  norm_y = median(median_pixelflat, dimension=1 ) ## replicate(1, 2048)
+  norm_y = median(median_pixelflat, dimension=1 ) ## replicate(1, Nx)
   x_profile = median(median_pixelflat / norm_y, dimension=2)
 
-  norm_x = transpose( replicate(1, 2048) # median(median_pixelflat, dimension=2 ) )
+  norm_x = transpose( replicate(1, Ny) # median(median_pixelflat, dimension=2 ) )
   y_profile = median(median_pixelflat / norm_x, dimension=1)
 
   ; make a model for the illumination using the smoothed profiles
