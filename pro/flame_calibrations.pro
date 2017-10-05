@@ -364,7 +364,7 @@ FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
 
   ; pixels in the master dark that are outliers
   ; by more than this value are considered bad pixels
-  sig_clip = 7.0
+  sig_clip = fuel.settings.badpix_sigma
 
   ; output file name
   badpix_filename = fuel.util.intermediate_dir + 'badpixel_mask.fits'
@@ -443,11 +443,11 @@ FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
       ; calculate typical value and dispersion for pixel values in a robust way
       mmm, master_pixelflat, flat_bias, flat_sigma
 
-      ; we trust corrections up to 20%. Beyond that, we consider it a bad pixel,
-      max_correction = 0.20
+      ; we trust corrections up to a point. Beyond that, we consider it a bad pixel,
+      max_correction = fuel.settings.badpix_flatcorrection
 
       ; however if the standard deviation is very large, then use that as threshold
-      if sig_clip*flat_sigma GT max_correction then max_correction = sig_clip*flat_sigma
+      ;if sig_clip*flat_sigma GT max_correction then max_correction = sig_clip*flat_sigma
 
       ; identify bad pixels
       low_cut = flat_bias - max_correction

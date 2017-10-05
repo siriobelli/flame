@@ -167,6 +167,8 @@ FUNCTION flame_util_create_fuel, input
     star_x_range: [1000, 1200], $
     star_y_window: 0, $
     clean_individual_frames : 0, $
+    badpix_sigma : 7.0, $
+    badpix_flatcorrection : 0.20, $
     trace_slit_with_emlines : 0, $
     trace_slit_ymargin: 12, $
     trace_slit_polydegree: 2, $
