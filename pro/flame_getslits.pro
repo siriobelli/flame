@@ -687,42 +687,6 @@ END
 ;******************************************************************
 
 
-PRO flame_getslits_write_slitim, fuel=fuel
-  ; make an image where the pixels belonging to a slit have the slit number as a value, otherwise zero
-
-  ; read slits structures
-  slits = fuel.slits
-
-  ; read in the first science frame to get the right dimensions
-  slitim = fix(0 * readfits((fuel.util.science.corr_files)[0], hdr))
-
-  ; construct the coordinates for the pixels in the image
-  N_pix_x = (size(slitim))[1]
-  N_pix_y = (size(slitim))[2]
-  x_axis = indgen(N_pix_x)
-  y_axis = indgen(N_pix_y)
-  pixel_x = x_axis # replicate(1, N_pix_y)
-  pixel_y = transpose(y_axis # replicate(1, N_pix_x))
-
-  for i_slit=0,n_elements(slits)-1 do begin
-
-    top_y = (poly(x_axis, slits[i_slit].bottom_poly) + slits[i_slit].height) # replicate(1, N_pix_x)
-    bottom_y = poly(x_axis, slits[i_slit].bottom_poly) # replicate(1, N_pix_x)
-
-    w_slit = where( pixel_y LT top_y AND pixel_y GT bottom_y, /null)
-    slitim[w_slit] = slits[i_slit].number
-
-  endfor
-
-  writefits, fuel.util.intermediate_dir + 'slitim.fits', slitim
-
-
-END
-
-
-;******************************************************************
-
-
 PRO flame_getslits, fuel
 
 	flame_util_module_start, fuel, 'flame_getslit'
@@ -737,9 +701,6 @@ PRO flame_getslits, fuel
   ; write ds9 region file with the slit traces
   flame_getslits_writeds9, fuel=fuel
   flame_getslits_writeds9, fuel=fuel, /raw
-
-  ; write slitim (FITS file with slit image - just for diagnostics purpose)
-  flame_getslits_write_slitim, fuel=fuel
 
   ; if we are reducing only one slit, then set the skip flag in all the others
   if fuel.input.reduce_only_oneslit ne 0 then begin
