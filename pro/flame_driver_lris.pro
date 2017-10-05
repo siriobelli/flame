@@ -35,9 +35,7 @@
 
   ; text file containing the list of FITS files for slit-flat field
   input.slitflat_filelist = 'slitflat.txt'
-
-  ; vertical offset, in pixel, between the slit-flat field and the science frames
-  input.slitflat_offset = 0
+  input.slitflat_pixelshift = 0
 
 
 

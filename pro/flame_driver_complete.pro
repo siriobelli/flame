@@ -43,13 +43,13 @@
   input.arc_filelist = 'none'
 
   ; vertical offset, in pixel, between the science frames and the arcs
-  input.arc_offset = 0
+  input.arc_pixelshift = 0
 
   ; text file containing the list of FITS files for slit-flat field
   input.slitflat_filelist = 'none'
 
   ; vertical offset, in pixel, between the slit-flat field and the science frames
-  input.slitflat_offset = 0
+  input.slitflat_pixelshift = 0
 
   ; manual slit positions
   input.slit_position_file = 'none'

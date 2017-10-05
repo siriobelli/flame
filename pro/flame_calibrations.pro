@@ -14,9 +14,10 @@
 
 
 
-PRO flame_calibrations_median_combine, filenames, outfilename
+PRO flame_calibrations_median_combine, filenames, outfilename, vertical_shift=vertical_shift
 
   ; utility to median-combine frames
+  ; optionally, apply a vertical shift
 
   ; read the filenames
   print, 'median combining the following frames:'
@@ -41,6 +42,13 @@ PRO flame_calibrations_median_combine, filenames, outfilename
     master = median(cube, dimension=3, /even)
 
   endelse
+
+  ; if needed, apply vertical shift (without circular boundary conditions)
+  if keyword_set(vertical_shift) then begin
+    master = shift(master, 0, vertical_shift)
+    if vertical_shift GT 0 then master[*,0:vertical_shift-1] = !values.d_nan
+    if vertical_shift LT 0 then master[*,-abs(vertical_shift):-1] = !values.d_nan
+  endif
 
   ; write out the master file
   writefits, outfilename, master, hdr
@@ -123,6 +131,7 @@ FUNCTION flame_calibrations_master_arc, fuel
 
   ;
   ; Make the master arcs by combining the arc frames provided by the user
+  ; and, if needed, apply a vertical pixel shift
   ; Return the master frame or !NULL
   ;
 
@@ -147,7 +156,7 @@ FUNCTION flame_calibrations_master_arc, fuel
   ; case 2: use the frames provided by the user -------------------------------------
 
   ; median combine the arc frames
-  flame_calibrations_median_combine, fuel.util.arc.raw_files, master_file
+  flame_calibrations_median_combine, fuel.util.arc.raw_files, master_file, vertical_shift=fuel.input.arc_pixelshift
   print, 'master arc file created: ', master_file
 
   ; return the master arcs
@@ -262,6 +271,7 @@ FUNCTION flame_calibrations_master_illumflat, fuel
 
   ;
   ; Make the master illumination flat by combining the illumflat frames provided by the user
+  ; and, if needed, apply a vertical pixel shift
   ; Return the master frame or !NULL
   ;
 
@@ -286,7 +296,7 @@ FUNCTION flame_calibrations_master_illumflat, fuel
   ; case 2: use the frames provided by the user -------------------------------------
 
   ; median combine the arc frames
-  flame_calibrations_median_combine, fuel.util.illumflat.raw_files, master_file
+  flame_calibrations_median_combine, fuel.util.illumflat.raw_files, master_file, vertical_shift=fuel.input.illumflat_pixelshift
   print, 'master illumination flat file created: ', master_file
 
   ; return the master illumination flat
@@ -306,6 +316,7 @@ FUNCTION flame_calibrations_master_slitflat, fuel
   ;
   ; Make the master slit flat by combining the slitflat frames provided by the user
   ; or using the science frames
+  ; and, if needed, apply a vertical pixel shift
   ; Return the master frame
   ;
 
@@ -339,7 +350,7 @@ FUNCTION flame_calibrations_master_slitflat, fuel
   endif else files =fuel.util.slitflat.raw_files
 
   ; median combine the frames
-  flame_calibrations_median_combine, files, master_file
+  flame_calibrations_median_combine, files, master_file, vertical_shift=fuel.input.slitflat_pixelshift
   print, 'master slit flat file created: ', master_file
 
   ; return the master slit flat

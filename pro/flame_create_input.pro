@@ -11,12 +11,13 @@ FUNCTION flame_create_input
     dark_filelist: 'none', $
     pixelflat_filelist: 'none', $
     illumflat_filelist: 'none', $
+    illumflat_pixelshift: 0.0, $
     arc_filelist: 'none', $
+    arc_pixelshift: 0.0, $
     dither_file: 'none', $
     slitflat_filelist: 'none', $
+    slitflat_pixelshift: 0.0, $
     slit_position_file: 'none', $
-    arc_offset: 0.0, $
-    slitflat_offset: 0.0, $
     AB_subtraction: 1, $
     star_y_A: 0, $
     star_y_B: 0, $

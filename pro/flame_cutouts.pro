@@ -4,7 +4,7 @@
 ;
 ;******************************************************************
 
-PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename, yref, vertical_shift=vertical_shift
+PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename, yref
 
   ; how much margin to leave beyond the slit edge, in pixels
   margin = 2
@@ -24,12 +24,6 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   top_y = (poly(x_axis, slit_structure.bottom_poly) + slit_structure.height) # replicate(1, N_pix_y)
   bottom_y = poly(x_axis, slit_structure.bottom_poly) # replicate(1, N_pix_y)
 
-  ; add a vertical shift, if needed
-  if keyword_set(vertical_shift) then begin
-    top_y += vertical_shift
-    bottom_y += vertical_shift
-  endif else vertical_shift = 0
-
   ; select pixels belonging to this slit
   w_slit = where( pixel_y LT top_y - margin AND pixel_y GT bottom_y + margin, /null, complement=w_outside_slit)
   if w_slit eq !NULL then message, slit_structure.name + ': slit not valid!'
@@ -41,7 +35,7 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   w_slit2d = array_indices(im, w_slit)
 
   ; extract the slit as a rectangle
-  this_cutout = im[ * , slit_structure.yrange_cutout[0]+vertical_shift : slit_structure.yrange_cutout[1]+vertical_shift ]
+  this_cutout = im[ * , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
 
   ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
   this_cutout[*, 0] = !values.d_nan
@@ -156,7 +150,7 @@ PRO flame_cutout_oneslit, fuel, i_slit
     print,'*** Cutting out slit from master arc frame'
 
     output_filename = slitdir + 'arc_slit' + string(fuel.slits[i_slit].number,format='(I02)') + '.fits'
-    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.arc.master_file, output_filename, 0.0, vertical_shift=fuel.input.arc_offset
+    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.arc.master_file, output_filename, 0.0
     fuel.slits[i_slit].arc_cutout.filename = output_filename
 
   endif
@@ -168,7 +162,7 @@ PRO flame_cutout_oneslit, fuel, i_slit
     print,'*** Cutting out slit from master illumination flat'
 
     output_filename = slitdir + 'illumflat_slit' + string(fuel.slits[i_slit].number,format='(I02)') + '.fits'
-    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.illumflat.master_file, output_filename, 0.0, vertical_shift=0 ;fuel.input.arc_offset
+    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.illumflat.master_file, output_filename, 0.0
     ;fuel.slits[i_slit].arc_cutout.filename = output_filename
 
   endif
