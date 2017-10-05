@@ -83,7 +83,7 @@ PRO flame_spatialcal, fuel
 			endif
 		endif
 
-
+		; arc
 		if fuel.util.arc.n_frames GT 0 then begin
 
 				; calculate the polynomial transformation between observed and rectified frame, for the arcs
@@ -92,7 +92,16 @@ PRO flame_spatialcal, fuel
 
 		endif
 
+		; illumination flat
+		if fuel.util.illumflat.n_frames GT 0 then begin
 
+				; calculate the polynomial transformation between observed and rectified frame, for the illumination flat
+				flame_spatialcal_one, fuel=fuel, slit=this_slit, cutout=this_slit.illumflat_cutout, $
+					diagnostics=fuel.diagnostics, this_diagnostics=(fuel.diagnostics)[0] 	; assume the dithering of the first frame
+
+		endif
+
+		; science frames
 		for i_frame=0, n_elements(fuel.slits[i_slit].cutouts)-1 do begin
 
 				; calculate the polynomial transformation between observed and rectified frame

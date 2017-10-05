@@ -458,6 +458,12 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
     arc_cutout.gamma_coeff = ptr_new(/allocate_heap)
     arc_cutout.speclines = ptr_new(/allocate_heap)
 
+    ; again for the illumflat cutout
+    illumflat_cutout = cutout
+    illumflat_cutout.lambda_coeff = ptr_new(/allocate_heap)
+    illumflat_cutout.gamma_coeff = ptr_new(/allocate_heap)
+    illumflat_cutout.speclines = ptr_new(/allocate_heap)
+
     ; add new fields to slit structure
     new_slit = create_struct( $
       'yshift', yshift, $
@@ -472,6 +478,7 @@ FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_
       'rough_skyflux', ptr_new(/allocate_heap), $
       'cutouts', cutouts, $
       'arc_cutout', arc_cutout, $
+      'illumflat_cutout', illumflat_cutout, $
       'outlambda_min', 0d, $
       'outlambda_delta', 0d, $
       'outlambda_Npix', 0L, $

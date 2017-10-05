@@ -608,9 +608,12 @@ PRO flame_wavecal, fuel
 
 				cgPS_close
 
-
-
 		endfor
+
+
+		; if illumination flat is present, then use the coefficients from the first science frame
+		if fuel.util.illumflat.n_frames GT 0 then $
+			*fuel.slits[i_slit].illumflat_cutout.lambda_coeff = *fuel.slits[i_slit].cutouts[0].lambda_coeff
 
 	endfor
 

@@ -44,13 +44,13 @@ PRO flame_illumcorr_applycorrection, cutout, illumcorr, gamma_0
 
 END
 
+
 ;*******************************************************************************
 ;*******************************************************************************
 ;*******************************************************************************
 
 
-
-FUNCTION flame_illumcorr_getcorrection, cutout, gamma_0=gamma_0
+FUNCTION flame_illumcorr_getcorrection_emlines, cutout, gamma_0=gamma_0
 	;
 	; use the speclines to derive an illumination correction
 	; along the spatial slit axis
@@ -93,13 +93,120 @@ FUNCTION flame_illumcorr_getcorrection, cutout, gamma_0=gamma_0
 	gamma_min = sorted_gamma[3]
 	gamma_max = sorted_gamma[-4]
 
+	; median filter the illumination values
+	sorted_gamma_filtered = median(sorted_gamma[w_tofit], 5)
+
 	; fit polynomial to the illumination correction as a function of gamma
 	; NB: to increase robustness, set zero-point for gamma so that we are working with small numbers
-	poly_coeff = robust_poly_fit(sorted_gamma[w_tofit]-gamma_min, sorted_illum[w_tofit], 8)
+	poly_coeff = robust_poly_fit(sorted_gamma_filtered-gamma_min, sorted_illum[w_tofit], 8)
 
 	; scatter plot of the illumination (show all lines)
 	cgps_open, flame_util_replace_string(cutout.filename, '.fits', '_illumcorr.ps'), /nomatch
 	cgplot, sorted_gamma[w_tofit], sorted_illum[w_tofit], psym=3, /ynozero, charsize=1.2, $
+		xtitle='gamma coordinate', ytitle='Illumination'
+
+	; overplot the smooth illumination
+	x_axis = gamma_min + (gamma_max-gamma_min)*dindgen(200)/199.
+	cgplot, x_axis, poly(x_axis-gamma_min, poly_coeff), $
+		/overplot, color='red', thick=3
+
+	if median(poly(x_axis-gamma_min, poly_coeff)) GT 2.0 or $
+		median(poly(x_axis-gamma_min, poly_coeff)) LT 0.5 then message, 'Illumination correction failed'
+
+	; overplot flat illumination
+	margin = abs(gamma_max-gamma_min)
+	cgplot, [gamma_min - margin, gamma_max + margin], [1,1], /overplot, linestyle=2, thick=3
+
+	; overplot the limit to the correction (25%)
+	cgplot, [gamma_min - margin, gamma_max + margin], 0.75+[0,0], /overplot, linestyle=2, thick=1
+	cgplot, [gamma_min - margin, gamma_max + margin], 1.25+[0,0], /overplot, linestyle=2, thick=1
+	cgps_close
+
+	; output the zero-point for the gamma axis
+	gamma_0 = gamma_min
+
+	; return the coefficients describing the illumination correction as a function of gamma
+	return, poly_coeff
+
+END
+
+
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+FUNCTION flame_illumcorr_getcorrection_flat, cutout, slit=slit, gamma_0=gamma_0
+	;
+	; use the illumflat to derive an illumination correction
+	; along the spatial slit axis
+	; returns the polynomial coefficients and the zero-point gamma_0
+	; such that the illumination field is:
+	; I(gamma) = poly(gamma-gamma_0, poly_coeff)
+	;
+
+	; read the illumination flat cutout
+	illumflat = mrdfits(cutout.filename, 0, hdr, /silent)
+
+	; read dimensions of the observed frame
+	N_imx = (size(illumflat))[1]
+	N_imy = (size(illumflat))[2]
+
+	; create 2D arrays containing the observed coordinates of each pixel
+	x_2d = indgen(N_imx) # replicate(1, N_imy)
+	y_2d = replicate(1, N_imx) # indgen(N_imy)
+
+	; create 2D arrays containing the rectified coordinates of each pixel
+	lambda_2d = flame_util_transform_coord(x_2d, y_2d, *cutout.lambda_coeff )
+	gamma_2d = flame_util_transform_coord(x_2d, y_2d, *cutout.gamma_coeff )
+
+	; get the parameters for the output grid
+	lambda_0 = slit.outlambda_min
+	delta_lambda = slit.outlambda_delta
+	Nx = slit.outlambda_Npix
+
+	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
+	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
+
+	; find the range of gamma values in the image
+	gamma_min = round( min(gamma_2d, /nan) )
+	gamma_max = round( max(gamma_2d, /nan) )
+	Ny = gamma_max-gamma_min
+
+	; resample image onto new grid using griddata
+	triangulate, lambdax_2d, gamma_2d, triangles
+	rectified_illumflat = griddata(lambdax_2d, gamma_2d, illumflat, triangles=triangles, start=[0.0, gamma_min], delta=[1.0, 1.0], dimension=[Nx, Ny], /linear, missing=!values.d_nan)
+
+	; get the median spectrum of the flat
+	spectrum = median(rectified_illumflat, dimension=2)
+
+	; make normalization image
+	norm = spectrum # replicate(1, Ny)
+
+	; normalize flat
+	normalized_flat = rectified_illumflat / norm
+
+	; get the median profile as a function of gamma
+	profile_flat = median(normalized_flat, dimension=1)
+
+	; re-normalized profile
+	profile_flat /= median(profile_flat)
+
+	; do not consider measurements that are more than a factor of three off
+	w_tofit = where(profile_flat GT 0.33 and profile_flat LT 3.0, /null)
+
+	; make gamma grid
+	gamma_grid = gamma_min + dindgen(Ny)
+
+	; fit polynomial to the illumination correction as a function of gamma
+	; NB: to increase robustness, set zero-point for gamma so that we are working with small numbers
+	poly_coeff = robust_poly_fit(gamma_grid[w_tofit]-gamma_min, profile_flat[w_tofit], 8)
+
+	; plot of the illumination
+	cgps_open, flame_util_replace_string(cutout.filename, '.fits', '_illumcorr.ps'), /nomatch
+	cgplot, gamma_grid[w_tofit], profile_flat[w_tofit], psym=3, /ynozero, charsize=1.2, $
 		xtitle='gamma coordinate', ytitle='Illumination'
 
 	; overplot the smooth illumination
@@ -168,11 +275,18 @@ PRO flame_illumcorr, fuel
 		endif
 
 
+		; if needed, use illumflat to get illumination correction
+		if fuel.util.illumflat.n_frames GT 0 then begin
+
+      print, 'Calculating illumination from the flat'
+			illumcorr = flame_illumcorr_getcorrection_flat( fuel.slits[i_slit].illumflat_cutout, slit=this_slit, gamma_0=gamma_0)
+
 		; if needed, use arcs to get illumination correction
+		endif else $
 		if fuel.util.arc.n_frames GT 0 then begin
 
       print, 'Calculating illumination from the arcs'
-			illumcorr = flame_illumcorr_getcorrection( fuel.slits[i_slit].arc_cutout, gamma_0=gamma_0)
+			illumcorr = flame_illumcorr_getcorrection_emlines( fuel.slits[i_slit].arc_cutout, gamma_0=gamma_0)
 
     endif else print, 'Calculating illumination from the science frames'
 
@@ -181,7 +295,7 @@ PRO flame_illumcorr, fuel
 
 	      ; calculate the illumination correction from the science frame (unless arcs are used)
 				if fuel.util.arc.n_frames EQ 0 then $
-					illumcorr = flame_illumcorr_getcorrection( fuel.slits[i_slit].cutouts[i_frame], gamma_0=gamma_0)
+					illumcorr = flame_illumcorr_getcorrection_emlines( fuel.slits[i_slit].cutouts[i_frame], gamma_0=gamma_0)
 
 				; if we are not applying the illumination correction, then skip remaining part
 				if ~fuel.settings.illumination_correction then continue

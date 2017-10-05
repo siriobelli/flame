@@ -163,7 +163,7 @@ PRO flame_cutout_oneslit, fuel, i_slit
 
     output_filename = slitdir + 'illumflat_slit' + string(fuel.slits[i_slit].number,format='(I02)') + '.fits'
     flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.illumflat.master_file, output_filename, 0.0
-    ;fuel.slits[i_slit].arc_cutout.filename = output_filename
+    fuel.slits[i_slit].illumflat_cutout.filename = output_filename
 
   endif
 
