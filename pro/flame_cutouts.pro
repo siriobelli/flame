@@ -149,6 +149,7 @@ PRO flame_cutout_oneslit, fuel, i_slit
   ; add the cutout filenames to the slits structure
   fuel.slits[i_slit].cutouts.filename = output_filenames
 
+
   ; cutout the corresponding arc
   if fuel.util.arc.n_frames gt 0 then begin
 
@@ -157,6 +158,18 @@ PRO flame_cutout_oneslit, fuel, i_slit
     output_filename = slitdir + 'arc_slit' + string(fuel.slits[i_slit].number,format='(I02)') + '.fits'
     flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.arc.master_file, output_filename, 0.0, vertical_shift=fuel.input.arc_offset
     fuel.slits[i_slit].arc_cutout.filename = output_filename
+
+  endif
+
+
+  ; cutout the corresponding illumination flat
+  if fuel.util.illumflat.n_frames gt 0 then begin
+
+    print,'*** Cutting out slit from master illumination flat'
+
+    output_filename = slitdir + 'illumflat_slit' + string(fuel.slits[i_slit].number,format='(I02)') + '.fits'
+    flame_cutout_extract, fuel, fuel.slits[i_slit], fuel.util.illumflat.master_file, output_filename, 0.0, vertical_shift=0 ;fuel.input.arc_offset
+    ;fuel.slits[i_slit].arc_cutout.filename = output_filename
 
   endif
 
