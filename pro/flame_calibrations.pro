@@ -493,7 +493,8 @@ END
 ;*******************************************************************************
 
 PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
-    master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=lacosmic
+    master_pixelflat=master_pixelflat, master_dark=master_dark, $
+    badpixel_mask=badpixel_mask, lacosmic=lacosmic
 
   ; read in raw frame
   frame = readfits(filename_raw, header)
@@ -517,25 +518,7 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
   endif
 
 
-  ; CORRECTION 1: non-linearity
-  frame_corr1 = poly(frame, fuel.instrument.linearity_correction )
-
-
-  ; CORRECTION 2: pixel flat field
-  if master_pixelflat NE !NULL then begin
-
-    ; check that dimensions are right
-    if (size(master_pixelflat))[1] NE size_science[1] OR (size(master_pixelflat))[1] NE size_science[1] then $
-    message, 'Dimensions of pixel flat do not match dimensions of science frame!'
-
-    ; divide by pixel flat
-    frame_corr2 = frame_corr1 / master_pixelflat
-
-  endif else frame_corr2 = frame_corr1
-
-
-  ; CORRECTION 3: bad pixels
-  frame_corr3 = frame_corr2
+  ; CORRECTION 1: bad pixels
   if badpixel_mask NE !NULL then begin
 
     ; check that dimensions are right
@@ -543,12 +526,42 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
     message, 'Dimensions of bad pixel mask do not match dimensions of science frame!'
 
     ; mask bad pixels
-    frame_corr3[where(badpixel_mask, /null)] = !values.d_nan
+    frame[where(badpixel_mask, /null)] = !values.d_nan
 
   endif
 
 
-  ; CORRECTION 3b: trim the edges of the detector
+  ; CORRECTION 2: dark frame
+  if master_dark NE !NULL then begin
+
+    ; check that dimensions are right
+    if (size(master_dark))[1] NE size_science[1] OR (size(master_dark))[1] NE size_science[1] then $
+    message, 'Dimensions of dark frame do not match dimensions of science frame!'
+
+    ; subtract master dark
+    frame -= master_dark
+
+  endif
+
+
+  ; CORRECTION 3: pixel flat field
+  if master_pixelflat NE !NULL then begin
+
+    ; check that dimensions are right
+    if (size(master_pixelflat))[1] NE size_science[1] OR (size(master_pixelflat))[1] NE size_science[1] then $
+    message, 'Dimensions of pixel flat do not match dimensions of science frame!'
+
+    ; divide by pixel flat
+    frame /= master_pixelflat
+
+  endif
+
+
+  ; CORRECTION 4: non-linearity
+  frame = poly(frame, fuel.instrument.linearity_correction )
+
+
+  ; CORRECTION 5: trim the edges of the detector
 
   ; set the size of the margin to trim (default is 1)
   if tag_exist(fuel.instrument, 'trim_edges') then $
@@ -556,16 +569,16 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
     trim = 1
 
   ; set to NaN the pixels at the edge of the detector
-  frame_corr3[0:trim-1,*] = !values.d_nan
-  frame_corr3[-trim:-1,*] = !values.d_nan
-  frame_corr3[*,0:trim-1] = !values.d_nan
-  frame_corr3[*,-trim:-1] = !values.d_nan
+  frame[0:trim-1,*] = !values.d_nan
+  frame[-trim:-1,*] = !values.d_nan
+  frame[*,0:trim-1] = !values.d_nan
+  frame[*,-trim:-1] = !values.d_nan
 
 
-  ; CORRECTION 4: convert to electrons per second
+  ; CORRECTION 6: convert to electrons per second
 
   ; first convert from ADU to electrons
-  frame_electrons = frame_corr3 * fuel.instrument.gain
+  frame_electrons = frame * fuel.instrument.gain
 
   ; find the exposure time
   exptime = fxpar(header, 'EXPTIME', missing=-1.0)
@@ -575,7 +588,7 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
   endif
 
   ; now convert electrons to electrons per second
-  frame_corr4 = frame_electrons / exptime
+  frame_eps = frame_electrons / exptime
 
   ; change the flux units in the header
   fxaddpar, header, 'BUNIT', 'electrons per second', ' '
@@ -585,17 +598,17 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
   ; error spectrum
 
   ; make the error image in units of electrons (Poisson + readnoise )
-  frame_sigma_electrons = fuel.instrument.readnoise + sqrt(frame_electrons)
+  frame_sigma_electrons = sqrt( (fuel.instrument.readnoise)^2 + frame_electrons )
 
   ; convert to electrons per second
-  frame_sigma = frame_sigma_electrons / exptime
+  frame_sigma_eps = frame_sigma_electrons / exptime
 
   ; ------------------------------------
   ; write output
 
   ; corrected frame in the first HDU, error frame in the second one
-  writefits, filename_corr, frame_corr4, header
-  writefits, filename_corr, frame_sigma, /append
+  writefits, filename_corr, frame_eps, header
+  writefits, filename_corr, frame_sigma_eps, /append
 
 
 END
@@ -675,7 +688,8 @@ PRO flame_calibrations, fuel
 
     ; apply corrections and create "corrected" file
     flame_calibrations_oneframe, fuel, raw_filenames[i_frame], corr_filenames[i_frame], $
-      master_pixelflat=master_pixelflat, badpixel_mask=badpixel_mask, lacosmic=fuel.settings.clean_individual_frames
+      master_pixelflat=master_pixelflat, master_dark=master_dark, $
+      badpixel_mask=badpixel_mask, lacosmic=fuel.settings.clean_individual_frames
 
   endfor
 
