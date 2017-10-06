@@ -619,10 +619,14 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 	resid_range += [-1.0, 1.0] * 0.5*(resid_range[1]-resid_range[0])
 
 	; plot distribution of residuals
-	cgplot, line_frame_pert, line_resid, psym=16, symsize=0.4, charsize=1, color='blk4', $
+	cgplot, line_frame_pert, line_resid, psym=16, symsize=0.4, charsize=1.2, color='blk4', $
+		xthick=4, ythick=4, $
 		yra=resid_range, /ysty, ytit='residuals (angstrom)', $
 		xra=[-1, Nfr], /xsty, xtit='frame number', $
     xtickv=xtickv, xticks=n_elements(xtickv)-1, xtickname=xtickname, xminor=xminor
+
+	; median absolute deviation for each frame
+	mad = dblarr(Nfr)
 
 	; overplot median for each frame
 	for i_frame=0, Nfr-1 do begin
@@ -630,15 +634,21 @@ PRO flame_checkdata_speclines, fuel, i_slit=i_slit
 		; select speclines that belong to this frame
 		line_resid_0 = line_resid[ where(line_frame eq i_frame, /null) ]
 
+		; median absolute deviation
+		mad = median ( abs(line_resid_0) )
+
 		; find percentiles to plot
 		resid_sorted = line_resid_0[sort(line_resid_0)]
 		top68 = resid_sorted[0.84*n_elements(resid_sorted)]
 		bottom_68 = resid_sorted[0.16*n_elements(resid_sorted)]
 
+		; overplot MAD
+		cgplot, [ i_frame ], [ 0 ], /overplot, psym=3, color='blue', $
+		/err_clip, err_yhigh=mad, err_ylow=mad, err_thick=4
+
 		; overplot median and 68 percentile
-		cgplot, [ i_frame ], [ median(line_resid_0) ], $
-		/overplot, psym=16, color='red', $
-		/err_clip, err_yhigh=top68-median(line_resid_0), err_ylow=median(line_resid_0)-bottom_68
+		cgplot, [ i_frame ], [ median(line_resid_0) ], /overplot, psym=16, color='red', $
+		/err_clip, err_yhigh=top68-median(line_resid_0), err_ylow=median(line_resid_0)-bottom_68, err_thick=6
 
 	endfor
 
