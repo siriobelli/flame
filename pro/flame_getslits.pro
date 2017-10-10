@@ -306,11 +306,13 @@ PRO flame_getslits_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_t
 
   ; remove detections at the edge of the cutout or with slit heights too far from the mean
   w_ok = where( slit_top_y LT (size(cutout))[2]-1 and abs(slit_top_height-mean_height) LT 3.0*sigma_height, /null )
+  if w_ok EQ !NULL then message, 'Slit edge is outside the cutout; try increasing trace_slit_ymargin'
   slit_top_x = slit_top_x[w_ok]
   slit_top_y = slit_top_y[w_ok]
 
   ; again but for the bottom edge
   w_ok = where( slit_bottom_y GT 0 and abs(slit_bottom_height-mean_height) LT 3.0*sigma_height, /null )
+  if w_ok EQ !NULL then message, 'Slit edge is outside the cutout; try increasing trace_slit_ymargin'
   slit_bottom_x = slit_bottom_x[w_ok]
   slit_bottom_y = slit_bottom_y[w_ok]
 
