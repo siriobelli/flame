@@ -66,20 +66,20 @@ FUNCTION flame_util_create_fuel, input
 
   ; find the flame data directory and check that it exists
   path_to_thisfile = file_which('flame_util_create_fuel.pro', /include_current_dir)
-  data_dir = flame_util_replace_string(path_to_thisfile, 'pro/flame_util_create_fuel.pro', 'data/')
+  data_dir = flame_util_replace_string(path_to_thisfile, 'pro' + path_sep() + 'flame_util_create_fuel.pro', 'data' + path_sep())
   if ~file_test(data_dir, /directory) then message, 'data directory not found! Check the flame directory structure.'
 
   ; intermediate directory
   if file_test(input.intermediate_dir) eq 0 then file_mkdir, input.intermediate_dir
-  intermediate_dir = file_expand_path(input.intermediate_dir) + '/'
+  intermediate_dir = file_expand_path(input.intermediate_dir) + path_sep()
 
   ; frames directory
-  if file_test(intermediate_dir + 'frames/') eq 0 then file_mkdir, intermediate_dir + 'frames/'
-  frames_dir = intermediate_dir + 'frames/'
+  if file_test(intermediate_dir + 'frames') eq 0 then file_mkdir, intermediate_dir + 'frames' + path_sep()
+  frames_dir = intermediate_dir + 'frames' + path_sep()
 
   ; output directory
   if file_test(input.output_dir) eq 0 then file_mkdir, input.output_dir
-  output_dir = file_expand_path(input.output_dir) + '/'
+  output_dir = file_expand_path(input.output_dir) + path_sep()
 
 
   ; read in filenames ----------------------------------------------------------
