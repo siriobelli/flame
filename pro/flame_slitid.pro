@@ -2,7 +2,7 @@
 ; ****************************************************************************************
 
 
-FUNCTION flame_getslits_findshift, image, approx_top, approx_bottom
+FUNCTION flame_slitid_findshift, image, approx_top, approx_bottom
   ;
   ; find the shift between the expected slit positions and the real ones
   ;
@@ -36,7 +36,7 @@ END
 ; ****************************************************************************************
 
 
-FUNCTION flame_getslits_trace_continuum, image_in, approx_edge, top=top, bottom=bottom
+FUNCTION flame_slitid_trace_continuum, image_in, approx_edge, top=top, bottom=bottom
 
   ; check keywords
   if ~keyword_set(top) AND ~keyword_set(bottom) then message, 'Please select either /top or /bottom'
@@ -143,7 +143,7 @@ END
 
 ; ****************************************************************************************
 
-PRO flame_getslits_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
+PRO flame_slitid_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
   ;
   ; Given a frame containing bright emission lines from sky or arcs, it traces the edge of a slit.
   ; approx_edges is an array of two elements indicating the approximate y-coordinates
@@ -336,7 +336,7 @@ END
 
 ; ****************************************************************************************
 
-FUNCTION flame_getslits_crosscorr, image_in, expected_bottom, expected_top, rectified_image=rectified_image
+FUNCTION flame_slitid_crosscorr, image_in, expected_bottom, expected_top, rectified_image=rectified_image
 ;
 ; cross-correlate the pixel rows of an image to find the approximate edges of a slit
 ; return [bottom, top] pixel coordinates
@@ -436,7 +436,7 @@ END
 
 
 
-FUNCTION flame_getslits_update_slit, fuel, old_slit, yshift, slitid_top, slitid_bottom, slit_height, poly_coeff
+FUNCTION flame_slitid_update_slit, fuel, old_slit, yshift, slitid_top, slitid_bottom, slit_height, poly_coeff
 
     ; make the cutout structure
     cutout = { $
@@ -506,7 +506,7 @@ END
 ;******************************************************************
 
 
-PRO flame_getslits_multislit, fuel=fuel
+PRO flame_slitid_multislit, fuel=fuel
 
   ; frame to use to find the edges
   frame_filename = fuel.util.slitflat.master_file
@@ -518,7 +518,7 @@ PRO flame_getslits_multislit, fuel=fuel
   if fuel.input.slit_position_file ne 'none' then $
     yshift = 0.0 else $
     ; get the overall vertical shift between the expected and the actual slit positions
-    yshift = flame_getslits_findshift( image, fuel.slits.approx_top, fuel.slits.approx_bottom )
+    yshift = flame_slitid_findshift( image, fuel.slits.approx_top, fuel.slits.approx_bottom )
 
   ; create array of new slit structures
   slits = []
@@ -532,18 +532,18 @@ PRO flame_getslits_multislit, fuel=fuel
     print, 'Finding the edges of slit ' + strtrim(old_slits_struc.number,2) + ' - ' + old_slits_struc.name
 
     ; cross-correlation: find approximate edges of the slit and make rectified image
-    approx_edges = flame_getslits_crosscorr( image, old_slits_struc.approx_bottom - yshift, old_slits_struc.approx_top - yshift, rectified_image=rectified_image )
+    approx_edges = flame_slitid_crosscorr( image, old_slits_struc.approx_bottom - yshift, old_slits_struc.approx_top - yshift, rectified_image=rectified_image )
 
     ; if the slit position were specified manually, then do not use the edges detected automatically
     if fuel.input.slit_position_file ne 'none' then approx_edges = [old_slits_struc.approx_bottom, old_slits_struc.approx_top]
 
     if fuel.settings.trace_slit_with_emlines eq 0 then begin
       ; identify top and bottom edge using sky background or flat lamp
-      slitid_top = flame_getslits_trace_continuum(image, approx_edges[1], /top )
-      slitid_bottom = flame_getslits_trace_continuum(image, approx_edges[0], /bottom )
+      slitid_top = flame_slitid_trace_continuum(image, approx_edges[1], /top )
+      slitid_bottom = flame_slitid_trace_continuum(image, approx_edges[0], /bottom )
     endif else begin
       ; identify top and bottom edge using emission lines
-      flame_getslits_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
+      flame_slitid_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top, slitid_bottom=slitid_bottom
     endelse
 
     ; calculate the slit height
@@ -558,7 +558,7 @@ PRO flame_getslits_multislit, fuel=fuel
     poly_coeff = robust_poly_fit( x_to_fit, y_to_fit, fuel.settings.trace_slit_polydegree )
 
     ; expand the slit structure with new fields and update them
-    this_slit = flame_getslits_update_slit( fuel, old_slits_struc, yshift, slitid_top, slitid_bottom, slit_height, poly_coeff)
+    this_slit = flame_slitid_update_slit( fuel, old_slits_struc, yshift, slitid_top, slitid_bottom, slit_height, poly_coeff)
 
     ; add to array with the other slits
     slits = [slits, this_slit]
@@ -575,7 +575,7 @@ END
 ;******************************************************************
 
 
-PRO flame_getslits_longslit, fuel=fuel
+PRO flame_slitid_longslit, fuel=fuel
 
   ; frame to use to find the edges
   frame_filename = (fuel.util.science.corr_files)[0]
@@ -590,7 +590,7 @@ PRO flame_getslits_longslit, fuel=fuel
   slit_height = old_slits_struc.approx_top - old_slits_struc.approx_bottom
 
   ; expand the slit structure with new fields and update them
-  this_slit = flame_getslits_update_slit( fuel, old_slits_struc, !values.d_nan, !values.d_nan, !values.d_nan, slit_height, old_slits_struc.approx_bottom)
+  this_slit = flame_slitid_update_slit( fuel, old_slits_struc, !values.d_nan, !values.d_nan, !values.d_nan, slit_height, old_slits_struc.approx_bottom)
 
   ; save the slit structures in fuel
   new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:this_slit }
@@ -603,7 +603,7 @@ END
 ;******************************************************************
 
 
-PRO flame_getslits_writeds9, fuel=fuel, raw=raw
+PRO flame_slitid_writeds9, fuel=fuel, raw=raw
   ;
   ; write a ds9 region files that shows the slit edges
   ; if /raw is set then the individual "raw" measurements of the slit identifications
@@ -696,20 +696,20 @@ END
 ;******************************************************************
 
 
-PRO flame_getslits, fuel
+PRO flame_slitid, fuel
 
-	flame_util_module_start, fuel, 'flame_getslit'
+	flame_util_module_start, fuel, 'flame_slitid'
 
 
   ; identify all slits from the data, and write the fuel.slits structures
   if fuel.input.longslit then $
-  flame_getslits_longslit, fuel=fuel $
+  flame_slitid_longslit, fuel=fuel $
     else $
-  flame_getslits_multislit, fuel=fuel
+  flame_slitid_multislit, fuel=fuel
 
   ; write ds9 region file with the slit traces
-  flame_getslits_writeds9, fuel=fuel
-  flame_getslits_writeds9, fuel=fuel, /raw
+  flame_slitid_writeds9, fuel=fuel
+  flame_slitid_writeds9, fuel=fuel, /raw
 
   ; if we are reducing only one slit, then set the skip flag in all the others
   if fuel.input.reduce_only_oneslit ne 0 then begin

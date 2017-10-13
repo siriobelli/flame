@@ -55,7 +55,7 @@
 
   flame_calibrations, fuel
 
-  flame_getslits, fuel
+  flame_slitid, fuel
 
   flame_cutouts, fuel
 
