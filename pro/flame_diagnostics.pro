@@ -174,7 +174,7 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
       offset_pos:offset_pos, $
       seeing: !values.f_NaN, $
       flux: !values.f_NaN, $
-      position: !values.f_NaN, $
+      position: 0.0, $
       airmass: airmass}
     return, diagnostics
   endif
@@ -319,7 +319,7 @@ FUNCTION flame_diagnostics_blind, fuel
       offset_pos:'', $
       seeing: !values.f_NaN, $
       flux: !values.f_NaN, $
-      position: !values.f_NaN, $
+      position: 0.0, $
       airmass: !values.f_NaN}
 
   ; array of diagnostics
