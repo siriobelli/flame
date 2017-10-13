@@ -1,7 +1,7 @@
 
   ;****************************************************
   ;****************************************************
-  ;              PART 1: INPUT
+  ;                       INPUT
   ;****************************************************
   ;****************************************************
 
@@ -39,22 +39,25 @@
   ; text file containing the list of FITS files for illumination-flat field
   input.illumflat_filelist = 'none'
 
-  ; text file containing the list of FITS files with arcs for wavelength calibration
-  input.arc_filelist = 'none'
-
-  ; vertical offset, in pixel, between the science frames and the arcs
-  input.arc_pixelshift = 0
+  ; vertical offset, in pixel, to apply to the master illumflat
+  input.illumflat_pixelshift = 0
 
   ; text file containing the list of FITS files for slit-flat field
   input.slitflat_filelist = 'none'
 
-  ; vertical offset, in pixel, between the slit-flat field and the science frames
+  ; vertical offset, in pixel, to apply to the master slit flat
   input.slitflat_pixelshift = 0
 
-  ; manual slit positions
+  ; text file containing the list of FITS files with arcs for wavelength calibration
+  input.arc_filelist = 'none'
+
+  ; vertical offset, in pixel, to apply to the master arc
+  input.arc_pixelshift = 0
+
+  ; manual slit edge positions
   input.slit_position_file = 'none'
 
-  ; if we don't have a star on the slit then we have to specify the dithering
+  ; if there is no reference star, you have to specify the dithering and nodding positions
   ; in this case, you must set input.star_y_A and input.star_y_B to 0
   input.dither_file = 'none'
 
@@ -71,7 +74,7 @@
 
   ;****************************************************
   ;****************************************************
-  ;              PART 2: INITIALIZATION
+  ;                 INITIALIZATION
   ;****************************************************
   ;****************************************************
 
@@ -137,7 +140,7 @@
 
   ;****************************************************
   ;****************************************************
-  ;               PART 3: DATA REDUCTION
+  ;                   DATA REDUCTION
   ;****************************************************
   ;****************************************************
 
