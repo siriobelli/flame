@@ -9,9 +9,6 @@
 \usepackage{deluxetable}
 
 
-
-
-
 \newcommand{\flame}{\texttt{flame}}
 \newcommand{\fuel}{\texttt{fuel}}
 \newcommand{\inp}{\texttt{input}}
@@ -36,9 +33,11 @@
 \section{Introduction}
 \label{sec:introudction}
 
-\flame\ is a pipeline for reducing near-infrared multi-object spectroscopic data, written in IDL. Although created specifically for the LUCI instrument at LBT, it has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. The present document describes in detail the reduction of LUCI data. Section \ref{sec:other_instruments} summarizes the different settings needed for the reduction of data taken with different instruments.
+\flame\ is a pipeline for reducing near-infrared multi-object spectroscopic data, written in IDL. The pipeline design and the algorithms used are described in Belli, Contursi \& Davies (2017). Before reading the present manual, users should read that paper. Please cite that paper in your work if you made use of \flame.
 
+Although created specifically for the LUCI instrument at LBT, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. The present document describes in detail the reduction of LUCI data. Section \ref{sec:other_instruments} summarizes the different settings needed for the reduction of data taken with different instruments.
 
+For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}.
 
 
 
@@ -58,6 +57,8 @@
 
 \subsection{Requirements}
 
+The pipeline has been extensively tested in Linux and Mac. Limited testing was done in Windows.
+
 The following three external IDL libraries must be installed before running \flame.
 \begin{enumerate}
 \item NASA's \href{http://idlastro.gsfc.nasa.gov/}{IDL Astronomy User's Library};
@@ -66,12 +67,12 @@ The following three external IDL libraries must be installed before running \fla
 \end{enumerate}
 Make sure to have the most recent versions of these libraries (at least more recent than the January 2016 release).
 
-Other third-party routines used by \flame\ are included in the distribution, in the flame/lib/ directory. These are the B-spline routines from the \texttt{idlutils} library, the L.A.Cosmic routine written by Joshua Bloom and Pieter van Dokkum, and the readmhdufits routine written by Marc Kassis.
+Other third-party routines used by \flame\ are included in the distribution, in the \texttt{flame/lib/} directory. These are the B-spline routines from the \texttt{idlutils} library, the L.A.Cosmic routine written by Joshua Bloom and Pieter van Dokkum, and the readmhdufits routine written by Marc Kassis.
 
 
 \subsection{Download}
 
-Download \flame\ from \url{http://siriobelli.github.io/flame/}. You can either save it in the directory where you keep your IDL code, or save it somewhere else and then add the flame/ directory to the IDL path. No other step is necessary.
+Download \flame\ from \url{http://siriobelli.github.io/flame/}. You can either save it in the directory where you keep your IDL code, or save it somewhere else and then add the \texttt{flame/} directory to the IDL path. No other step is necessary.
 
 
 
@@ -93,12 +94,12 @@ Download \flame\ from \url{http://siriobelli.github.io/flame/}. You can either s
 
 Go to the directory that you want to use for the reduction of a data set (it is recommended to create a new directory for this purpose). Then:
 \begin{itemize}
-\item Copy the driver file (\texttt{flame\_driver\_luci.pro}) from the flame/pro/ directory to the current directory.
-\item Create a text file (e.g., science.txt) with, in each line, the full name, including the absolute path, of a raw science frame (either FITS files or gzipped FITS files).
-\item \emph{(optional)} Create additional text files with the names of the calibration frames (e.g., darks.txt, flats.txt, etc.)
+\item Copy the driver file (\texttt{flame\_driver\_luci.pro}) from the \texttt{flame/pro/} directory to the current directory. If you want to see all the advanced options, use the extended driver file instead (\texttt{flame\_driver\_complete.pro}).
+\item Create a text file (e.g., \texttt{science.txt}) with, in each line, the full name, including the absolute path, of a raw science frame (either FITS files or gzipped FITS files).
+\item \emph{(optional)} Create additional text files with the names of the calibration frames (e.g., \texttt{darks.txt}, \texttt{flats.txt}, etc.)
 \end{itemize}
 
-The data reduction is controlled entirely via the driver file. Open the local copy with a text editor and have a look at the code. The driver file is divided into three parts. The first part is where the input parameters are set; the second part is the initialization, and the third part is the data reduction. In this section we discuss the first part.
+The data reduction is controlled entirely via the driver file. Open the local copy with a text editor and have a look at the code. First the input parameters are set, the pipeline is then initialized, and finally the actual data reduction is run.
 
 The first step in the driver file creates the \inp\ structure:
 \begin{lstlisting}
@@ -111,21 +112,21 @@ We start by specifying the name of the file containing the science frames; for e
 \begin{lstlisting}
 input.science_filelist = 'science.txt'
 \end{lstlisting}
-If the file is not in the current working directory, then the absolute path must be provided. However it is recommended to run the data reduction from the same directory in which the input files and the driver file are stored.
+If the file is not in the current working directory, then the absolute path must be provided.
 
-\subsubsection{Dithering}
-Near-infrared observations are usually spatially dithered for an effective sky subtraction. \flame\ supports a two-point dithering, also called AB dithering, which is activated via the flag:
+\subsubsection{Nodding}
+Near-infrared observations typically use spatial nodding for an effective sky subtraction. \flame\ supports a two-point nodding, also called A-B nodding, which is activated via the flag:
 \begin{lstlisting}
 input.AB_subtraction = 1
 \end{lstlisting}
 
 \subsubsection{Reference star}
-When observing faint targets, it is recommended to place a slit on a relatively bright star (hereafter called the reference star) from which the observing conditions and the spatial dithering can be accurately measured. In the AB dithering scheme, the star trace will appear on two different positions, which may be in the same slit or in two different slits. The y pixel position of the reference star in both the A and the B position must be provided:
+It is always recommended to place a slit on a relatively bright star (hereafter called the reference star) from which the observing conditions and the spatial dithering can be accurately measured. In the A-B nodding scheme, the star trace will appear on two different positions, which may be in the same slit or in two different slits. The y pixel position of the reference star in both the A and the B position must be provided:
 \begin{lstlisting}
 input.star_y_A = 520
 input.star_y_B = 560
 \end{lstlisting}
-These coordinates do not need to be exact. If the trace of the reference star is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the dithering pattern must be specified manually (see Section \ref{sec:troubleshooting}). If no AB dithering is performed, the B star position should be set to zero.
+These coordinates do not need to be exact. If the trace of the reference star is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the nodding pattern must be specified manually (see Section \ref{sec:troubleshooting}). If no AB nodding is performed, the B star position should be set to zero.
 
 \subsubsection{Slits to be reduced}
 While the default behavior is to reduce all the slits in the mask, it is sometimes preferable to reduce only one slit, for example to obtain the reduction of one representative object while observing. This can be achieved by specifying:
@@ -148,7 +149,52 @@ If longslit\_edge is set to [0,0], the default is to reduce the full frame exclu
 
 \subsection{Optional input}
 
-The \inp\ structure contains additional fields that can be used to specify optional settings. The full list is reported in Table \ref{tab:input}. The expanded driver file \texttt{flame\_driver\_complete.pro} includes all the options: the relevant lines can be copied and then pasted in the local copy of the driver.
+The \inp\ structure contains additional fields that can be used to specify optional settings. The full list is reported in Table \ref{tab:input}, and the content of the \inp\ structure can be explored at any time by typing
+\begin{lstlisting}
+help, input
+\end{lstlisting}
+in the interactive IDL session.
+
+The extended driver file \texttt{flame\_driver\_complete.pro} includes all the possible types of input and settings: the relevant lines can be copied and then pasted in the local copy of the driver.
+
+% ******************************************************************************
+\begin{table}
+\caption{Content of the \inp\ structure \label{tab:input}}
+\medskip
+\footnotesize
+\makebox[\textwidth][c]{
+  \begin{tabular}{lll}
+    \hline
+    \smallskip
+    Field    & Default Value   & Description \\
+    \hline
+    \smallskip
+science\_filelist   	     & 'science.txt' 		& name of ASCII file containing the list of science frames \\
+AB\_subtraction      & 1      & flag to enable AB subtraction \\
+star\_y\_A 		 & 0			& pixel y-coordinate of the A position of the star trace \\
+star\_y\_B 		 & 0			& pixel y-coordinate of the B position of the star trace \\
+reduce\_only\_oneslit 	& 0 				& if non-zero, reduce only that one slit \\
+longslit 				& 0 				& set to one to reduce long-slit data \\
+longslit\_edge			& [0, 0] 			& when reducing long-slit data, only consider this range of pixel y-coordinate \\
+dark\_filelist   		       & 'none' 				& name of ASCII file containing the list of dark frames\\
+pixelflat\_filelist        & 'none' 				& name of ASCII file containing the list of frames for pixel flat field	\\
+illumflat\_filelist   		 & 'none' 				& name of ASCII file containing the list of frames for illumination flat field	\\
+illumflat\_pixelshift  		 & 0      				& vertical pixel shift required to align the illumination flat with the science frames	\\
+slitflat\_filelist    & 'none'        & name of ASCII file containing the list of slit flats \\
+slitflat\_pixelshift  & 0      				& vertical pixel shift required to align the slit flat with the science frames	\\
+arc\_filelist   		  & 'none' 				& name of ASCII file containing the list of lamp arc frames	\\
+arc\_pixelshift  		  & 0      				& vertical pixel shift required to align the arc with the science frames	\\
+slit\_position\_file  & 'none'        & name of ASCII file containing the approximate y-coordinates of the slit edges \\
+dither\_file       		& 'none' 				& name of ASCII file containing the list of dither positions \\
+max\_slitwidth\_arcsec & 0          & threshold value of the slit width to identify the alignment boxes \\
+intermediate\_dir		 & 'intermediate/'		& directory that will contain the intermediate products \\
+output\_dir				   & 'output/'			& directory that will contain the final output \\
+\hline
+\end{tabular}
+}
+\end{table}
+% ******************************************************************************
+
 
 \subsubsection{Dark frames}
 Dark frames, if provided, are used to construct the median-combined master dark, which is then subtracted from each science frame. When adopting an AB dithering, the dark current is automatically corrected for during the A-B subtraction, and dark frames are not needed.
@@ -187,35 +233,6 @@ The near-infrared sky spectrum is dominated by OH emission lines, which are idea
 input.arc_filelist = 'arcs.txt'
 \end{lstlisting}
 
-
-\begin{deluxetable}{lll}
-\tabletypesize{\footnotesize}
-\tablewidth{0pc}
-\tablecaption{Content of the \inp\ structure \label{tab:input}}
-\tablehead{
-\colhead{Field} & \colhead{Default Value} & \colhead{Description} }
-\startdata
-science\_filelist   	     & science.txt 		& name of ASCII file containing the list of science frames \\
-AB\_subtraction      & 1      & flag to enable AB subtraction \\
-input.star\_y\_A 		 & 0			& pixel y-coordinate of the A position of the star trace \\
-input.star\_y\_B 		 & 0			& pixel y-coordinate of the B position of the star trace \\
-reduce\_only\_oneslit 	& 0 				& if non-zero, reduce only that one slit \\
-longslit 				& 0 				& set to one to reduce long-slit data \\
-longslit\_edge			& [0, 0] 			& when reducing long-slit data, only consider this range of pixel y-coordinate \\
-dark\_filelist   		       & none 				& name of ASCII file containing the list of dark frames\\
-pixelflat\_filelist        & none 				& name of ASCII file containing the list of frames for pixel flat field	\\
-illumflat\_filelist   		 & none 				& name of ASCII file containing the list of frames for illumination flat field	\\
-arc\_filelist   		  & none 				& name of ASCII file containing the list of lamp arc frames	\\
-slitflat\_filelist    & none        & name of ASCII file containing the list of slit flats \\
-slitflat\_offset      & 0           & vertical offset in pixels between the slit flat and the science frames \\
-slit\_position\_file  & none        & name of ASCII file containing the approximate y-coordinates of the slit edges \\
-dither\_file       		& none 				& name of ASCII file containing the list of dither positions \\
-max\_slitwidth\_arcsec & 0          & threshold value of the slit width to identify the alignment boxes \\
-intermediate\_dir		 & intermediate/		& directory that will contain the intermediate products \\
-output\_dir				   & output/			& directory that will contain the final output
-\enddata
-%\tablecomments{Some comment here.}
-\end{deluxetable}
 
 
 \subsubsection{Dithering positions}
@@ -258,6 +275,55 @@ Some of the fields in the \fuel\ structure are initially set to null pointers an
 
 During the initialization, relevant fields from the FITS header of the science files, such as band, central wavelength, and slit positions are read and saved. This is the only step during the data reduction where instrument-specific operations are performed. Since the remaining steps are common to all near-infrared MOS data, it is in principle easy to adapt \flame\ to a different instrument by simply writing the appropriate initialization module.
 
+
+% ******************************************************************************
+\begin{table}
+\caption{Content of the \texttt{fuel.settings} structure \label{tab:util}}
+\medskip
+\footnotesize
+  \makebox[\textwidth][c]{
+  \begin{tabular}{llll}
+    \hline
+    \smallskip
+    Field    & Default Value   & Routine   & Description \\
+             & (for LUCI)      &           & \\
+    \hline
+    \smallskip
+    sky\_emission\_filename       & -             & roughwavecal     & None \\
+    linelist\_filename            & -             & (many)           & None \\
+    star\_x\_range 			          & [1000, 1200]  & diagnostics   	 & range of pixel x-coordinate to consider for the reference star trace \\
+    star\_y\_window               & $\simeq$4 arcsec & diagnostics   & range of pixel y-coordinate to consider for the reference star trace \\
+    clean\_individual\_frames     & 0             & calibrations     & identify and mask cosmic rays in each frame \\
+    badpix\_sigma                 & 7.0           & calibrations     & sigma clipping to identify bad pixels in the master dark frame \\
+    badpix\_flatcorrection        & 0.20          & calibrations     & values beyond this deviation in the master pixel flat are bad pixels \\
+    trace\_slit\_with\_emlines    & 1             & getslits         & use arcs or sky lines to trace slit edges \\
+    trace\_slit\_ymargin          & 12            & getslits         & margin (in pixels) to consider beyond the expected slit edge \\
+    trace\_slit\_polydegree       & 2             & getslits         & degree of the polynomial used to describe the slit edge \\
+    roughwavecal\_R               & [500, 1000, 3000] & roughwavecal & spectral resolution to be used for the rough wavelength calibration \\
+    roughwavecal\_smooth\_window  & 20            & roughwavecal     & window, in pixels, used to calculate and subtract the sky continuum \\
+    roughwavecal\_split           & 0             & roughwavecal     & in the last step of rough\_wavecal, split the wavelength range in two \\
+    findlines\_stack\_rows        & 0             & findlines        & number of pixel rows to stack when identifying arcs or sky lines \\
+    findlines\_poly\_degree       & 5             & findlines        & polynomial degree for the row-by-row wavelength solution \\
+    findlines\_Nmin\_lines        & 6             & findlines        & minimum number of lines needed to consider a pixel row \\
+    findlines\_linefit\_window    & 6.0           & findlines        & window used for Gaussian fitting, in units of expected line width \\
+    wavesolution\_order\_x        & 3             & wavecal          & polynomial degree for the wavelength solution, along x \\
+    wavesolution\_order\_y        & 2             & wavecal          & polynomial degree for the wavelength solution, along y \\
+    shift\_arcs\_Nmin\_lines      & 1             & wavecal          & minimum number of sky lines needed for shifting the arcs solution \\
+    illumination\_correction      & 1             & illumcorr        & apply illumination correction derived from sky lines \\
+    skysub\_plot\_range           & [0.4, 0.6]    & skysub           & fractional range of the x axis to plot during sky subtraction \\
+    skysub\_bspline\_oversample   & 1.0           & skysub           & breakpoints separation for the b-spline model, in units of pixels \\
+    skysub\_reject\_fraction      & 0.10          & skysub           & fraction of pixels to reject at each loop \\
+    skysub\_reject\_loops         & 3             & skysub           & number of loops for outlier rejection \\
+    skysub\_reject\_window        & 2.0           & skysub           & window for outlier rejection, in units of breakpoint separation \\
+    interpolation\_method         & 'NaturalNeighbor'  & rectify     & method used to resample frames during rectification \\
+    combine\_sigma\_clip          & 2.0           & combine          & sigma-clipping to use when combining frames \\
+    combine\_min\_framefrac       & 0.49          & combine          & minimum fraction of frames that must contribute to a pixel \\
+    debugging                     & 0             & (all)            & debugging mode: halt execution when an error occurs \\
+    \hline
+  \end{tabular}
+  }
+\end{table}
+% ******************************************************************************
 
 
 
@@ -509,21 +575,6 @@ input.xrange_star = [100, 500]
 
 
 
-\begin{deluxetable}{lll}
-\tabletypesize{\footnotesize}
-\tablewidth{0pc}
-\tablecaption{Settings in the \texttt{fuel.util} structure \label{tab:util}}
-\tablehead{
-\colhead{Field} & \colhead{Default Value} & \colhead{Description} }
-\startdata
-star\_x\_range 			& [1000, 1200]		& range of star trace (in pixel x-coordinate) that will be extracted \\
-rough\_wavecal\_R 	& 500				& target spectral resolution for the rough wavecal calibration \\
-trace\_slit\_with\_skylines			& 1 				& if set, the slit detection is based on the sky emission lines instead of the continuum
-\enddata
-%\tablecomments{Some comment here.}
-\end{deluxetable}
-
-
 \subsection{Skip slits}
 
 It is possible to specify which slits to skip during the data reduction by setting the \texttt{skip} flag in the \texttt{fuel.slits} structures. When this flag is set, the slit is ignored by the pipeline.
@@ -554,19 +605,6 @@ and \texttt{fuel.util.identify\_lines\_linefit\_window}.
 
 \subsection{Keck LRIS}
 
-
-% ***********************************************************************************************
-% ***********************************************************************************************
-%									CREDITS
-% ***********************************************************************************************
-% ***********************************************************************************************
-
-
-\vspace{10mm}
-
-\section*{Credits}
-
-\flame\ was written by Sirio Belli with substantial help from Alessandra Contursi and Tom Fletcher for development and testing. Many features were inspired by code written by Eva Wuyts and Ric Davies for the LUCAS pipeline, and by Nick Konidaris' MOSFIRE DRP. Dave Thompson provided useful information particularly for the LUCI-specific parts.
 
 
 \end{document}
