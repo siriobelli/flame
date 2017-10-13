@@ -105,7 +105,7 @@ PRO flame_cutout_oneslit, fuel, i_slit
 
   ; create directory (and delete previous one if present)
   slitdir = fuel.util.intermediate_dir + $
-    'slit' + string(fuel.slits[i_slit].number,format='(I02)') + '/'
+    'slit' + string(fuel.slits[i_slit].number,format='(I02)') + path_sep()
   file_delete, slitdir, /allow_nonexistent, /recursive
   file_mkdir, slitdir
 

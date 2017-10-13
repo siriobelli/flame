@@ -483,7 +483,7 @@ FUNCTION flame_initialize_lris, input
   gaindata = instrument.gaindata
 
   ; create directory where we will store the new FITS files
-  lris_dir = fuel.util.intermediate_dir + 'data_LRIS/'
+  lris_dir = fuel.util.intermediate_dir + 'data_LRIS' + path_sep()
   if file_test(lris_dir) then file_delete, lris_dir, /recursive
   file_mkdir, lris_dir
 

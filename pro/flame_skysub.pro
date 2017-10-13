@@ -155,7 +155,7 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 
 	; plot all pixels in a small wavelength range
 	cgplot, pixel_wavelength[w_good], pixel_flux[w_good], psym=3, color='blk3', /nodata, $
-		xtit='wavelength (micron)', xra=xrange, title=(strsplit(slit_filename,'/', /extract))[-1], /ynozero
+		xtit='wavelength (micron)', xra=xrange, title=file_basename(slit_filename), /ynozero
 
 	; plot all pixels in gray
 	cgplot, pixel_wavelength, pixel_flux, psym=16, color='blk3', /overplot

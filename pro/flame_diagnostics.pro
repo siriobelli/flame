@@ -159,7 +159,7 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   ;
 
   ; read frame number from file name
-  frame_num = strmid( (strsplit(frame_filename, '._-/', /extract))[-2], 3, /reverse_offset)
+  frame_num = strmid( (strsplit(frame_filename, '._-/\', /extract))[-2], 3, /reverse_offset)
 
   ; read in the frame
   frame_star = readfits(frame_filename, header, /silent)
@@ -328,7 +328,7 @@ FUNCTION flame_diagnostics_blind, fuel
   ; read frame numbers from file names
   frame_num = intarr(fuel.util.science.n_frames)
   for i_frame=0, fuel.util.science.n_frames-1 do $
-    frame_num[i_frame] =  strmid( (strsplit(fuel.util.science.raw_files[i_frame], '._-/', /extract))[-2] , 3, /reverse_offset)
+    frame_num[i_frame] =  strmid( (strsplit(fuel.util.science.raw_files[i_frame], '._-/\', /extract))[-2] , 3, /reverse_offset)
 
   ; fill the frame_num field
   diagnostics.frame_num = frame_num

@@ -62,10 +62,10 @@
   input.max_slitwidth_arcsec = 0.0
 
   ; specify the directory for the intermediate products
-  input.intermediate_dir = 'intermediate/'
+  input.intermediate_dir = 'intermediate'
 
   ; specify the directory for the final output
-  input.output_dir = 'output/'
+  input.output_dir = 'output'
 
 
 

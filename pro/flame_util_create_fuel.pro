@@ -65,7 +65,7 @@ FUNCTION flame_util_create_fuel, input
   ; set up directories ---------------------------------------------------------
 
   ; find the flame data directory and check that it exists
-  path_to_thisfile = file_which('flame_util_create_fuel.pro', /include_current_dir)
+  path_to_thisfile = routine_filepath()
   data_dir = flame_util_replace_string(path_to_thisfile, 'pro' + path_sep() + 'flame_util_create_fuel.pro', 'data' + path_sep())
   if ~file_test(data_dir, /directory) then message, 'data directory not found! Check the flame directory structure.'
 

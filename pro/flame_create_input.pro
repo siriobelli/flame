@@ -25,8 +25,8 @@ FUNCTION flame_create_input
     longslit: 0, $
     longslit_edge: [0,0], $
     max_slitwidth_arcsec : 0.0, $
-    intermediate_dir : 'intermediate/', $
-    output_dir: 'output/' $
+    intermediate_dir : 'intermediate' + path_sep(), $
+    output_dir: 'output' + path_sep() $
     }
 
   return, input
