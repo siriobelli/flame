@@ -380,8 +380,8 @@ PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
   ; calcolate typical wavelength step of one pixel
   lambda_step = median( approx_lambda_axis - shift(approx_lambda_axis, 1) )
 
-  ; approximate sky line width (assuming one arcsec slit width)
-	approximate_linewidth_um = median(approx_lambda_axis) / (2.36 * fuel.instrument.resolution_slit1arcsec)
+  ; approximate sky line width
+	approximate_linewidth_um = median(approx_lambda_axis) / (2.36 * slit.approx_R)
 	linewidth = approximate_linewidth_um / lambda_step ; in pixel
 
   ; start with a larger linewidth, for a generous range where the line could be
