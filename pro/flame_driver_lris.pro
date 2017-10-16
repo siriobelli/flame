@@ -1,12 +1,13 @@
 
+  ; suppress harmless messages (e.g., module compilation)
+  !quiet = 1
+
+
   ;****************************************************
   ;****************************************************
   ;                       INPUT
   ;****************************************************
   ;****************************************************
-
-  ; suppress harmless messages (e.g., module compilation)
-  !quiet = 1
 
   ; create the input structure
   input = flame_create_input()

@@ -8,7 +8,7 @@ FUNCTION flame_create_input
   ; create the input substructure and set the default values
   input = { $
     science_filelist : 'science.txt', $
-    AB_subtraction: 1, $
+    AB_subtraction: 0, $
     star_y_A: 0, $
     star_y_B: 0, $
     reduce_only_oneslit : 0, $
