@@ -215,6 +215,68 @@ END
 ;*******************************************************************************
 
 
+PRO flame_initialize_luci_arcs, fuel
+
+  ; read first frame
+  arc_hdr = headfits(fuel.util.arc.raw_files[0])
+
+  lamp_name = ['NEON', 'ARGON', 'XENON']
+  lamp_file = ['arc_Ne_air.txt', 'arc_Ar_air.txt', 'arc_Xe_air.txt']
+
+  ; read lamp status from header
+  status_Ne = strlowcase(strtrim(sxpar(arc_hdr, 'STATLMP1'), 2))
+  status_Ar = strlowcase(strtrim(sxpar(arc_hdr, 'STATLMP2'), 2))
+  status_Xe = strlowcase(strtrim(sxpar(arc_hdr, 'STATLMP3'), 2))
+
+  ; put them together
+  lamp_status_string = [status_Ne, status_Ar, status_Xe]
+
+  ; from string of 'on', 'off' to integer
+  lamp_status = intarr(n_elements(lamp_status_string))
+  lamp_status[where(lamp_status_string eq 'on', /null)] = 1
+
+  print, ''
+  print, 'Lamps used for the arc calibrations:'
+  forprint, lamp_name, lamp_status, format='(A10,A7)'
+
+  ; check that some are on
+  w_on = where(lamp_status eq 1, /null)
+  if w_on eq !NULL then message, 'arc frame was taken with no arc lamp on!'
+
+  ; load line lists for the lamps that were used
+  all_lines_air = []
+  for i=0, n_elements(w_on)-1 do begin
+    print, 'Loading line list ' + fuel.util.flame_data_dir + lamp_file[w_on[i]]
+    readcol, fuel.util.flame_data_dir + lamp_file[w_on[i]], arc_linelist
+    all_lines_air = [all_lines_air, arc_linelist]
+  endfor
+
+	; sort them by wavelength
+	all_lines_air = all_lines_air[sort(all_lines_air)]
+
+	; convert to vacuum
+	airtovac, all_lines_air, all_lines_vac
+
+	; convert to micron
+	all_lines = all_lines_vac*1d-4
+
+	; write out the linelist
+  forprint, all_lines, replicate(1, n_elements(all_lines)), $
+	 	textout=fuel.util.intermediate_dir + 'linelist_arcs.txt', comment='#  arc_lines  trust'
+
+  print, ''
+  print, 'Arc line list written to ', fuel.util.intermediate_dir + 'linelist_arcs.txt'
+
+
+END
+
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
 
 FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=input
 
@@ -498,6 +560,11 @@ FUNCTION flame_initialize_luci, input
   ; set the degree of the polynomials for the 2D wavelength solution
   fuel.settings.wavesolution_order_x = 3
   fuel.settings.wavesolution_order_y = 2
+
+
+  ; ---------------------   ARC LINE LIST    -----------------------------------
+
+  if fuel.util.arc.n_frames gt 0 then flame_initialize_luci_arcs, fuel
 
 
   ; -------------------------------------------------------------------------------
