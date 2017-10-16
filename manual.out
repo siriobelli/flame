@@ -10,33 +10,23 @@
 \BOOKMARK [3][-]{subsubsection.3.1.4}{Slits to be reduced}{subsection.3.1}% 10
 \BOOKMARK [3][-]{subsubsection.3.1.5}{Longslit observations}{subsection.3.1}% 11
 \BOOKMARK [2][-]{subsection.3.2}{Optional input}{section.3}% 12
-\BOOKMARK [3][-]{subsubsection.3.2.1}{Dark frames}{subsection.3.2}% 13
-\BOOKMARK [3][-]{subsubsection.3.2.2}{Flat field}{subsection.3.2}% 14
-\BOOKMARK [3][-]{subsubsection.3.2.3}{Arcs}{subsection.3.2}% 15
-\BOOKMARK [3][-]{subsubsection.3.2.4}{Dithering positions}{subsection.3.2}% 16
-\BOOKMARK [3][-]{subsubsection.3.2.5}{Directories}{subsection.3.2}% 17
-\BOOKMARK [2][-]{subsection.3.3}{Initialization}{section.3}% 18
-\BOOKMARK [1][-]{section.4}{Running the Data Reduction}{}% 19
-\BOOKMARK [2][-]{subsection.4.1}{flame\137diagnostics}{section.4}% 20
-\BOOKMARK [2][-]{subsection.4.2}{flame\137quickstack}{section.4}% 21
-\BOOKMARK [2][-]{subsection.4.3}{flame\137correct}{section.4}% 22
-\BOOKMARK [2][-]{subsection.4.4}{flame\137getslits}{section.4}% 23
-\BOOKMARK [2][-]{subsection.4.5}{flame\137cutout\137slits}{section.4}% 24
-\BOOKMARK [2][-]{subsection.4.6}{flame\137wavecal\137rough}{section.4}% 25
-\BOOKMARK [2][-]{subsection.4.7}{flame\137identify\137lines}{section.4}% 26
-\BOOKMARK [2][-]{subsection.4.8}{flame\137wavecal\137accurate}{section.4}% 27
-\BOOKMARK [2][-]{subsection.4.9}{flame\137skysub}{section.4}% 28
-\BOOKMARK [2][-]{subsection.4.10}{flame\137rectify}{section.4}% 29
-\BOOKMARK [2][-]{subsection.4.11}{flame\137combine}{section.4}% 30
-\BOOKMARK [2][-]{subsection.4.12}{flame\137checkdata}{section.4}% 31
-\BOOKMARK [1][-]{section.5}{Troubleshooting}{}% 32
-\BOOKMARK [2][-]{subsection.5.1}{Bad fit to sky lines}{section.5}% 33
-\BOOKMARK [2][-]{subsection.5.2}{Slit identification}{section.5}% 34
-\BOOKMARK [3][-]{subsubsection.5.2.1}{Manual identification of slit edges}{subsection.5.2}% 35
-\BOOKMARK [3][-]{subsubsection.5.2.2}{Detection of slit edges with sky background}{subsection.5.2}% 36
-\BOOKMARK [3][-]{subsubsection.5.2.3}{Detection of slit edges with slit flat field}{subsection.5.2}% 37
-\BOOKMARK [2][-]{subsection.5.3}{Specify the x coordinates for the reference star}{section.5}% 38
-\BOOKMARK [2][-]{subsection.5.4}{Skip slits}{section.5}% 39
-\BOOKMARK [2][-]{subsection.5.5}{Line identification issues}{section.5}% 40
-\BOOKMARK [1][-]{section.6}{Other instruments}{}% 41
-\BOOKMARK [2][-]{subsection.6.1}{Keck LRIS}{section.6}% 42
+\BOOKMARK [3][-]{subsubsection.3.2.1}{Calibration frames}{subsection.3.2}% 13
+\BOOKMARK [3][-]{subsubsection.3.2.2}{Slit edge positions}{subsection.3.2}% 14
+\BOOKMARK [3][-]{subsubsection.3.2.3}{Dithering positions}{subsection.3.2}% 15
+\BOOKMARK [3][-]{subsubsection.3.2.4}{Directories}{subsection.3.2}% 16
+\BOOKMARK [2][-]{subsection.3.3}{Initialization}{section.3}% 17
+\BOOKMARK [1][-]{section.4}{Running the Data Reduction}{}% 18
+\BOOKMARK [2][-]{subsection.4.1}{flame\137diagnostics}{section.4}% 19
+\BOOKMARK [2][-]{subsection.4.2}{flame\137quickstack}{section.4}% 20
+\BOOKMARK [2][-]{subsection.4.3}{flame\137calibrations}{section.4}% 21
+\BOOKMARK [2][-]{subsection.4.4}{flame\137slitid}{section.4}% 22
+\BOOKMARK [2][-]{subsection.4.5}{flame\137cutouts}{section.4}% 23
+\BOOKMARK [2][-]{subsection.4.6}{flame\137spatialcal}{section.4}% 24
+\BOOKMARK [2][-]{subsection.4.7}{flame\137roughwavecal}{section.4}% 25
+\BOOKMARK [2][-]{subsection.4.8}{flame\137findlines}{section.4}% 26
+\BOOKMARK [2][-]{subsection.4.9}{flame\137wavecal}{section.4}% 27
+\BOOKMARK [2][-]{subsection.4.10}{flame\137illumcorr}{section.4}% 28
+\BOOKMARK [2][-]{subsection.4.11}{flame\137skysub}{section.4}% 29
+\BOOKMARK [2][-]{subsection.4.12}{flame\137rectify}{section.4}% 30
+\BOOKMARK [2][-]{subsection.4.13}{flame\137combine}{section.4}% 31
+\BOOKMARK [2][-]{subsection.4.14}{flame\137checkdata}{section.4}% 32

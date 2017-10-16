@@ -33,9 +33,9 @@
 \section{Introduction}
 \label{sec:introudction}
 
-\flame\ is a pipeline for reducing near-infrared multi-object spectroscopic data, written in IDL. The pipeline design and the algorithms used are described in Belli, Contursi \& Davies (2017). Before reading the present manual, users should read that paper. Please cite that paper in your work if you made use of \flame.
+\flame\ is a pipeline for reducing near-infrared multi-object spectroscopic data, written in IDL. The pipeline design and the algorithms used are described in Belli, Contursi \& Davies (2017), which users should read before reading the present manual. Please cite that paper in your work if you made use of \flame.
 
-Although created specifically for the LUCI instrument at LBT, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. The present document describes in detail the reduction of LUCI data. Section \ref{sec:other_instruments} summarizes the different settings needed for the reduction of data taken with different instruments.
+Although created specifically for the LUCI instrument at LBT, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. For simplicity, the present document describes in detail the reduction of LUCI data only.
 
 For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}.
 
@@ -126,7 +126,7 @@ It is always recommended to place a slit on a relatively bright star (hereafter 
 input.star_y_A = 520
 input.star_y_B = 560
 \end{lstlisting}
-These coordinates do not need to be exact. If the trace of the reference star is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the nodding pattern must be specified manually (see Section \ref{sec:troubleshooting}). If no AB nodding is performed, the B star position should be set to zero.
+These coordinates do not need to be exact. If the trace of the reference star is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the nodding pattern must be specified manually (see Section \ref{sec:manual_dithering}). If no AB nodding is performed, the B star position should be set to zero.
 
 \subsubsection{Slits to be reduced}
 While the default behavior is to reduce all the slits in the mask, it is sometimes preferable to reduce only one slit, for example to obtain the reduction of one representative object while observing. This can be achieved by specifying:
@@ -149,13 +149,13 @@ If longslit\_edge is set to [0,0], the default is to reduce the full frame exclu
 
 \subsection{Optional input}
 
-The \inp\ structure contains additional fields that can be used to specify optional settings. The full list is reported in Table \ref{tab:input}, and the content of the \inp\ structure can be explored at any time by typing
+The \inp\ structure contains additional fields that can be used to specify optional inputs. The full list is reported in Table \ref{tab:input}, and the content of the \inp\ structure can be explored at any time by typing
 \begin{lstlisting}
 help, input
 \end{lstlisting}
 in the interactive IDL session.
 
-The extended driver file \texttt{flame\_driver\_complete.pro} includes all the possible types of input and settings: the relevant lines can be copied and then pasted in the local copy of the driver.
+The extended driver file \texttt{flame\_driver\_complete.pro} includes all the possible types of input and settings: the relevant lines can be copied and pasted in the local copy of the driver.
 
 % ******************************************************************************
 \begin{table}
@@ -170,7 +170,7 @@ The extended driver file \texttt{flame\_driver\_complete.pro} includes all the p
     \hline
     \smallskip
 science\_filelist   	     & 'science.txt' 		& name of ASCII file containing the list of science frames \\
-AB\_subtraction      & 1      & flag to enable AB subtraction \\
+AB\_subtraction      & 0      & flag to enable AB subtraction \\
 star\_y\_A 		 & 0			& pixel y-coordinate of the A position of the star trace \\
 star\_y\_B 		 & 0			& pixel y-coordinate of the B position of the star trace \\
 reduce\_only\_oneslit 	& 0 				& if non-zero, reduce only that one slit \\
@@ -196,54 +196,43 @@ output\_dir				   & 'output/'			& directory that will contain the final output \
 % ******************************************************************************
 
 
-\subsubsection{Dark frames}
-Dark frames, if provided, are used to construct the median-combined master dark, which is then subtracted from each science frame. When adopting an AB dithering, the dark current is automatically corrected for during the A-B subtraction, and dark frames are not needed.
-
-The dark frames, as well as all the other calibration frames, are supplied to the pipeline via text files containing a list of FITS files, similarly to what done for the science data:
+\subsubsection{Calibration frames}
+The calibration frames used by \flame\ are the dark, pixel flat, illumination flat, slit flat, and arcs. Each of these types of calibrations can be supplied to the pipeline via text files containing a list of FITS files, similarly to what done for the science data. The only difference is that all the calibration files are optional, and the default value for the filelist parameter is always \texttt{'none'}. Here is an example:
 \begin{lstlisting}
-input.dark_filelist = 'dark.txt'
-\end{lstlisting}
-The only difference is that all the calibration files are optional, and the default value for the filelist parameter is always \texttt{'none'}.
-
-
-
-\subsubsection{Flat field}
-
-A flat field is a calibration frame taken with the purpose of removing unwanted patterns in the data. However, there are many ways in which flat fields can be obtained: using a lamp or the twilight sky; with or without the slitmask; with or without the dispersion element; and with different filters, cameras, and so on.
-
-In \flame\ the flat fields are divided into three types, based on how they are used during the data reduction, rather than what instrument configuration was adopted in taking the calibrations. This means that the user is free to choose the actual configuration for each type of flat field.
-
-The \textbf{pixel flat field} is used to correct for the pixel-to-pixel variation in sensitivity. First the large-scale variation in the illumination is removed via polynomial fitting, and then the flat field is divided by its median pixel value. Pixel flats work best if taken without slitmask, in order to obtain a smooth illumination of the full detector. If the imaging mode produces small-scale patterns due to the presence of dust, the dispersion element can be used (with or without a long slit). The LUCI detectors present pixel-to-pixel variation of the order of a few percent. These variations vary with time, and often times it is better not to flat field the data rather than using a flat field obtained in a different observing run.
-
-The \textbf{illumination flat field} corrects for the uneven illumination of the slit along the spatial direction.
-
-Finally, the \textbf{slit flat field} is used to identify the slit traces and trace the geometric distortion of the slit edges.
-
-Each of the three types of flat field can be specified in the usual way, for example:
-\begin{lstlisting}
-input.pixelflat_filelist = 'pixelflat.txt'
+input.dark_filelist = 'darks.txt'
+input.pixelflat_filelist = 'pixelflats.txt'
 input.illumflat_filelist = 'none'
-input.slitflat_filelist = 'slitflat.txt'
+input.slitflat_filelist = 'twilightflats.txt'
+input.arc_filelist = 'none'
 \end{lstlisting}
-
-
-\subsubsection{Arcs}
-The near-infrared sky spectrum is dominated by OH emission lines, which are ideal for wavelength calibrating the observations. However, in particular cases these OH lines are not strong enough (for example when the exposure time is very short) or do not cover the full observed range (this can happen with high-resolution observations in the K band). Also, spectra taken with optical instruments have very few sky emission lines. In all these cases, it is necessary to observe the spectrum of arc lamps in order to obtain a reliable wavelength calibration. These arc frames can be specified via:
+For the illumination flat, slit flat, and arcs, it is important that the calibration frames are spatially aligned with the science frames. However, it is often the case that calibrations taken in the afternoon show a vertical displacement compared to science observations because of flexure. In this case, it is possible to correct for this by specifying the vertical offset, in pixel, that must be applied to the calibration frames:
 \begin{lstlisting}
-input.arc_filelist = 'arcs.txt'
+input.illumflat_pixelshift = 7
+input.slitflat_pixelshift = 8
+input.arc_pixelshift = 0
 \end{lstlisting}
+
+\textbf{Warning:} the use of arcs with LUCI observations has not been tested.
+
+
+\subsubsection{Slit edge positions}
+Normally, the expected positions of the slits on the detector are derived from the values in the FITS header. However, sometimes this can fail, particularly when the slits are tilted or curved. In these cases it is possible to specify the list of approximate pixel positions of each slit edge as an ASCII file:
+\begin{lstlisting}
+input.slit_position_file = 'slit_edges.reg'
+\end{lstlisting}
+The easiest way to generate this file is to open the slit flat field (or a science frame) with ds9, make a simple circular region at each slit edge (both top and bottom edges for each slit must be specified), and save the regions in a file with format 'XY' and coordinate system 'Image'.
 
 
 
 \subsubsection{Dithering positions}
-It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the dithering offset for each frame, and the dithering pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, in arcseconds, corresponding to that frame (for example 5, -5, 5, -5, etc). Then the file name needs to be input in the \inp\ structure:
+\label{sec:manual_dithering}
+It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the nodding and dithering offset for each frame, and this pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, in arcseconds, corresponding to that frame (for example 5, -5, 5, -5, etc). Then the file name needs to be input in the \inp\ structure:
 \begin{lstlisting}
-input.startrace_y_pos = [0, 0]
 input.dither_file = 'dither.txt'
 \end{lstlisting}
 
 \subsubsection{Directories}
-Next, we need to define the directories for intermediate and final outputs:
+Finally, it is possible to specify the directories for intermediate and final outputs:
 \begin{lstlisting}
 input.intermediate_dir = 'intermediate/'
 input.output_dir = 'output/'
@@ -262,9 +251,10 @@ fuel = flame_initialize_luci(input)
 \end{lstlisting}
 This will also check for potential errors in the inputs, and create the necessary directories.
 
-The \fuel\ structure consists of five substructures:
+The \fuel\ structure consists of six substructures:
 \begin{itemize}
 	\item fuel.input: a copy of the \inp\ structure created in the previous step;
+  \item fuel.settings: a series of settings and parameters that control the data reduction;
 	\item fuel.util: utility variables needed by \flame;
 	\item fuel.instrument: instrument-specific information;
 	\item fuel.diagnostics: diagnostics such as seeing and transparency for each of the science frames;
@@ -273,12 +263,13 @@ The \fuel\ structure consists of five substructures:
 
 Some of the fields in the \fuel\ structure are initially set to null pointers and will be created by successive steps.
 
-During the initialization, relevant fields from the FITS header of the science files, such as band, central wavelength, and slit positions are read and saved. This is the only step during the data reduction where instrument-specific operations are performed. Since the remaining steps are common to all near-infrared MOS data, it is in principle easy to adapt \flame\ to a different instrument by simply writing the appropriate initialization module.
+During the initialization, relevant fields from the FITS header of the science files, such as band, central wavelength, and slit positions are read and saved. This is the only step during the data reduction where instrument-specific operations are performed.
 
+After the initialization, the user has complete control over the \texttt{fuel.settings} structure. We will describe some of the settings in the next section; the complete list together with a brief description for each of them is shown in Table \ref{tab:settings}. Normally, the user should not edit the other five substructures contained in \fuel.
 
 % ******************************************************************************
 \begin{table}
-\caption{Content of the \texttt{fuel.settings} structure \label{tab:util}}
+\caption{Content of the \texttt{fuel.settings} structure \label{tab:settings}}
 \medskip
 \footnotesize
   \makebox[\textwidth][c]{
@@ -296,9 +287,9 @@ During the initialization, relevant fields from the FITS header of the science f
     clean\_individual\_frames     & 0             & calibrations     & identify and mask cosmic rays in each frame \\
     badpix\_sigma                 & 7.0           & calibrations     & sigma clipping to identify bad pixels in the master dark frame \\
     badpix\_flatcorrection        & 0.20          & calibrations     & values beyond this deviation in the master pixel flat are bad pixels \\
-    trace\_slit\_with\_emlines    & 1             & getslits         & use arcs or sky lines to trace slit edges \\
-    trace\_slit\_ymargin          & 12            & getslits         & margin (in pixels) to consider beyond the expected slit edge \\
-    trace\_slit\_polydegree       & 2             & getslits         & degree of the polynomial used to describe the slit edge \\
+    trace\_slit\_with\_emlines    & 1             & slitid           & use arcs or sky lines to trace slit edges \\
+    trace\_slit\_ymargin          & 12            & slitid           & margin (in pixels) to consider beyond the expected slit edge \\
+    trace\_slit\_polydegree       & 2             & slitid           & degree of the polynomial used to describe the slit edge \\
     roughwavecal\_R               & [500, 1000, 3000] & roughwavecal & spectral resolution to be used for the rough wavelength calibration \\
     roughwavecal\_smooth\_window  & 20            & roughwavecal     & window, in pixels, used to calculate and subtract the sky continuum \\
     roughwavecal\_split           & 0             & roughwavecal     & in the last step of rough\_wavecal, split the wavelength range in two \\
@@ -316,6 +307,7 @@ During the initialization, relevant fields from the FITS header of the science f
     skysub\_reject\_loops         & 3             & skysub           & number of loops for outlier rejection \\
     skysub\_reject\_window        & 2.0           & skysub           & window for outlier rejection, in units of breakpoint separation \\
     interpolation\_method         & 'NaturalNeighbor'  & rectify     & method used to resample frames during rectification \\
+    frame\_weights                & 'None'        & combine          & weights to use for the final frmae stacking \\
     combine\_sigma\_clip          & 2.0           & combine          & sigma-clipping to use when combining frames \\
     combine\_min\_framefrac       & 0.49          & combine          & minimum fraction of frames that must contribute to a pixel \\
     debugging                     & 0             & (all)            & debugging mode: halt execution when an error occurs \\
@@ -345,12 +337,12 @@ Once the first part of the driver file has been edited, the data reduction is fu
 \end{lstlisting}
 Another possibility, which allows some interaction and testing, is to copy line-by-line the content of the driver file onto an interactive IDL session. In this way one can explore the output files and the fuel structure after every step.
 
-The second part of the driver file contains eleven steps or modules, which we are going to examine in detail in this section. Every module is an IDL routine whose name starts with \texttt{flame\_} and which is saved in a .pro file with the same name in the directory flame/pro/. All modules accept (and require) only one argument, which is the \fuel\ structure, so that the IDL code for each module looks the same:
+The second part of the driver file contains fourteen steps or modules. Every module is an IDL routine whose name starts with \texttt{flame\_} and which is saved in a .pro file with the same name in the directory flame/pro/. All modules accept (and require) only one argument, which is the \fuel\ structure, so that the IDL code for each module looks the same:
 \begin{lstlisting}
 flame_modulename, fuel
 \end{lstlisting}
 
-Every module edits the fuel structure and/or outputs files in the intermediate directory. Only the last module, which creates the final results, saves the output files in the output directory.
+Every module edits the fuel structure and/or outputs files in the intermediate directory. Only the last two modules, which create the final results, save the output files in the output directory.
 
 
 
@@ -367,7 +359,7 @@ The first step produces important diagnostics which will be used by the other mo
 \label{fig:diagnostics}
 \end{figure}
 
-Starting with the y coordinates specified by the user in fuel.startrace\_y\_pos, this module detects the reference star position on each frame, and identifies which frames belong to the $A$ and which to the $B$ position (and assign an $X$ position when no star trace is found). Then, for each frame a Gaussian profile is fit to the star trace, from which the flux, vertical position and FWHM are measured. In addition, the airmass value is read from the FITS header of each frame.
+Starting with the y coordinates specified by the user in fuel.startrace\_y\_pos, this module detects the reference star position on each frame, and identifies which frames belong to the $A$ and which to the $B$ position (and assign an $X$ position when no star trace is found). Then, for each frame a Gaussian profile is fit to the star trace, from which the flux, vertical position and FWHM are measured. In addition, the airmass value is read from the FITS header of each frame. If the fits fail, the user can change the horizontal and the vertical pixel range used to extract the star trace.
 
 All these quantities are saved in the substructure fuel.diagnostics. They are also output in the ASCII file diagnostics.txt, and plotted as a function of the frame number in the file diagnostics.ps. One example of such file is shown in Figure \ref{fig:diagnostics}. Because of the dithering, the vertical position is shown in different panels for the $A$ and the $B$ frames. If there are multiple frames with same frame number, which can happen when combining data from different nights, then the x axis of the plot will show a sequential number (but the original frame numbers are used in the ASCII file).
 
@@ -385,33 +377,14 @@ The sole goal of this module is to allow a quick look at the data. This step can
 
 
 % ---------------------------------------------------
-\subsection{\texttt{flame\_correct}}
+\subsection{\texttt{flame\_calibrations}}
 
-This module applies a number of corrections to the raw science frames. First, the bad pixel mask is generated from the input dark and/or flat frames. If neither dark nor flat field frames were supplied, then the default bad pixel mask, stored in flame/data/, is used.
+This module applies a number of calibrations to the raw science frames. First, the bad pixel mask is generated from the input dark and/or flat frames. If neither dark nor flat field frames were supplied, then the default bad pixel mask, stored in flame/data/LUCI, is used.
 
-The following corrections are applied:
-\begin{itemize}
-\item Cosmic rays removal: this step is not recommended for near-infrared data, but can be necessary for observations in the optical.
-\item Linearity correction: the value of each pixel is corrected to take into account the non-linear response of the detector. The correction is a polynomial function with instrument-specific coefficients, which are determined during the initialization.
-\item Pixel flat field correction, if required.
-\item Bad pixels are set to NaN.
-\item The flux of each pixel is multiplied by the gain and divided by the exposure time. This converts the flux units from ADUs to electrons/second.
-\end{itemize}
+The user can choose whether individual frames must be cleaned of cosmic rays using L.A.Cosmic (this is generally not needed for LUCI data, as long as the number of frames is enough for sigma-clipping), and the parameters used to identify bad pixels from the master dark and flat field.
 
-The corrected science frames are then saved in the intermediate/frames/ directory. Each FITS file contains a second extension with the error spectrum, which is calculated as the combination of read-out noise and Poisson noise.
+The corrected science frames are saved in the intermediate/frames/ directory. Each FITS file contains a second extension with the error spectrum, which is calculated as the combination of read-out noise and Poisson noise.
 
-
-% ---------------------------------------------------
-\subsection{\texttt{flame\_getslits}}
-\label{sec:getslits}
-
-The module \texttt{flame\_getslits} is responsible for detecting the slits from the multi-object slitmask. The vertical coordinates of the slit edges calculated during the initialization are used. However, the physical position of the mask with respect to the detector is typically difficult to predict and varies slightly from one night to the other. To account for this, a vertical shift is calculated by identifying the slit edges.
-
-Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure. Note that this procedure is more likely to fail when the slits are short or when there is not much space between one slit and the next one. When observing in the $K$, the low number of OH lines and the strong continuum sky emission makes it convenient to use the sky background instead (see Section \ref{sec:use_sky_edge})
-
-The output file slitim.fits is a mask image where the value of each pixel is an integer indicating the slit number to which that pixel belongs to, with zero indicating pixels that do not belong to any slit. Also, the file slits.reg is saved, which is a ds9 region file that can be loaded on top of any science frame and will show the slit edges (see Figure \ref{fig:slits}). This can be used to check the slit detection and also to identify which slit on the science frame corresponds to which target.
-
-\textbf{Explain the option of manually specifying the slit edges for difficult cases.}
 
 \begin{figure}[htbp]
 \centering
@@ -420,28 +393,47 @@ The output file slitim.fits is a mask image where the value of each pixel is an 
 \label{fig:slits}
 \end{figure}
 
+% ---------------------------------------------------
+\subsection{\texttt{flame\_slitid}}
+\label{sec:slitid}
+
+The module \texttt{flame\_slitid} is responsible for detecting the slits from the multi-object slitmask. If slit flat field frames are not supplied, the central three science frames will be stacked and used to generate the master slit flat. The vertical coordinates of the slit edges calculated during the initialization are used. However, the physical position of the mask with respect to the detector is typically difficult to predict and varies slightly from one night to the other. To account for this, a vertical shift is calculated by identifying the slit edges.
+
+Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure.
+
+In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges. It is possible to use the continuum emission instead, by specifying settings.trace\_slit\_with\_emlines$ = 0$. Using lamp flats or arc frames as slit flat field is also an option. The user can also change the order of the polynomial describing the slit edge and the cutout size used for the slit identification.
+
+This module creates the file file slits.reg, which is a ds9 region file that can be loaded on top of any science frame and will show the slit edges (see Figure \ref{fig:slits}). This can be used to check the slit detection and also to identify which slit on the science frame corresponds to which target. The raw detection of the sky lines are saved in slits\_raw.reg.
+
+If the slit identification fails or is not accurate, one alternative is to use the longslit option to manually select the region within one slit to reduce. By default the longslit option assumes that the slit is spatially centered on the mask. If this assumption causes a wildly wrong initial guess for the wavelength range, it is possible to override this value by changing the \texttt{fuel.slits.range\_lambda0} variable, which is a 2-element array containing the minimum and maximum values to be considered for the wavelength of the first pixel.
+
 
 % ---------------------------------------------------
-\subsection{\texttt{flame\_cutout\_slits}}
+\subsection{\texttt{flame\_cutouts}}
 
 Using the slit definition from the previous step, the slits are extracted from each corrected frame and saved as FITS files. All the cutouts corresponding to the same slit are saved in the directory slitxx, where xx is the slit number.
 
+% ---------------------------------------------------
+\subsection{\texttt{flame\_spatialcal}}
+
+The spatial rectification is calculated starting from the slit edges, and is corrected for nodding and dithering using the results of the diagnostics. The coefficients of the coordinate transformation $\gamma(x,y)$ are stored for each cutout in the fuel.slits structure.
+
 
 % ---------------------------------------------------
-\subsection{\texttt{flame\_wavecal\_rough}}
+\subsection{\texttt{flame\_roughwavecal}}
 
 The wavelength calibration is arguably the most important and difficult step in the data reduction. An accurate calibration is not only useful for the scientific interpretation of the data, but is also necessary for a correct sky subtraction.
 
 In \flame, the wavelength calibration is split into three steps. The first step finds an approximate wavelength calibration for the central part of the slit, using only the first science frame. The sky spectrum is extracted from the central five pixels of the slit, and is compared to a model spectrum. The comparison consists of two successive steps:
 \begin{enumerate}
-\item Both the observed and the model sky spectra are smoothed to an intermediate spectral resolution ($R=500$, but this value is stored in the input structure and can be changed by the user), and a series of values for the pixel scale (in micron per pixel) are tested. At each loop, cross-correlation is used to find the initial wavelength, and the pixel scale that gives the largest value of the cross-correlation is selected.
+\item Both the observed and the model sky spectra are smoothed to an intermediate spectral resolution ($R=500$, but this value can be controlled via settings.roughwavecal\_R), and a series of values for the pixel scale (in micron per pixel) are tested. At each loop, cross-correlation is used to find the initial wavelength, and the pixel scale that gives the largest value of the cross-correlation is selected.
 \item Once the pixel scale and the initial wavelength are roughly known, a finer comparison is performed. In this case the spectra are not heavily smoothed, so that the narrow OH lines can be used for a very effective comparison. The relation between $x$ pixel coordinate and wavelength is typically not linear, and a second-order polynomial is used: $\lambda(x) = a_0 + a_1 x + a_2 x^2$. A fine grid of values for $a_1$ and $a_2$ is used, and at each loop cross-correlation is used to determine the best value for $a_0$.
 \item Finally, another cross-correlation is performed at the native spectral resolution.
 \end{enumerate}
 
-For each slit, plots illustrating the successive comparisons of observed and model sky spectra are saved as ps files (wavelength\_solution\_estimate.ps). An example is shown in Figure \ref{fig:wavecal_approx}.
+For each slit, plots illustrating the successive comparisons of observed and model sky spectra are saved as ps files (rough\_wavelength\_calibration.ps). An example is shown in Figure \ref{fig:wavecal_approx}.
 
-If the sky spectrum includes a strong contribution from continuum emission, as is often the case for the thermal emission in the K band, it may be necessary to fit and subtract a low-order polynomial to the observed spectrum before comparing it to the model. This can be done be setting \texttt{util.wavecal\_rough\_continuum\_degree} to a number different from zero, which will be taken as the degree of the polynomial representing the continuum (typically about five or less).
+If the sky spectrum includes a strong contribution from continuum emission, as is often the case for the thermal emission in the K band, it may be necessary to fit and subtract a low-order polynomial to the observed spectrum before comparing it to the model. This is controlled by the parameter settings.roughwavecal\_smooth\_window.
 
 
 \begin{figure*}[tbp]
@@ -459,7 +451,7 @@ If the sky spectrum includes a strong contribution from continuum emission, as i
 
 
 % ---------------------------------------------------
-\subsection{\texttt{flame\_identify\_lines}}
+\subsection{\texttt{flame\_findlines}}
 
 
 The previous procedure gives only a rough wavelength calibration that is valid for the pixel rows at the center of the slits. Since the wavelength solution typically varies with spatial coordinate within the slit (particularly for tilted slits), the calibration needs to be calculated for each individual pixel row, which is done in this step.
@@ -467,6 +459,8 @@ The previous procedure gives only a rough wavelength calibration that is valid f
 Initially, the spectrum of the central pixel row is extracted, and the individual OH emission lines are identified using the rough wavelength solution. A Gaussian fit is performed on each line, and the $x$ pixel coordinate corresponding to the center is stored. It is therefore necessary that the calibration found in the previous step is accurate to within the window used in the Gaussian fit, otherwise the identification of the OH lines will not be possible. The relation between the $x$ coordinate and the expected wavelength of each OH line is then fit with a low order polynomial (see example in Figure \ref{fig:speclines}). This procedure is then repeated for the next pixel row, using the wavelength solution from the previous pixel row as first guess. This is always a good assumption as long as the wavelength solution varies smoothly with position, without abrupt changes from one pixel position to the next.
 
 After all the pixel rows have been processed, the final result is a number of $x,y$ coordinates of detected OH lines, and the corresponding theoretical wavelength. A ds9 region file (OHlines.reg) showing the detected location of the OH lines is produced.
+
+It is possible for difficult cases (e.g., few or weak lines, or slits heavily tilted), that the parameters controlling this step need to be tweaked (see Table \ref{tab:settings}).
 
 
 \begin{figure}[tbp]
@@ -478,35 +472,43 @@ After all the pixel rows have been processed, the final result is a number of $x
 
 
 % ---------------------------------------------------
-\subsection{\texttt{flame\_wavecal\_accurate}}
+\subsection{\texttt{flame\_wavecal}}
 
-For each sky line identification, we have a matching set of \emph{observed} pixel coordinates $(x,y)$ and \emph{rectified} coordinates $(\lambda,\gamma)$, where $\lambda$ is the theoretical wavelength of the OH line and $\gamma$ is simply the vertical distance (in pixels) from the bottom edge of the slit, calculated using the polynomial fits obtained by \texttt{flame\_getslits}. The wavelength solution and the
+A 2D polynomial function is fit to the identified sky line to obtain the coordinate transformation $\lambda(x,y)$. The polynomial degrees of the function (both in x and y) can be changed for particularly tall or narrow slits.
+
+
+% ---------------------------------------------------
+\subsection{\texttt{flame\_illumcorr}}
+
+The illumination correction is calculated from the sky lines and applied to each cutout. The user can choose to skip this step by setting the parameter illumination\_correction$=0$.
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_skysub}}
 
-Because the OH emission lines vary on short timescales, the A-B subtraction typically leaves strong residuals. In order to improve the sky subtraction, \flame\ adopts the method of Kelson 2003. Briefly, the wavelength solution is used to map each pixel from the observed, distorted frame to the output, rectified frame. The distortion in the observed frame (which is produced by the optics and/or by the tilted slits) produces a very fine sampling of the sky lines in the rectified frame. Because of this sub-pixel sampling, it is possible to obtain an excellent B-spline fitting of the emission lines. \flame\ performs this operation on each frame for every slit, and saves a FITS file of the sky-subtracted data. A graphic window shows, during this step, the sky emission spectrum (collapsed onto one dimension) and the B-spline fit for every frame.
+Because the OH emission lines vary on short timescales, the A-B subtraction typically leaves strong residuals. In order to improve the sky subtraction, \flame\ adopts the method of Kelson 2003. \flame\ performs this operation on each frame for every slit, and saves a FITS file of the sky-subtracted data. A graphic window shows, during this step, the sky emission spectrum (collapsed onto one dimension) and the B-spline fit for every frame. The user has ample control on the parameters controlling the b-spline model and the rejection of outliers, which may be need to be tweaked when the science targets take up most of the slit.
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_rectify}}
 
-Using the 2D rectification coefficients calculated in \texttt{flame\_wavecal\_accurate}, this step performs both the wavelength calibration and the spatial rectification simultaneously, using only one interpolation. In practice, for each slit and each frame a polynomial warping is applied to the observed 2D spectrum, and a rectified FITS file is produced.
+Using the 2D rectification coefficients calculated in \texttt{flame\_wavecal\_accurate}, this step performs both the wavelength calibration and the spatial rectification simultaneously, using only one interpolation. The interpolation method can be set to 'NaturalNeighbor', 'Linear', 'NearestNeighbor', or 'Quintic'.
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_combine}}
 
-This step consists in the stacking (after sigma-clipping) of all the A and B frames. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved. Also, an ABcombined FITS file is produced by summing A-B to the shifted B-A images, so that one positive central trace, corresponding to the total observing time, can be extracted for the science analysis.
+This step consists in the stacking of all the A and B frames. Sigma-clipping is first performed to remove cosmic rays and bad pixels, the default value is 2-sigma but this can be changed. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved. Also, an ABcombined FITS file is produced by summing A-B to the shifted B-A images, so that one positive central trace, corresponding to the total observing time, can be extracted for the science analysis.
 
-Sometimes the dithering is such that one object spends half of the time in one slit and half of the time in another slit. This is particularly useful when the slits need to be tilted in directions that are different from the dithering direction (as is the case when different objects in the mask require different position angles). If the dithering length, as calculated from the star traces, matches the distance between any two slits, then these are assumed to be matching slits and their A-B stacks are combined together. It is worth pointing out that this assumption breaks down if the star traces for the A and B positions actually belong to different stars.
+If the dithering length, as calculated from the star traces, matches the distance between any two slits, then these are assumed to be matching slits and their A-B stacks are combined together. It is worth pointing out that this assumption breaks down if the star traces for the A and B positions actually belong to different stars.
+
+By default, no weights are applied to the frames, but the user can set frame\_weights to 'None', 'Flux', 'Seeing', or 'Peak'.
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_checkdata}}
 
-Finally, this optional module performs a quality check on the reduced data set. If present, the reference star spectrum is analyzed and the effective seeing calculated. The file reference\_star.ps is written, showing the spatial profile, the width and position of the stellar track as a function of wavelength, and the xtracted 1D spectrum of the star. Then, a ps file is written for each slit. The first plot shows the stacked sky spectrum, from which the sky lines are identified and fit, and the wavelength residuals and spectral resolution R are shown. Stats on the wavelength solution and the velocity resolution are shown at the bottom. The remaining two plots show respectively the line width and the wavelength residuals for each of the science frames reduced. The gray points are individual measurements for one pixel row of one sky line; the red points show the median value for each frame and the error bars include the central 68\% of points. Looking at these figures it is easy to see if one of more of the frames do not have a good wavelength solution. In such cases the user can decide to run the reduction again excluding those frames, or trying to improve the wavelength solution by tweaking the settings in \texttt{fuel.util}.
+Finally, this module performs a quality check on the reduced data set. If present, the reference star spectrum is analyzed and the effective seeing calculated. The file reference\_star.ps is written, showing the spatial profile, the width and position of the stellar track as a function of wavelength, and the xtracted 1D spectrum of the star. Then, a ps file is written for each slit. The first plot shows the stacked sky spectrum, from which the sky lines are identified and fit, and the wavelength residuals and spectral resolution R are shown. Stats on the wavelength solution and the velocity resolution are shown at the bottom. The remaining plots illustrate the performance of the wavelength calibration as a function of wavelength or frame. Looking at these figures it is easy to see if one of more of the frames do not have a good wavelength solution. In such cases the user can decide to run the reduction again excluding those frames, or trying to improve the wavelength solution by tweaking the settings.
 
 
 
@@ -517,94 +519,17 @@ Finally, this optional module performs a quality check on the reduced data set. 
 % ***********************************************************************************************
 
 
-
-\section{Troubleshooting}
-\label{sec:troubleshooting}
-
-
-\subsection{Bad fit to sky lines}
-
-Sometime the sky lines are not bright or numerous enough for a reliable wavelength calibration. This can happen especially in the K band, where the OH lines are less numerous and the spectrum is typically dominated by thermal emission. Another situation where this issue can arise is when the OH lines are faint due to very short exposure times. In this cases it is always advisable to obtain arcs. There are however a few settings that can be optimized to obtain a satisfactory wavelength solution.
-
-During the \texttt{flame\_identify\_lines} step, at each pixel row a polynomial is fit to the position of the sky lines (see Figure \ref{fig:speclines}). This part is critical and is often the first to fail in sub-optimal conditions. If the number of sky lines identified in one row is too low, the fit will not be considered valid. It is possible to change this threshold number by changing the variable \texttt{fuel.util.identify\_lines\_Nmin\_lines}. However, with a low number of lines it is also necessary to lwer the degree of the polynomial, to avoid over-fitting and obtaining meaningless wavelength solutions. This can be done by changing the variable \texttt{fuel.util.identify\_lines\_poly\_degree}.
-
-Another possibility is to manually exclude those sky lines that are clearly problematic. This can be done easily by commenting out one or more entries in the line list, which is stored as a text file in the flame/data/ directory.
-
-
-\subsection{Slit identification}
-
-If the slit identification fails or is not accurate, one alternative is to use the longslit option to manually select the region within one slit to reduce. By default the longslit option assumes that the slit is spatially centered on the mask. If this assumption causes a wildly wrong initial guess for the wavelength range, it is possible to override this value by changing the \texttt{fuel.slits.range\_lambda0} variable, which is a 2-element array containing the minimum and maximum values to be considered for the wavelength of the first pixel.
-
-Sometimes using a different science frame gives a better slit identification. The default frame used for the slit identification is the one in the middle; this file name is stored in \texttt{fuel.util.master\_getslit}. This can be manually changed after initialization; or a different science frame can be specified via the \texttt{input.slitflat\_filelist}, see below.
-
-
-\subsubsection{Manual identification of slit edges}
-
-Description of the manual input for the slit edges
-
-When using curved slit with LUCI at LBT, the header keywords are not sufficient to correctly predict the position and size of the slits, and it is often necessary to specify the slit edges manually.
-
-
-\subsubsection{Detection of slit edges with sky background}
-\label{sec:use_sky_edge}
-
-In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges (see Section \ref{sec:getslits}). It is possible to use the continuum emission instead, by specifying
-\begin{lstlisting}
-input.trace_slit_with_skylines = 0
-\end{lstlisting}
-
-
-\subsubsection{Detection of slit edges with slit flat field}
-
-If the slit edges are not well defined in the science frames, it is possible to use a flat field for the slit identification:
-\begin{lstlisting}
-input.trace_slit_with_skylines = 0
-input.slitflat_filelist = 'slitflat.txt'
-input.slitflat_offset = 4
-\end{lstlisting}
-where the file slitflat.txt contains a list of file names corresponding to the slit flat field data. These can be the same as the pixel and/or illumination flats.
-It is often the case that the science frames present a vertical shift compared to the calibration frames because of flexure. In this case the shift needs to be measured manually and specified via the \texttt{slitflat\_offset} setting.
-
-
-\subsection{Specify the x coordinates for the reference star}
-
-When the reference star is present, its trace is extracted and used as a diagnostic tool (see Section \ref{sec:diagnostics}). Only the central part of the trace is used, in the interval [1000, 1200] in x-pixel coordinates. If the trace is too faint in this central region, it is possible to define a different range for the extraction:
-\begin{lstlisting}
-input.xrange_star = [100, 500]
-\end{lstlisting}
-
-
-
-\subsection{Skip slits}
-
-It is possible to specify which slits to skip during the data reduction by setting the \texttt{skip} flag in the \texttt{fuel.slits} structures. When this flag is set, the slit is ignored by the pipeline.
-
-Setting the \texttt{input.reduce\_only\_oneslit} parameter is equivalent to setting the \texttt{skip} flag in each slit except one.
-
-The \texttt{skip} flag is automatically set whenever an error is encountered, so that the subsequent steps can be regularly carried on for the remaining slits.
-
-
-\subsection{Line identification issues}
-
-When fitting the wavelength solution row by row, there is a minimum number of sky lines that must be identified, otherwise that pixel row will be skipped.
-In some cases, it is possible that there are very few lines available in the observed wavelength range (for example in part of the K band), and all or most of the pixel rows will be skipped. In such cases it is possible to lower the minimum number of required line identification by changing the parameter \texttt{fuel.util.identify\_lines\_nmin\_lines}.
-
-Explain also \texttt{fuel.util.identify\_lines\_poly\_degree}
-
-and \texttt{fuel.util.identify\_lines\_linefit\_window}.
-
-
 % ***********************************************************************************************
 % ***********************************************************************************************
 %									6. OTHER INSTRUMENTS
 % ***********************************************************************************************
 % ***********************************************************************************************
 
-\section{Other instruments}
-\label{sec:other_instruments}
-
-\subsection{Keck LRIS}
-
+% \section{Other instruments}
+% \label{sec:other_instruments}
+%
+% \subsection{Keck LRIS}
+%
 
 
 \end{document}
