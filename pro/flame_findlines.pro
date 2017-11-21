@@ -419,6 +419,7 @@ PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
 
   w_l = where(reflines_initial.lambda GT lambda_axis[4] and reflines_initial.lambda LT lambda_axis[-5], /null)
   print, 'Identified ', strtrim(Nlines, 2), ' out of ', strtrim(n_elements(w_l), 2), ' lines present in the line list.'
+  if Nlines EQ 0 then message, 'Not enough lines were identified in the spectrum extracted from the central rows!'
 
   ; consider only the lines that have been identified here and use them as reference
   reflines = speclines_thisloop
