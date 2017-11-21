@@ -305,20 +305,20 @@ FUNCTION flame_initialize_lris_slits, header, instrument=instrument, slit_y=slit
   range_lambda0 = instrument.lambda0 * [0.8, 1.20]  ; this depends on the horizontal position of the slit
   range_delta_lambda = instrument.dispersion * [0.8, 1.2]
 
-    this_slit = { $
-      number:i_slit+1, $
-      name:'NN', $
-      skip:0, $
-      PA:!values.d_NaN, $
-      approx_bottom:slit_y[2*i_slit], $
-      approx_top:slit_y[2*i_slit+1], $
-      approx_target: 0.5 * (slit_y[2*i_slit] + slit_y[2*i_slit+1]), $
-      width_arcsec:!values.d_NaN, $
-      approx_R:instrument.resolution_slit1arcsec, $
-      range_lambda0:range_lambda0, $
-      range_delta_lambda:range_delta_lambda }
+  ; create one slit structure
+  this_slit = flame_util_create_slitstructure( $
+    number = i_slit+1, $
+    PA = !values.d_NaN, $
+    approx_bottom = slit_y[2*i_slit], $
+    approx_top = slit_y[2*i_slit+1], $
+    approx_target = 0.5 * (slit_y[2*i_slit] + slit_y[2*i_slit+1]), $
+    width_arcsec = !values.d_NaN, $
+    approx_R = instrument.resolution_slit1arcsec, $
+    range_lambda0 = range_lambda0, $
+    range_delta_lambda = range_delta_lambda )
 
-    slits = [slits, this_slit]
+  ; stack this slit structure with the other slits
+  slits = [slits, this_slit]
 
   endfor
 

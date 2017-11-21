@@ -297,21 +297,20 @@ FUNCTION flame_initialize_luci_longslit, header, instrument=instrument, input=in
     yrange = [205, 1843] else $
     yrange = input.longslit_edge
 
-    ; create slit structure
-    slits = { $
-      number:1, $
-      name:'longslit', $
-      skip:0, $
-      PA:!values.d_nan, $
-      approx_bottom:yrange[0], $
-      approx_top:yrange[1], $
-      approx_target:mean(input.longslit_edge), $
-      width_arcsec:!values.d_nan, $
-      approx_R:instrument.resolution_slit1arcsec, $
-      range_lambda0:range_lambda0, $
-      range_delta_lambda:range_delta_lambda }
+  ; create the slit structure
+  longslit = flame_util_create_slitstructure( $
+    number = 1, $
+    name = 'longslit', $
+    PA = !values.d_nan, $
+    approx_bottom = yrange[0], $
+    approx_top = yrange[1], $
+    approx_target = mean(yrange), $
+    width_arcsec = !values.d_nan, $
+    approx_R = instrument.resolution_slit1arcsec, $
+    range_lambda0 = range_lambda0, $
+    range_delta_lambda = range_delta_lambda )
 
-  return, slits
+  return, longslit
 
 END
 
@@ -424,7 +423,7 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
 
   ; create array of slit structures
   slits = []
-  ; trace the edges of the slits using the sky emission lines
+
   for i_slit=0, n_elements(bottom)-1 do begin
 
     ; calculate approximate wavelength range
@@ -438,19 +437,20 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
     pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
     range_delta_lambda = pixel_scale*[0.5,1.5]
 
-    this_slit = { $
-      number:slit_num[i_slit], $
-      name:slit_name[i_slit], $
-      skip:0, $
-      PA:slit_PA[i_slit], $
-      approx_bottom:bottom[i_slit], $
-      approx_top:top[i_slit], $
-      approx_target:target[i_slit], $
-      width_arcsec:slit_width[i_slit], $
-      approx_R:instrument.resolution_slit1arcsec / slit_width[i_slit], $
-      range_lambda0:range_lambda0, $
-      range_delta_lambda:range_delta_lambda }
+    ; create one slit structure
+    this_slit = flame_util_create_slitstructure( $
+      number = slit_num[i_slit], $
+      name = slit_name[i_slit], $
+      PA = slit_PA[i_slit], $
+      approx_bottom = bottom[i_slit], $
+      approx_top = top[i_slit], $
+      approx_target = target[i_slit], $
+      width_arcsec = slit_width[i_slit], $
+      approx_R = instrument.resolution_slit1arcsec / slit_width[i_slit], $
+      range_lambda0 = range_lambda0, $
+      range_delta_lambda = range_delta_lambda )
 
+    ; stack this slit structure with the other slits
     slits = [slits, this_slit]
 
   endfor

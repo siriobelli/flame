@@ -60,7 +60,7 @@ END
 ;*******************************************************************************
 
 
-FUNCTION flame_initialize_template_waverange, instrument, slit_xmm
+FUNCTION flame_initialize_template_waverange, instrument, slit_xlocation
 ;
 ; Return the estimated wavelength range for a slit (in micron).
 ; It usually depends on the instrument settings but also the horizontal location
@@ -97,7 +97,7 @@ camera = (strsplit(instrument.camera, /extract))[0]
       message, 'camera ' + instrument.camera + ' not supported'
 
   ; 3 - rough wavelength range given the known geometry of the slitmask
-  lambda_min = instrument.central_wavelength - (162.0 + slit_xmm) / 162.0 * wavelength_range / 2.0
+  lambda_min = instrument.central_wavelength - (162.0 + slit_xlocation) / 162.0 * wavelength_range / 2.0
   lambda_max = lambda_min + wavelength_range
 
   ; return the wavelength range for this slit
@@ -271,7 +271,7 @@ END
 
 FUNCTION flame_initialize_template_longslit, header, instrument=instrument, input=input
   ;
-  ;
+  ; Create and return one slit structure for the long slit
   ;
 
   ; rough wavelength range (slit should be central: x=0.0)
@@ -288,24 +288,23 @@ FUNCTION flame_initialize_template_longslit, header, instrument=instrument, inpu
 
   ; vertical range to be considered. Default is to cut 10% of pixels on each side
   if array_equal( input.longslit_edge, [0,0]) then $
-    yrange = [205, 1843] else $
+    yrange = [205, 1843] else $   ; for a 2048x2048 detector
     yrange = input.longslit_edge
 
-    ; create slit structure
-    slits = { $
-      number:1, $
-      name:'longslit', $
-      skip:0, $
-      PA:!values.d_nan, $
-      approx_bottom:yrange[0], $
-      approx_top:yrange[1], $
-      approx_target:mean(input.longslit_edge), $
-      width_arcsec:!values.d_nan, $
-      approx_R:instrument.resolution_slit1arcsec, $
-      range_lambda0:range_lambda0, $
-      range_delta_lambda:range_delta_lambda }
+  ; create the slit structure
+  longslit = flame_util_create_slitstructure( $
+    number = 1, $
+    name = 'longslit', $
+    PA = !values.d_nan, $
+    approx_bottom = yrange[0], $
+    approx_top = yrange[1], $
+    approx_target = mean(yrange), $
+    width_arcsec = !values.d_nan, $
+    approx_R = instrument.resolution_slit1arcsec, $
+    range_lambda0 = range_lambda0, $
+    range_delta_lambda = range_delta_lambda )
 
-  return, slits
+  return, longslit
 
 END
 
@@ -317,112 +316,41 @@ END
 
 
 
-FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
+FUNCTION flame_initialize_template_slits, header, instrument=instrument, input=input
 
 ;
-; read the header of a LUCI science frame
+; read the header of a science frame
 ; and for each slit finds or calculate the slit number, name, slit PA,
 ; bottom pixel position, top pixel position, target pixel position,
-; and wavelength at the center of the slit. It return the slits structure.
+; and wavelength at the center of the slit. Return the array of slit structures.
 ;
 
   ; array of structures that will contain the info for each slit
   slit_hdr = []
 
-  i_slit=1
-  while fxpar( header, 'TGT' + string(i_slit, format='(I02)')  + 'NAM', missing='NONE' ) NE 'NONE' do begin
+  ; need to know how the information on the slitmask is stored in the FITS header,
+  ; and extract the relevant information:
 
-    slitnum = string(i_slit, format='(I02)')
+  ; here is a naive example:
+  slit_name = strarr(3)
+  slit_xlocation = fltarr(3)
+  for i_slit=0,2 do begin
+    slit_name[i_slit] = strtrim( fxpar( header, 'TGT' + i_slit + 'NAM' ), 2)
+    slit_xlocation[i_slit] = float(fxpar(header, 'MOS' + i_slit + 'XPO'))
+    ; slit_bottom[i_slit] = ... and so on
+  endfor
 
-    this_slit_hdr = {number : i_slit, $
-    name : strtrim( fxpar( header, 'TGT' + slitnum + 'NAM' ), 2), $
-    shape : fxpar( header, 'MOS' + slitnum + 'SHA'), $
-    width_arcsec : float(fxpar( header, 'MOS' + slitnum + 'WAS')), $
-    length_arcsec : float(fxpar( header, 'MOS' + slitnum + 'LAS')), $
-    angle : float(fxpar( header, 'MOS' + slitnum + 'PA')), $
-    width_mm : float(fxpar(header, 'MOS' + slitnum + 'WMM')), $
-    length_mm : float(fxpar(header, 'MOS' + slitnum + 'LMM')), $
-    x_mm : float(fxpar(header, 'MOS' + slitnum + 'XPO')), $
-    y_mm : float(fxpar(header, 'MOS' + slitnum + 'YPO')) }
-
-    slit_hdr = [ slit_hdr, this_slit_hdr ]
-
-    i_slit++
-
-  endwhile
-
-  ; exclude reference slits
-  slit_hdr = slit_hdr( where( strtrim(slit_hdr.name,2) ne 'refslit', /null) )
-
-  ; identify and exclude the alignment boxes
-  ;---------------------------------------------------------
-
-  ; get the slit widths in arcsec
-  widths = slit_hdr.width_arcsec
-
-  ; sort them in decreasing order
-  sorted_widths = widths[sort(-widths)]
-
-  ; if they all are of the same width, then assume there are no alignment boxes
-  if sorted_widths[0] eq sorted_widths[-1] then $
-    print, 'All slits have the same width of ', sorted_widths[0], ' arcsec. No alignment boxes found.' $
-  else begin
-
-    ; if a maximum width for the science slits was specified, then use that to select the alignment boxes
-    if input.max_slitwidth_arcsec NE 0.0 then begin
-
-      print, n_elements(where(slit_hdr.width_arcsec GT input.max_slitwidth_arcsec, /null)), $
-        ' alignment boxes ( wider than ', cgnumber_formatter(input.max_slitwidth_arcsec, decimals=2), ' arcsec) found.'
-
-      ; exclude alignment boxes
-      slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LE input.max_slitwidth_arcsec, /null) ]
-
-    ; otherwise, select all the slits that have the same width as the wider one
-    endif else begin
-
-      maxwidth = sorted_widths[0]
-
-      print, n_elements(where(sorted_widths eq maxwidth, /null)), $
-        ' alignment boxes (', cgnumber_formatter(maxwidth, decimals=2), ' arcsec) found.'
-
-      ; exclude alignment boxes
-      slit_hdr = slit_hdr[where( slit_hdr.width_arcsec LT maxwidth, /null) ]
-
-    endelse
-
-  endelse
-
-  ; calculate the conversion between arcsec and mm
-  mmtoarcsec = median(slit_hdr.length_arcsec/slit_hdr.length_mm)
-
-
-  ; convert from coordinates in mm to coordinates in pixels
-  ;---------------------------------------------------------
-  N_pixel_y = fxpar(header, 'NAXIS2')
-
-  deltay_arcsec = slit_hdr.y_mm * mmtoarcsec  ; how many arcsec from the mask center; positive going down
-  deltay_pixels = deltay_arcsec / instrument.pixel_scale ; how many pixels from the mask center; positive going down
-  y_pixels = N_pixel_y / 2 - deltay_pixels    ; y-pixel position, usual convention
-
-  ; find the height in pixels of each slit
-  slitheight_pixels = slit_hdr.length_arcsec / instrument.pixel_scale
-
-  ; output interesting values
-  slit_num = slit_hdr.number
-  slit_name = slit_hdr.name
-  slit_PA = slit_hdr.angle
-  bottom = y_pixels - 0.5*slitheight_pixels
-  top = y_pixels + 0.5*slitheight_pixels
-  target = y_pixels
-  slit_width = slit_hdr.width_arcsec
+  ;
+  ; if needed, identify and exclude the alignment boxes here
+  ;
 
   ; create array of slit structures
   slits = []
-  ; trace the edges of the slits using the sky emission lines
+
   for i_slit=0, n_elements(bottom)-1 do begin
 
     ; calculate approximate wavelength range
-    lambda_range = flame_initialize_luci_waverange(instrument, slit_hdr[i_slit].x_mm)
+    lambda_range = flame_initialize_template_waverange(instrument, slit_xlocation[i_slit])
 
     ; range in lambda0 (wavelength of first pixel) to be realistically considered
     lambda_width = lambda_range[1] - lambda_range[0]
@@ -432,20 +360,22 @@ FUNCTION flame_initialize_luci_slits, header, instrument=instrument, input=input
     pixel_scale = (lambda_range[1]-lambda_range[0])/2048.0
     range_delta_lambda = pixel_scale*[0.5,1.5]
 
-    this_slit = { $
-      number:slit_num[i_slit], $
-      name:slit_name[i_slit], $
-      skip:0, $
-      PA:slit_PA[i_slit], $
-      approx_bottom:bottom[i_slit], $
-      approx_top:top[i_slit], $
-      approx_target:target[i_slit], $
-      width_arcsec:slit_width[i_slit], $
-      approx_R:instrument.resolution_slit1arcsec / slit_width[i_slit], $
-      range_lambda0:range_lambda0, $
-      range_delta_lambda:range_delta_lambda }
+    ; create one slit structure
+    this_slit = flame_util_create_slitstructure( $
+      number = i_slit, $
+      name = slit_name[i_slit], $
+      PA = 0.0, $
+      approx_bottom = slit_bottom[i_slit], $
+      approx_top = slit_top[i_slit], $
+      approx_target = slit_target[i_slit], $
+      width_arcsec = slit_width[i_slit], $
+      approx_R = instrument.resolution_slit1arcsec / slit_width[i_slit], $
+      range_lambda0 = range_lambda0, $
+      range_delta_lambda = range_delta_lambda )
 
+    ; stack this slit structure with the other slits
     slits = [slits, this_slit]
+
 
   endfor
 
