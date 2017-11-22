@@ -80,7 +80,7 @@ END
 
 PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 	approx_wavecal=approx_wavecal, linewidth=linewidth, $
-  reflines=reflines, check_shift=check_shift, $
+  reflines=reflines, check_shift=check_shift, verbose=verbose, $
 	speclines=speclines, wavecal=wavecal, plot_title=plot_title
 
 	;
@@ -98,6 +98,7 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
   ;           reflines.trust_lambda: if zero, consider the wavelength value for this line as approximate
   ;           reflines.x, measured x-coordinates for the emission lines in the reference spectrum
   ; check_shift: (input, optional) if set, the x-positions of the identified lines are compared to the x positions of the reference lines.
+  ; verbose: (input, optional) if set, and the fit fails, info on what went wrong is printed
 	; speclines: (output) array of structures with parameters for each OH line
 	; wavecal: (output) array with the wavelength solution
 	; plot_title : (input) string to print as title of the plot
@@ -148,8 +149,9 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 		endif
 
 		; estimate parameters of the Gaussian
-		est_peak = max( median( y[w_fit], 3) , /nan)
-		est_center = w_fit[ n_elements(w_fit)/2 ]
+		est_peak = max( median( y[w_fit], 3), ind_max , /nan)
+		;est_center = w_fit[ n_elements(w_fit)/2 ]
+    est_center = x[w_fit[ind_max]]
 		est_sigma = linewidth
 		est_cont = min( median( y[w_fit], 3) , /nan)
 
@@ -187,7 +189,10 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 	endfor
 
   ; did we find any speclines at all?
-  if n_elements(speclines) eq 0 then return
+  if n_elements(speclines) eq 0 then begin
+    if keyword_set(verbose) then print, 'No spectral lines were found!'
+    return
+  endif
 
   ; compare the detections to the reference positions,
   ; to make sure that the fit did not jump to an adjacent emission line
@@ -211,8 +216,27 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
   speclines_trust = speclines[where(speclines.trust_lambda eq 1, /null)]
   speclines_donttrust = speclines[where(speclines.trust_lambda eq 0, /null)]
 
+  ; charsize for the plots
+	ch = 0.8
+
+	; panel 1: plot the spectrum
+	erase
+	cgplot, x, y, charsize=ch, xsty=1, xtit='', ytit='observed flux', title=plot_title, $
+		position = [0.15, 0.70, 0.95, 0.96], xtickformat="(A1)", xra=[x[0], x[-1]], /nodata
+
+  ; show the OH lines that were identified
+	for i_line=0, n_elements(speclines_trust)-1 do cgplot, speclines_trust[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='red'
+  for i_line=0, n_elements(speclines_donttrust)-1 do cgplot, speclines_donttrust[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='blk4'
+
+	; show the spectrum on top, for clarity
+	cgplot, x, y, /overplot
+
 	; if too few lines were found, then no reliable wavelength solution exists
 	if n_elements(speclines_trust) LT fuel.settings.findlines_Nmin_lines then begin
+    if keyword_set(verbose) then begin
+      print, 'Only ', n_elements(speclines_trust), ' lines were found,'
+      print, 'and fuel.settings.findlines_Nmin_lines = ', fuel.settings.findlines_Nmin_lines
+    endif
 		speclines = !NULL
 		return
 	endif
@@ -226,21 +250,6 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 
 	; calculate polynomial solution
 	poly_wl = poly(x, wavesol_coeff)
-
-	; charsize
-	ch = 0.8
-
-	; panel 1: plot the spectrum
-	erase
-	cgplot, x, y, charsize=ch, xsty=1, xtit='', ytit='observed flux', title=plot_title, $
-		position = [0.15, 0.70, 0.95, 0.96], xtickformat="(A1)", xra=[x[0], x[-1]], /nodata
-
-	; show the OH lines that were identified
-	for i_line=0, n_elements(speclines_trust)-1 do cgplot, speclines_trust[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='red'
-  for i_line=0, n_elements(speclines_donttrust)-1 do cgplot, speclines_donttrust[i_line].x + [0,0], [-2,2]*max(abs(y)), /overplot, color='blk4'
-
-	; show the spectrum on top, for clarity
-	cgplot, x, y, /overplot
 
 	; panel 2: show the wavelength solution
 	cgplot, speclines_trust.x, speclines_trust.lambda, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
@@ -404,12 +413,14 @@ PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
 
     ; fit the emission lines and find the wavelength solution
   	flame_findlines_fitskylines, fuel=fuel, x=pix_axis, y=central_skyspec, $
-  		approx_wavecal=lambda_axis, linewidth=linewidth, reflines=reflines_initial, $
+  		approx_wavecal=lambda_axis, linewidth=linewidth, reflines=reflines_initial, verbose=1, $
   		speclines=speclines_thisloop, wavecal=lambda_axis_output, plot_title='central rows / ' + strtrim(i_loop,2)
 
     ; check that lines were identified
-    if n_elements(speclines_thisloop) eq 0 then $
-      message, 'No lines were identified in the spectrum extracted from the central rows!'
+    if n_elements(speclines_thisloop) eq 0 then begin
+      cgps_close
+      message, 'Not enough lines were identified in the spectrum extracted from the central rows!'
+    endif
 
     ; update the wavelength solution
     lambda_axis = lambda_axis_output
