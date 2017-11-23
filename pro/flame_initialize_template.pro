@@ -21,36 +21,21 @@ FUNCTION flame_initialize_template_resolution, instrument
 
 ; for example:
 
-; get the first part of the grating name
-grating = (strsplit(instrument.grating, /extract))[0]
+; get the band in which the observations were taken
+filter = instrument.filter
 
-; get the first part of the camera name
-camera = (strsplit(instrument.camera, /extract))[0]
-
-; 1 - look up the resolution for this grating ----------------------------------
-
-  ; grating G210
-  if grating eq 'G210' then case instrument.grating_order of
-    '2': R = 5000. ; K
-    '3': R = 5900. ; H
-    '4': R = 5800. ; J
-    '5': R = 5400. ; z
-    else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
+; look up the resolution for this band, assuming a 1" slit width ---------------
+  case filter of
+    'K': R = 3700.
+    'H': R = 3600.
+    'J': R = 3500.
+    'Y': R = 3400.
+    else: message, filter + ': filter not supported'
   endcase
 
-  ; check whether no grating has been found
-  if R EQ !NULL then message, 'grating ' + instrument.grating + ' not supported'
-
-  ; convert to the resolution for a 1"-wide slit:
-  R_1arcsec = R / 2.0
-
-  ; 2 - correct for different cameras ------------------------------------------
-  if camera ne 'N1.8' then $
-    if camera eq 'N3.75' then R_1arcsec *= 2.1 else $
-      message, 'camera ' + instrument.camera + ' not supported'
-
   ; return the spectral resolution
-  return, R_1arcsec
+  return, R
+
 
 END
 
@@ -71,34 +56,41 @@ FUNCTION flame_initialize_template_waverange, instrument, slit_xlocation
 
 ; for example:
 
-; get the first part of the grating name
-grating = (strsplit(instrument.grating, /extract))[0]
+  ; get the band in which the observations were taken
+  filter = instrument.filter
 
-; get the first part of the camera name
-camera = (strsplit(instrument.camera, /extract))[0]
-
-; 1 - look up the wavelength range (in um) covered by the detector
-
-  ; grating G210
-  if grating eq 'G210' then case instrument.grating_order of
-    '2': wavelength_range = 0.328 ; K
-    '3': wavelength_range = 0.202 ; H
-    '4': wavelength_range = 0.150 ; J
-    '5': wavelength_range = 0.124 ; z
-    else: message, instrument.grating + ': order ' + instrument.grating_order + ' not supported'
+  ; 1 - look up the central wavelength (in um) for a centered slit -------------
+  case filter of
+    'K': central_wavelength = 2.2
+    'H': central_wavelength = 1.6
+    'J': central_wavelength = 1.2
+    'Y': central_wavelength = 1.0
+    else: message, filter + ': filter not supported'
   endcase
 
-  ; check whether no grating has been found
-  if wavelength_range EQ !NULL then message, 'grating ' + instrument.grating + ' not supported'
+  ; 2 - look up the dispersion, in A/pixel -------------------------------------
+  case filter of
+    'K': dispersion = 1.5
+    'H': dispersion = 1.5
+    'J': dispersion = 1.5
+    'Y': dispersion = 1.5
+    else: message, filter + ': filter not supported'
+  endcase
 
-; 2 - correct for the camera (scale by the ratio of pixel scales)
-  if camera NE 'N1.8' then $
-    if camera eq 'N3.75' then wavelength_range *= 0.47 else $
-      message, 'camera ' + instrument.camera + ' not supported'
+  ; 3 - look up the geometric shift, in A/mm -----------------------------------
+  case filter of
+    'K': shift = 7.0
+    'H': shift = 7.0
+    'J': shift = 7.0
+    'Y': shift = 7.0
+    else: message, filter + ': filter not supported'
+  endcase
 
-  ; 3 - rough wavelength range given the known geometry of the slitmask
-  lambda_min = instrument.central_wavelength - (162.0 + slit_xlocation) / 162.0 * wavelength_range / 2.0
-  lambda_max = lambda_min + wavelength_range
+
+  ; 4 - rough wavelength range given the known geometry of the instrument ------
+  lambda_center = central_wavelength - shift * slit_xlocation
+  lambda_min = lambda_center - 1024.0*dispersion
+  lambda_max = lambda_center + 1024.0*dispersion
 
   ; return the wavelength range for this slit
   return, [lambda_min, lambda_max]
