@@ -591,8 +591,11 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
   ; first convert from ADU to electrons
   frame_electrons = frame * fuel.instrument.gain
 
-  ; find the exposure time
+  ; find the exposure time: try EXPTIME first, then TRUITIME
   exptime = fxpar(header, 'EXPTIME', missing=-1.0)
+  if exptime EQ -1.0 then exptime = fxpar(header, 'TRUITIME', missing=-1.0)
+
+  ; if no valid exptime is found, set it to 1 second
   if exptime EQ -1.0 then begin
     print, 'EXPTIME not found; setting to 1 second.'
     exptime = 1.0
