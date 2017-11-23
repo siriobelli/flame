@@ -101,7 +101,7 @@ END
 
 PRO flame_cutout_oneslit, fuel, i_slit
 
-  print,'Working on slit ', fuel.slits[i_slit].name, ' - ', fuel.slits[i_slit].number
+  print,'Working on slit ', fuel.slits[i_slit].number, ' - ', fuel.slits[i_slit].name
 
   ; create directory (and delete previous one if present)
   slitdir = fuel.util.intermediate_dir + $
