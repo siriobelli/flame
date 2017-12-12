@@ -1,6 +1,6 @@
-\documentclass[a4paper, notitlepage]{article}
+\documentclass[a4paper]{article}
 
-\usepackage{hyperref}
+\usepackage[colorlinks=false, linktocpage=true]{hyperref}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{listings}
@@ -13,15 +13,25 @@
 \newcommand{\fuel}{\texttt{fuel}}
 \newcommand{\inp}{\texttt{input}}
 
+% define the font for file names
+\newenvironment{filenamefont}{\fontfamily{pcr}\selectfont}{\par}
+\DeclareTextFontCommand{\filename}{\filenamefont}
+
+% define the font for settings and structures
+\newenvironment{codefont}{\fontfamily{cmtt}\selectfont}{\par}
+\DeclareTextFontCommand{\code}{\codefont}
+
+
 \begin{document}
 
-\lstset{language=IDL}
+%\lstset{language=IDL}
 
-\title{\flame\ user manual}
+\title{\flame\ User Manual}
 \author{Sirio Belli}
 \maketitle
 
-
+\newpage
+\tableofcontents
 
 % ***********************************************************************************************
 % ***********************************************************************************************
@@ -29,13 +39,13 @@
 % ***********************************************************************************************
 % ***********************************************************************************************
 
-
+\newpage
 \section{Introduction}
-\label{sec:introudction}
+\label{sec:introduction}
 
 \flame\ is a pipeline for reducing near-infrared multi-object spectroscopic data, written in IDL. The pipeline design and the algorithms used are described in Belli, Contursi \& Davies (2017), which users should read before reading the present manual. Please cite that paper in your work if you made use of \flame.
 
-Although created specifically for the LUCI instrument at LBT, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. For simplicity, the present document describes in detail the reduction of LUCI data only.
+Although created specifically for the LUCI instrument at the Large Binocular Telescope, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. For simplicity, the present document describes in detail the reduction of LUCI data. Section \ref{sec:instruments} explains how to use \flame\ with other supported instruments, and how it is possible to implement support for new instruments.
 
 For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}.
 
@@ -94,7 +104,7 @@ Download \flame\ from \url{http://siriobelli.github.io/flame/}. You can either s
 
 Go to the directory that you want to use for the reduction of a data set (it is recommended to create a new directory for this purpose). Then:
 \begin{itemize}
-\item Copy the driver file (\texttt{flame\_driver\_luci.pro}) from the \texttt{flame/pro/} directory to the current directory. If you want to see all the advanced options, use the extended driver file instead (\texttt{flame\_driver\_complete.pro}).
+\item Copy the appropriate driver file (for LUCI, \texttt{flame\_driver\_luci.pro}) from the \texttt{flame/drivers/} directory to the current directory. If you want to see all the advanced options, use the extended driver file instead\\ (\texttt{flame\_driver\_complete.pro}).
 \item Create a text file (e.g., \texttt{science.txt}) with, in each line, the full name, including the absolute path, of a raw science frame (either FITS files or gzipped FITS files).
 \item \emph{(optional)} Create additional text files with the names of the calibration frames (e.g., \texttt{darks.txt}, \texttt{flats.txt}, etc.)
 \end{itemize}
@@ -337,12 +347,14 @@ Once the first part of the driver file has been edited, the data reduction is fu
 \end{lstlisting}
 Another possibility, which allows some interaction and testing, is to copy line-by-line the content of the driver file onto an interactive IDL session. In this way one can explore the output files and the fuel structure after every step.
 
-The second part of the driver file contains fourteen steps or modules. Every module is an IDL routine whose name starts with \texttt{flame\_} and which is saved in a .pro file with the same name in the directory flame/pro/. All modules accept (and require) only one argument, which is the \fuel\ structure, so that the IDL code for each module looks the same:
+The driver file contains fourteen steps or modules. Every module is an IDL routine whose name starts with \code{flame\_} and which is saved in a .pro file with the same name in the directory \filename{flame/pro/}. All modules accept (and require) only one argument, which is the \fuel\ structure, so that the IDL code for each module looks the same:
 \begin{lstlisting}
 flame_modulename, fuel
 \end{lstlisting}
 
 Every module edits the fuel structure and/or outputs files in the intermediate directory. Only the last two modules, which create the final results, save the output files in the output directory.
+
+In this section for each module we briefly describe its goal, the output produced, and how to solve potential problems encountered while running \flame.
 
 
 
@@ -350,7 +362,7 @@ Every module edits the fuel structure and/or outputs files in the intermediate d
 \subsection{\texttt{flame\_diagnostics}}
 \label{sec:diagnostics}
 
-The first step produces important diagnostics which will be used by the other modules. These diagnostics can also be helpful to the user to assess the quality of the observations, and can be run in real time while observing, ideally after every new frame or frame pair has been taken.
+The first step produces important diagnostics which will be used by other modules. These diagnostics can also be helpful to the user to assess the quality of the observations, and can be run in real time while observing, ideally after every new frame or frame pair has been taken.
 
 \begin{figure}[htbp]
 \centering
@@ -359,12 +371,24 @@ The first step produces important diagnostics which will be used by the other mo
 \label{fig:diagnostics}
 \end{figure}
 
-Starting with the y coordinates specified by the user in fuel.startrace\_y\_pos, this module detects the reference star position on each frame, and identifies which frames belong to the $A$ and which to the $B$ position (and assign an $X$ position when no star trace is found). Then, for each frame a Gaussian profile is fit to the star trace, from which the flux, vertical position and FWHM are measured. In addition, the airmass value is read from the FITS header of each frame. If the fits fail, the user can change the horizontal and the vertical pixel range used to extract the star trace.
+Starting with the y coordinates specified by the user in \code{fuel.startrace\_y\_pos}, this module detects the reference star position on each frame, and identifies which frames belong to the $A$ and which to the $B$ position (and assigns an $X$ position when no star trace is found). Then, for each frame a Gaussian profile is fit to the star trace, from which the flux, vertical position and FWHM are measured. In addition, the airmass value is read from the FITS header of each frame.
 
-All these quantities are saved in the substructure fuel.diagnostics. They are also output in the ASCII file diagnostics.txt, and plotted as a function of the frame number in the file diagnostics.ps. One example of such file is shown in Figure \ref{fig:diagnostics}. Because of the dithering, the vertical position is shown in different panels for the $A$ and the $B$ frames. If there are multiple frames with same frame number, which can happen when combining data from different nights, then the x axis of the plot will show a sequential number (but the original frame numbers are used in the ASCII file).
+All these quantities are saved in the substructure \code{fuel.diagnostics} and plotted as a function of the frame number in the file \filename{diagnostics.ps}. One example of such file is shown in Figure \ref{fig:diagnostics}. Because of the dithering, the vertical position is shown in different panels for the $A$ and the $B$ frames.
 
 The diagnostic plots can be used to judge the trend of transmission (including the effect of cloud cover), seeing, and drift. In addition to help the user make informed decisions while observing, these measurements are also useful to identify the bad frames that should be excluded from the final data reduction.
 
+\medskip
+\noindent
+\textbf{Outputs.} The main output file is \filename{diagnostics.ps}. The same information is also available in tabular form in \filename{diagnostics.txt}. It is a good idea to check that each frame has been assigned to the correct nodding position, and that the measured seeing, flux variation, and position are reasonable. If one or more frames have unexpected values, additional plots written to \filename{startrace\_identify\_AB.ps} and \filename{startraces.ps} should be checked.
+
+\medskip
+\noindent
+\textbf{Troubleshooting.} If some of the fits to the stellar trace fail, there are three things that the user can do to improve the fits:
+\begin{enumerate}
+\item The input values (\code{input.star\_y\_A} and \code{input.star\_y\_B}) can be slightly adjusted. Particularly if the first frame was used as a reference, and there is substantial drift among frames, choosing a value that is more representative of all frames can help.
+\item The stellar trace is extracted from a relatively narrow range of $x$ pixels, which can be changed via \texttt{settings.star\_x\_range}. Sometimes the stellar spectrum only covers part of the detector, for example if the slit was placed at the left or right edge of the mask. If sky lines are strong, it is advisable to choose a relatively clear, narrow range; if the star is very faint, it may be better to use a wider range.
+\item The vertical window used to extract the stellar profile can also be changed, via \texttt{settings.star\_y\_window}. The stellar trace should be within this window in all frames, so a wider window should be used when dealing with large drift or dithering. Sometimes fits can fail because the spatial profile is disturbed by the presence of the slit edge; in these cases the size of the window should be decreased.
+\end{enumerate}
 
 
 % ---------------------------------------------------
@@ -374,6 +398,11 @@ The second step produces a FITS file which is the difference of a stack of the $
 
 The sole goal of this module is to allow a quick look at the data. This step can be skipped with no consequences for the remaining parts of the data reduction.
 
+This step and the previous ones can be run on virtually any data set without any knowledge on the instrument except for the spatial pixel scale. This minimal version of \flame, designed for on-the-fly use, is described in Section \ref{sec:minimal}.
+
+\medskip
+\noindent
+\textbf{Outputs.} The only output is the file named \filename{quickstack\_A-B.fits} or similar (according to the nodding pattern).
 
 
 % ---------------------------------------------------
@@ -512,24 +541,62 @@ Finally, this module performs a quality check on the reduced data set. If presen
 
 
 
-% ***********************************************************************************************
-% ***********************************************************************************************
-%									5. TROUBLESHOOTING
-% ***********************************************************************************************
-% ***********************************************************************************************
-
 
 % ***********************************************************************************************
 % ***********************************************************************************************
-%									6. OTHER INSTRUMENTS
+%									5. OTHER INSTRUMENTS
 % ***********************************************************************************************
 % ***********************************************************************************************
 
-% \section{Other instruments}
-% \label{sec:other_instruments}
-%
-% \subsection{Keck LRIS}
-%
+\section{Supported Instruments}
+\label{sec:instruments}
+
+All the \flame\ modules described in Section \ref{sec:data_reduction} are written in an instrument-independent way, and can be used on nearly any optical or near-infrared data set. The instrument-specific part is relegated to the initialization module. When running \flame, the correct initialization module must be called, and those options that are required and/or relevant to the specific instrument must be set. To simplify this procedure, a different driver file is available for each instrument, although in principle a skilled user should be able to easily write the correct driver for any supported instrument. All driver files are split into three parts:
+\begin{enumerate}
+  \item The inputs are set, in slightly different ways for different instruments.
+  \item The specific initialization module is then run and the \fuel\ structure is created.
+  \item The data reduction modules are called. This part is identical for all drivers.
+\end{enumerate}
+
+The list of files in the \texttt{flame/drivers/} directory shows what instruments are supported. Currently, this directory contains the following files:
+\begin{itemize}
+  \item[] \texttt{flame\_driver\_luci.pro}: driver for reducing data from the LUCI1 and LUCI2 instruments at the Large Binocular Telescope.
+  \item[] \texttt{flame\_driver\_lris.pro}: driver for reducing data from the blue and red channel of LRIS at the Keck telescope.
+  \item[] \texttt{flame\_driver\_complete.pro}: generic driver that contains all the possible options for the \input\ structure and for the settings in the \fuel\ structure; it can be used as a reference by copying the relevant lines and pasting them on the actual driver.
+  \item[] \texttt{flame\_driver\_minimal.pro}: minimalistic driver that can be used to run the first two modules (diagnsotics and quick stack) on any data set, including instruments that are not supported.
+\end{itemize}
+
+We describe each supported instrument, and give indications on how to implement support for new instruments, in the remainder of this section.
+
+
+\subsection{LUCI at LBT}
+
+The reduction of LUCI data is described throughout Section \ref{sec:setup} and \ref{sec:data_reduction}, and no further discussion for this instrument is needed.
+
+
+\subsection{LRIS at Keck}
+
+
+\subsection{MOSFIRE at Keck}
+
+\emph{Work in progress.}
+
+
+
+\subsection{Diagnostics for data from unsupported instruments}
+\label{sec:minimal}
+
+
+\subsection{How to add support for a new instrument}
+
+
+
+
+
+
+
+
+
 
 
 \end{document}
