@@ -386,7 +386,7 @@ PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
   reflines_initial.lambda = line_list
   reflines_initial.trust_lambda = line_trust
 
-  ; calcolate typical wavelength step of one pixel
+  ; calculate typical wavelength step of one pixel
   lambda_step = median( approx_lambda_axis - shift(approx_lambda_axis, 1) )
 
   ; approximate sky line width
@@ -514,6 +514,288 @@ PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
 	cgPS_close
 
 END
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+
+PRO flame_findlines_diagnostics, fuel, slit
+
+  ;
+  ; Produce diagnostic plots to check whether the lines were properly identified
+  ; in all frames. Assumes that sky lines were used
+  ;
+
+  ; number of frames
+  Nfr = n_elements(slit.cutouts)
+
+  ; start plot
+	cgPS_open, file_dirname(slit.cutouts[0].filename, /mark_directory) + 'line_identification.ps', /nomatch
+
+
+	; take care of the frame numbers for the x axis titles (see also flame_diagnostics)
+	;----------------------------------------------------------------------------------
+
+  ; these are the values used to label the x axis
+  xtickname = strtrim(fix(fuel.diagnostics.frame_num), 2)
+  xtickv = indgen(Nfr)
+  xminor = 1
+
+  ; if there are too many frames, only label some of them
+  while n_elements(xtickv) GT 18 do begin
+
+    ; make the array of subindices used to select every other element
+    if n_elements(xtickname) mod 2 eq 0 then $
+      subset = 2*indgen(n_elements(xtickname)/2) else $   ; if odd
+      subset = 2*indgen((1+n_elements(xtickname))/2)      ; if even, select also the last element
+
+    ; keep only every other element for the labeling of the axis
+    xtickname = xtickname[ subset ]
+    xtickv = xtickv[ subset ]
+
+    ; therefore, need to double the number of minor tick marks between two major marks
+    xminor *= 2
+
+  endwhile
+
+
+	; read in and stack together all the speclines from all cutouts
+	;----------------------------------------------------------------------------------
+
+  ; read in the first specline
+  template = (*slit.cutouts[0].speclines)[0]
+
+  ; expand the structure by adding the frame index
+  new_template = create_struct('frame', 0, template)
+
+  ; set all fields to zero, just to be sure
+  for i_tag=0, n_tags(new_template)-1 do new_template.(i_tag) = 0.0
+
+  ; make the new, extended array of speclines
+  speclines_plus = []
+
+  ; for each cutout, extract the speclines and add them to the array
+  for i_frame=0, Nfr-1 do begin
+
+    ; speclines from this frame
+    speclines_thisframe = *slit.cutouts[i_frame].speclines
+
+    ; copy into new structure
+    speclines_plus_thisframe = replicate(new_template, n_elements(speclines_thisframe))
+    struct_assign, speclines_thisframe, speclines_plus_thisframe
+
+    ; set the frame index
+    speclines_plus_thisframe.frame = i_frame
+
+    ; save in final array
+    speclines_plus = [speclines_plus, speclines_plus_thisframe]
+
+  endfor
+
+
+
+  ; PLOT 1: number of identified lines for each frame
+	;----------------------------------------------------------------------------------
+
+  ; empty arrays with number of identified lines
+  count_frame = indgen(Nfr)
+  count_pixels = intarr(Nfr)
+  count_lines = intarr(Nfr)
+  count_lines_50p = intarr(Nfr)
+  count_lines_80p = intarr(Nfr)
+  count_lines_90p = intarr(Nfr)
+
+  ; loop through each frame and count identified lines
+  for i_frame=0, Nfr-1 do begin
+
+    ; all speclines for this frame
+    speclines = *slit.cutouts[i_frame].speclines
+
+    ; identify unique wavelengths
+    line_lambda = speclines.lambda
+    uniq_lambda = line_lambda[UNIQ(line_lambda, SORT(line_lambda))]
+
+    ; of these, which ones have at least 50% of pixels identified?
+    line_pixels = intarr(n_elements(uniq_lambda))
+    for i_line=0, n_elements(uniq_lambda)-1 do $
+      line_pixels[i_line] = n_elements( where(line_lambda eq uniq_lambda[i_line], /null) )
+
+    count_pixels[i_frame] = n_elements(speclines)
+    count_lines[i_frame] = n_elements(uniq_lambda)
+    count_lines_50p[i_frame] = n_elements(where(line_pixels GE 0.50*slit.height))
+    count_lines_80p[i_frame] = n_elements(where(line_pixels GE 0.80*slit.height))
+    count_lines_90p[i_frame] = n_elements(where(line_pixels GE 0.90*slit.height))
+
+  endfor
+
+  ; plot number of identified lines
+	cgplot, count_frame, count_lines, psym=-16, symsize=1, charsize=1, color='black', $
+		ytit='number of identified lines', $
+		xra=[-1, Nfr], /xsty, xtit='frame number', $
+    xtickv=xtickv, xticks=n_elements(xtickv)-1, xtickname=xtickname, xminor=xminor
+
+  ; overplot number of lines with at least xx% of pixels identified
+  cgplot, count_frame, count_lines_50p, psym=-16, symsize=1, charsize=1, color='red8', /overplot
+  cgplot, count_frame, count_lines_80p, psym=-16, symsize=1, charsize=1, color='red6', /overplot
+  cgplot, count_frame, count_lines_90p, psym=-16, symsize=1, charsize=1, color='red4', /overplot
+
+  ; legend
+  cgtext, 0.2, 0.30, 'number of lines detected', charsize=1, /normal, color='black'
+  cgtext, 0.2, 0.26, 'number of lines covering more than 50% of the slit', charsize=1, /normal, color='red8'
+  cgtext, 0.2, 0.22, 'number of lines covering more than 80% of the slit', charsize=1, /normal, color='red6'
+  cgtext, 0.2, 0.18, 'number of lines covering more than 90% of the slit', charsize=1, /normal, color='red4'
+
+  ; check if some of the frames are suspicious
+  meanclip, count_lines_50p, mean_50p, sigma_50p, clipsig=2.0
+  w_out_50p = where( mean_50p - count_lines_50p GT (3.0*sigma_50p > 2.0), /null)
+
+  meanclip, count_lines_90p, mean_90p, sigma_90p, clipsig=2.0
+  w_out_90p = where( mean_90p - count_lines_90p GT (3.0*sigma_90p > 2.0), /null)
+
+  if w_out_50p NE !NULL or w_out_90p NE !NULL then begin
+    print, '*********************'
+    print, ''
+    print, 'WARNING'
+    print, 'Some frames may have bad line identification: '
+    if w_out_50p NE !NULL then print, 'low number of lines identified: ', strtrim(fix(fuel.diagnostics[w_out_50p].frame_num), 2)
+    if w_out_90p NE !NULL then print, 'low number of lines fully traced:', strtrim(fix(fuel.diagnostics[w_out_90p].frame_num), 2)
+    print, ''
+    print, '*********************'
+  endif
+
+
+  ; PLOT 2: properties for three representative lines
+	;----------------------------------------------------------------------------------
+
+  ; number of pixels along the x direction
+  Npix = n_elements(*slit.rough_skylambda)
+  if Npix eq 0 then Npix = n_elements(*slit.rough_arclambda)
+
+  ; identify "best" line in each third of the slit
+  bestlines = [-1d, -1d, -1d]
+  bins = [0.0, 0.33, 0.66, 1.0]
+
+  for j=0,2 do begin
+
+    ; select all lines in this third of the slit
+    w_third = where(speclines_plus.x GE bins[j]*Npix AND speclines_plus.x LT bins[j+1]*Npix, /null)
+    if w_third eq !NULL then continue
+
+    ; identify unique lines
+    line_lambda = speclines_plus[w_third].lambda
+    uniq_lambda = line_lambda[UNIQ(line_lambda, SORT(line_lambda))]
+
+    ; count the number of frames with such line
+    uniq_framecount = intarr( n_elements(uniq_lambda) )
+    uniq_totlines = intarr( n_elements(uniq_lambda) )
+    for i_line=0, n_elements(uniq_lambda)-1 do begin
+      frames = speclines_plus[where(speclines_plus.lambda eq uniq_lambda[i_line])].frame
+      uniq_framecount[i_line] = n_elements(frames[UNIQ(frames, SORT(frames))])
+      uniq_totlines[i_line] = n_elements(speclines_plus[where(speclines_plus.lambda eq uniq_lambda[i_line])])
+    endfor
+
+    ; choose the line present in the largest number of frames
+    w_line = where(uniq_framecount eq max(uniq_framecount), complement=w_not, /null)
+
+    ; if there is a tie, then count the total number of identifications
+    if n_elements(w_line) GT 1 then begin
+      uniq_totlines[w_not] = 0  ; make sure we only consider the lines in the tie
+      w_line = $
+        where(uniq_framecount eq max(uniq_framecount) AND uniq_totlines eq max(uniq_totlines), /null)
+    endif
+
+    ; save the best line in this third
+    bestlines[j] = uniq_lambda[w_line[0]]
+
+  endfor
+
+  ; check that lines exist; otherwise duplicate them
+  w_nogood = where(bestlines LT 0.0, /null, complement=w_good)
+  if w_nogood NE !NULL then bestlines[w_nogood] = bestlines[w_good[0]]
+
+  ; select speclines for each of the best lines (labeled A, B, and C)
+  speclines_A = speclines_plus[where(speclines_plus.lambda eq bestlines[0], /null)]
+  speclines_B = speclines_plus[where(speclines_plus.lambda eq bestlines[1], /null)]
+  speclines_C = speclines_plus[where(speclines_plus.lambda eq bestlines[2], /null)]
+
+  ; make a 2D array with all the identification in all frames
+  lineshapes_A = dblarr(Nfr, max(speclines_plus.y)) + !values.d_NaN
+  lineshapes_A[speclines_A.frame, speclines_A.y] = speclines_A.x
+  lineshapes_B = dblarr(Nfr, max(speclines_plus.y)) + !values.d_NaN
+  lineshapes_B[speclines_B.frame, speclines_B.y] = speclines_B.x
+  lineshapes_C = dblarr(Nfr, max(speclines_plus.y)) + !values.d_NaN
+  lineshapes_C[speclines_C.frame, speclines_C.y] = speclines_C.x
+
+  ; construct the median profiles
+  median_A = median(lineshapes_A, dimension=1)
+  median_B = median(lineshapes_B, dimension=1)
+  median_C = median(lineshapes_C, dimension=1)
+
+  ; calculate distance to median profile
+  distance_to_median_A = lineshapes_A - median_A ## replicate(1, Nfr)
+  distance_to_median_B = lineshapes_B - median_B ## replicate(1, Nfr)
+  distance_to_median_C = lineshapes_C - median_C ## replicate(1, Nfr)
+
+
+  ; show all line identifications and line A, B, C
+  cgplot, speclines_plus.x, speclines_plus.y, psym=16, symsize=0.5, color='blk5', $
+    title='all line identifications', charsize=1, xtit='x', ytit='y'
+  cgplot, median_A, indgen(max(speclines_plus.y)), /overplot, color='forest green', thick=5
+  cgplot, median_B, indgen(max(speclines_plus.y)), /overplot, color='red', thick=5
+  cgplot, median_C, indgen(max(speclines_plus.y)), /overplot, color='blue', thick=5
+
+  erase
+  ; plot the shape of the A line for each frame
+  cgplot, speclines_A.x, speclines_A.y, /ynozero, /nodata, charsize=1.5, layout=[3,1,1], $
+    xtitle='x', ytitle='y', title='line A: ' + strtrim(bestlines[0], 2) + ' um'
+  for i=0,Nfr-1 do cgplot, lineshapes_A[i,*], indgen(max(speclines_plus.y)), /overplot, thick=2
+  cgplot, median_A, indgen(max(speclines_plus.y)), /overplot, color='forest green', thick=5
+
+  ; plot the shape of the B line for each frame
+  cgplot, speclines_B.x, speclines_B.y, /ynozero, /nodata, charsize=1.5, layout=[3,1,2], $
+    xtitle='x', ytitle='y', title='line B: ' + strtrim(bestlines[1], 2) + ' um'
+  for i=0,Nfr-1 do cgplot, lineshapes_B[i,*], indgen(max(speclines_plus.y)), /overplot, thick=2
+  cgplot, median_B, indgen(max(speclines_plus.y)), /overplot, color='red', thick=5
+
+  ; plot the shape of the C line for each frame
+  cgplot, speclines_C.x, speclines_C.y, /ynozero, /nodata, charsize=1.5, layout=[3,1,3], $
+    xtitle='x', ytitle='y', title='line C: ' + strtrim(bestlines[2], 2) + ' um'
+  for i=0,Nfr-1 do cgplot, lineshapes_C[i,*], indgen(max(speclines_plus.y)), /overplot, thick=2
+  cgplot, median_C, indgen(max(speclines_plus.y)), /overplot, color='blue', thick=5
+
+  erase
+  ; show distance from median profile
+  tot_x = [indgen(Nfr), indgen(Nfr), indgen(Nfr)] ; these are just to set the area to plot
+  tot_y = [ mean(distance_to_median_A, dimension=2, /nan), $
+    mean(distance_to_median_B, dimension=2, /nan), mean(distance_to_median_C, dimension=2, /nan)]
+  cgplot, tot_x, tot_y, /nodata, charsize=0.8, $
+    ytit='average of distance to median profile (pix)', layout=[1,2,1], $
+		xra=[-1, Nfr], /xsty, xtit='frame number', $
+    xtickv=xtickv, xticks=n_elements(xtickv)-1, xtickname=xtickname, xminor=xminor
+  cgplot, indgen(Nfr), mean(distance_to_median_A, dimension=2, /nan), psym=-16, /overplot, color='forest green'
+  cgplot, indgen(Nfr), mean(distance_to_median_B, dimension=2, /nan), psym=-16, /overplot, color='red'
+  cgplot, indgen(Nfr), mean(distance_to_median_C, dimension=2, /nan), psym=-16, /overplot, color='blue'
+  cgplot, [-1,Nfr], [0,0], /overplot, linestyle=2
+
+  ; show stddev
+  tot_y = [ stddev(distance_to_median_A, dimension=2, /nan), $
+    stddev(distance_to_median_B, dimension=2, /nan), stddev(distance_to_median_C, dimension=2, /nan)]
+  cgplot, tot_x, tot_y, /nodata, charsize=0.8, $
+    ytit='std. dev. of distance to median profile (pix)', layout=[1,2,2], $
+    xra=[-1, Nfr], /xsty, xtit='frame number', $
+    xtickv=xtickv, xticks=n_elements(xtickv)-1, xtickname=xtickname, xminor=xminor
+  cgplot, indgen(Nfr), stddev(distance_to_median_A, dimension=2, /nan), psym=-16, /overplot, color='forest green'
+  cgplot, indgen(Nfr), stddev(distance_to_median_B, dimension=2, /nan), psym=-16, /overplot, color='red'
+  cgplot, indgen(Nfr), stddev(distance_to_median_C, dimension=2, /nan), psym=-16, /overplot, color='blue'
+
+
+  cgps_close
+
+END
+
 
 
 ;*******************************************************************************
@@ -661,6 +943,9 @@ PRO flame_findlines, fuel
   				endif
 
   		endfor
+
+      ; diagnostic plot to check the line identification
+      flame_findlines_diagnostics, fuel, this_slit
 
     endelse
 
