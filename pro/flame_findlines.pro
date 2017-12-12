@@ -78,9 +78,10 @@ END
 
 
 
-PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
+PRO flame_findlines_fitskylines, x=x, y=y, $
 	approx_wavecal=approx_wavecal, linewidth=linewidth, $
-  reflines=reflines, check_shift=check_shift, verbose=verbose, $
+  reflines=reflines, check_shift=check_shift, Nmin_lines=Nmin_lines, fit_window=fit_window, $
+  poly_degree=poly_degree, verbose=verbose, $
 	speclines=speclines, wavecal=wavecal, plot_title=plot_title
 
 	;
@@ -98,14 +99,23 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
   ;           reflines.trust_lambda: if zero, consider the wavelength value for this line as approximate
   ;           reflines.x, measured x-coordinates for the emission lines in the reference spectrum
   ; check_shift: (input, optional) if set, the x-positions of the identified lines are compared to the x positions of the reference lines.
+  ; Nmin_lines: (input, optional) minimum number of lines for the fit to be valid (default: 3)
+  ; fit_window: (input, optional) window to be used for fitting each lines (default: 8 times the linewidth)
+  ; poly_degree: (input, optional) polynomial degree to be used for the wavelength solution (default: 5)
   ; verbose: (input, optional) if set, and the fit fails, info on what went wrong is printed
 	; speclines: (output) array of structures with parameters for each OH line
 	; wavecal: (output) array with the wavelength solution
 	; plot_title : (input) string to print as title of the plot
 	;
 
+  ; set default values
+  if ~keyword_set(Nmin_lines) then Nmin_lines = 3
+  if ~keyword_set(fit_window) then fit_window = 8.0*linewidth
+  if ~keyword_set(poly_degree) then poly_degree = 5
+
 	; convert linewidth to micron
-	linewidth_um = linewidth * median( approx_wavecal - shift(approx_wavecal, 1) )
+  conversion_to_um = median( approx_wavecal - shift(approx_wavecal, 1) )
+	linewidth_um = linewidth * conversion_to_um
 
 	; identify the emission lines that are in this wavelength range
 	w_lines = where(reflines.lambda GT min(approx_wavecal, /nan) $
@@ -134,7 +144,7 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 	for i_line=0,n_elements(line_list)-1 do begin
 
 		; select the region to fit
-		w_fit = where( abs(approx_wavecal-line_list[i_line]) LT 0.5*fuel.settings.findlines_linefit_window*linewidth_um and $
+		w_fit = where( abs(approx_wavecal-line_list[i_line]) LT 0.5*fit_window*conversion_to_um and $
       finite(y), /null )
 
     ; check that there actually is signal and it's not just a bunch of NaNs or it's outside the range
@@ -186,6 +196,13 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 		; add to the stack
 		speclines = [speclines, this_OHline]
 
+    ; cgplot, x[w_fit], y[w_fit], charsize=1, psym=10
+    ; color='red'
+    ; if line_trust[i_line] eq 0 then color='blk6'
+    ; cgplot, gauss_param[1]+[0,0], [0, max(y)], /overplot, color=color
+    ; print, 0.5*fit_window*conversion_to_um
+    ; print, fit_window
+
 	endfor
 
   ; did we find any speclines at all?
@@ -232,17 +249,16 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 	cgplot, x, y, /overplot
 
 	; if too few lines were found, then no reliable wavelength solution exists
-	if n_elements(speclines_trust) LT fuel.settings.findlines_Nmin_lines then begin
+	if n_elements(speclines_trust) LT Nmin_lines then begin
     if keyword_set(verbose) then begin
       print, 'Only ', n_elements(speclines_trust), ' lines were found,'
-      print, 'and fuel.settings.findlines_Nmin_lines = ', fuel.settings.findlines_Nmin_lines
+      print, 'minimum allowed: ', Nmin_lines
     endif
 		speclines = !NULL
 		return
 	endif
 
   ; set the degree for the polynomial fit - if there are few lines, decrease the degree
-  poly_degree = fuel.settings.findlines_poly_degree
   if poly_degree GT (n_elements(speclines_trust)+1)/3 then poly_degree = (n_elements(speclines_trust)+1)/3
 
   ; fit a polynomial to the skyline positions using only the lines we can trust
@@ -275,7 +291,7 @@ PRO flame_findlines_fitskylines, fuel=fuel, x=x, y=y, $
 
 	; panel 4: plot the line widths
 	cgplot, speclines_trust.x, speclines_trust.sigma, /ynozero, xra=[x[0], x[-1]], xsty=1, psym=16, color='red', symsize=0.7, $
-		xtit='pixel coordinate', ytit='line width (pixel)', charsize=ch, $
+		xtit='pixel coordinate', ytit='line width (sigma, in pixel)', charsize=ch, $
 		/noerase, position = [0.15, 0.10, 0.95, 0.30]
 
   if n_elements(speclines_donttrust) GT 0 then $
@@ -386,15 +402,12 @@ PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
   reflines_initial.lambda = line_list
   reflines_initial.trust_lambda = line_trust
 
-  ; calculate typical wavelength step of one pixel
+  ; calculate typical wavelength step of one pixel, in um
   lambda_step = median( approx_lambda_axis - shift(approx_lambda_axis, 1) )
 
   ; approximate sky line width
 	approximate_linewidth_um = median(approx_lambda_axis) / (2.36 * slit.approx_R)
 	linewidth = approximate_linewidth_um / lambda_step ; in pixel
-
-  ; start with a larger linewidth, for a generous range where the line could be
-  linewidth *= 2.0
 
   ; use the shifted rough wavelength calibration as starting solution
   lambda_axis = approx_lambda_axis
@@ -412,8 +425,9 @@ PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
   while delta_Nlines GT 0 and i_loop LT 10 do begin
 
     ; fit the emission lines and find the wavelength solution
-  	flame_findlines_fitskylines, fuel=fuel, x=pix_axis, y=central_skyspec, $
-  		approx_wavecal=lambda_axis, linewidth=linewidth, reflines=reflines_initial, verbose=1, $
+  	flame_findlines_fitskylines, x=pix_axis, y=central_skyspec, $
+  		approx_wavecal=lambda_axis, linewidth=linewidth, reflines=reflines_initial, $
+      Nmin_lines=3, fit_window=10.0*linewidth, poly_degree=fuel.settings.findlines_poly_degree, verbose=1, $
   		speclines=speclines_thisloop, wavecal=lambda_axis_output, plot_title='central rows / ' + strtrim(i_loop,2)
 
     ; check that lines were identified
@@ -472,9 +486,10 @@ PRO flame_findlines_find_speclines, fuel=fuel, filename=filename, $
 		if i_row eq i0_bottom then wavelength_axis_guess = wavelength_solution_0
 
 		; fit the emission lines and find the wavelength solution
-		flame_findlines_fitskylines, fuel=fuel, x=pix_axis, y=this_row, $
+		flame_findlines_fitskylines, x=pix_axis, y=this_row, $
 			approx_wavecal=wavelength_axis_guess, linewidth=linewidth, $
-			reflines=reflines, check_shift=1, $
+			reflines=reflines, check_shift=1, poly_degree=fuel.settings.findlines_poly_degree, $
+      Nmin_lines=fuel.settings.findlines_Nmin_lines, fit_window=fuel.settings.findlines_linefit_window*linewidth, $
 			speclines=speclines_thisrow, wavecal=wavelength_axis_for_this_row, plot_title='row '+strtrim(i_row,2)
 
 		; if sky lines were not found, then skip to next row
