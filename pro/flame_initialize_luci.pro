@@ -11,18 +11,14 @@
 FUNCTION flame_initialize_luci_resolution, instrument
 ;
 ; return the estimated spectral resolution *for a slit width of 1.0 arcsec*.
-; the resolution depends on both the camera and the grating.
+; the resolution depends only on the grating (and the slit witdth).
 ;
 
 ; get the first part of the grating name
 grating = (strsplit(instrument.grating, /extract))[0]
 
-; get the first part of the camera name
-camera = (strsplit(instrument.camera, /extract))[0]
-
-; 1 - look up the resolution for this grating
+; look up the resolution for this grating
 ; Note that the tabulated values for R assume a slit width of 0.5 arcsec
-; and the N1.80 camera
 
   ; grating G210
   if grating eq 'G210' then case instrument.grating_order of
@@ -51,11 +47,6 @@ camera = (strsplit(instrument.camera, /extract))[0]
 
   ; convert to the resolution for a 1"-wide slit:
   R_1arcsec = R / 2.0
-
-  ; 2 - correct for different camera
-  if camera ne 'N1.8' then $
-    if camera eq 'N3.75' then R_1arcsec *= 2.1 else $
-      message, 'camera ' + instrument.camera + ' not supported'
 
   return, R_1arcsec
 
