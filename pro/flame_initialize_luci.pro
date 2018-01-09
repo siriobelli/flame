@@ -134,6 +134,12 @@ FUNCTION flame_initialize_luci_instrument, science_header
   ; read grating name
   grating = strtrim(fxpar(science_header, 'GRATNAME'), 2)
 
+  ; for old data, the grating names were slightly different
+  grating_name = (strsplit(grating, /extract))[0]
+  if (grating_name eq '150') then grating = 'G150 X'
+  if (grating_name eq '200') then grating = 'G200 X'
+  if (grating_name eq '210') then grating = 'G210 X'
+
   ; read in grating order
   grating_order = strtrim(fxpar(science_header, 'GRATORDE'), 2)
 
@@ -141,7 +147,8 @@ FUNCTION flame_initialize_luci_instrument, science_header
   central_wavelength = fxpar(science_header, 'GRATWLEN')
 
   ; read camera
-  camera = fxpar(science_header, 'CAMERA')
+  camera = fxpar(science_header, 'CAMERA', missing='NONE')
+  if camera eq 'NONE' then camera = fxpar(science_header, 'CAMNAME') ; for old data
 
   ; read pixel scale
   pixel_scale = fxpar(science_header, 'PIXSCALE')  ; arcsec/pixel
@@ -151,10 +158,12 @@ FUNCTION flame_initialize_luci_instrument, science_header
   filter2 = strtrim(fxpar(science_header, 'FILTER2'), 2)
 
   ; read in read-out noise
-  readnoise = fxpar(science_header, 'RDNOISE')   ; e-/read
+  readnoise = fxpar(science_header, 'RDNOISE', missing=-1)   ; e-/read
+  if readnoise eq -1 then readnoise = fxpar(science_header, 'ENOISE') ; for old data
 
   ; read in gain
-  gain = fxpar(science_header, 'GAIN')   ; e-/adu
+  gain = fxpar(science_header, 'GAIN', missing=-1)   ; e-/adu
+  if gain eq -1 then gain = fxpar(science_header, 'ELECGAIN') ; for old data
 
   ; calculate things from hard-coded numbers - - - - - - - - - - - - - - - - - - -
 
