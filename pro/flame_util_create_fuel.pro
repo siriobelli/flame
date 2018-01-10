@@ -192,7 +192,7 @@ FUNCTION flame_util_create_fuel, input
     frame_weights: 'None', $
     combine_sigma_clip : 2.0, $
     combine_min_framefrac : combine_min_framefrac, $
-    debugging:0 $
+    stop_on_error:1 $
    }
 
 

@@ -219,7 +219,7 @@ PRO flame_skysub, fuel
 		if fuel.slits[i_slit].skip then continue
 
 		; handle errors by ignoring that slit
-		if fuel.settings.debugging eq 0 then begin
+		if fuel.settings.stop_on_error eq 0 then begin
 			catch, error_status
 			if error_status ne 0 then begin
 				print, ''
