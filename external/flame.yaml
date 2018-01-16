@@ -1,0 +1,20 @@
+--- !CustomLoader
+name: Flame data reduction pipeline
+extension:
+- fits
+dispersion:
+  col: LAMBDA
+  hdu: 1
+  unit: Angstrom
+wcs:
+  hdu: 1
+data:
+  col: FLUX
+  hdu: 1
+  unit: 'electron / (pix s)'
+uncertainty:
+  col: IVAR
+  hdu: 1
+  type: ivar
+meta:
+  author: Sirio Belli
