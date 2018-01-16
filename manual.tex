@@ -153,9 +153,9 @@ The pipeline has been extensively tested in Linux and Mac. Limited testing was d
 
 The following three external IDL libraries must be installed before running \flame.
 \begin{enumerate}
-\item NASA's \href{http://idlastro.gsfc.nasa.gov/}{IDL Astronomy User's Library};
-\item David Fanning's \href{http://www.idlcoyote.com/code_tips/installcoyote.php}{Coyote Library};
-\item Craig Markwardt's \href{https://www.physics.wisc.edu/~craigm/idl/fitting.html}{mpfit} (only the mpfit.pro and mpfit2dfun.pro files are needed).
+\item NASA's IDL Astronomy User's Library\footnote{\url{http://idlastro.gsfc.nasa.gov/}};
+\item David Fanning's Coyote Library\footnote{\url{http://www.idlcoyote.com/code_tips/installcoyote.php}};
+\item Craig Markwardt's mpfit\footnote{\url{https://www.physics.wisc.edu/~craigm/idl/fitting.html}} (only the mpfit.pro and mpfit2dfun.pro files are needed).
 \end{enumerate}
 Make sure to have the most recent versions of these libraries (at least more recent than the January 2016 release).
 
@@ -624,7 +624,22 @@ By default, no weights are applied to the frames, but the user can set frame\_we
 % ---------------------------------------------------
 \subsection{\texttt{flame\_checkdata}}
 
-Finally, this module performs a quality check on the reduced data set. If present, the reference star spectrum is analyzed and the effective seeing calculated. The file reference\_star.ps is written, showing the spatial profile, the width and position of the stellar track as a function of wavelength, and the xtracted 1D spectrum of the star. Then, a ps file is written for each slit. The first plot shows the stacked sky spectrum, from which the sky lines are identified and fit, and the wavelength residuals and spectral resolution R are shown. Stats on the wavelength solution and the velocity resolution are shown at the bottom. The remaining plots illustrate the performance of the wavelength calibration as a function of wavelength or frame. Looking at these figures it is easy to see if one of more of the frames do not have a good wavelength solution. In such cases the user can decide to run the reduction again excluding those frames, or trying to improve the wavelength solution by tweaking the settings.
+This module performs a quality check on the reduced data set. If present, the reference star spectrum is analyzed and the effective seeing calculated. The file reference\_star.ps is written, showing the spatial profile, the width and position of the stellar track as a function of wavelength, and the xtracted 1D spectrum of the star. Then, a ps file is written for each slit. The first plot shows the stacked sky spectrum, from which the sky lines are identified and fit, and the wavelength residuals and spectral resolution R are shown. Stats on the wavelength solution and the velocity resolution are shown at the bottom. The remaining plots illustrate the performance of the wavelength calibration as a function of wavelength or frame. Looking at these figures it is easy to see if one of more of the frames do not have a good wavelength solution. In such cases the user can decide to run the reduction again excluding those frames, or trying to improve the wavelength solution by tweaking the settings.
+
+
+
+% ---------------------------------------------------
+\subsection{\texttt{flame\_extract}}
+
+Finally, this module identifies the brightest object in each slit and extracts the 1D spectrum. Output files are saved in the directory \code{extraction/}, which is created inside the output directory. These include, for each slit, a ps file showing the spatial profile with its Gaussian fit, the extracted spectrum, and the SNR for both the boxcar extraction and the optimal extraction. The 1D spectrum extracted from each slit is stored in a FITS file as a structure containing the fields \code{lambda}, \code{flux}, and \code{ivar}, corresponding to wavelength (NB: in angstrom), flux (in electron per second), and inverse variance. The error spectrum can be easily obtained as $\mathrm{err} = 1/\sqrt{\mathrm{ivar}}$.
+
+There are a number of third-party programs that can be used to visualize and analyze the extracted 1D spectra. In particular, the FITS files output by \flame\ are compatible with the interactive programs SpecPro and SpecViz.
+
+SpecPro\footnote{\url{http://specpro.caltech.edu/}} is written in IDL. It uses both the IDL Astronomy User's Library and the mpfit routines, which are also required by \flame. After downloading and installing the source code, simply launch IDL from the \code{extraction/} directory and run the \code{specpro} command.
+
+SpecViz\footnote{\url{https://github.com/spacetelescope/specviz}} is written in Python. After installing SpecViz, copy the configuration file \code{flame/external/flame.yaml} to the \code{\textasciitilde/.specviz/} directory. This file contains a description of the data format used by \flame. Open SpecViz, click the \emph{Open} button, and in the dropdown menu \emph{Files of type} there should now be an entry called \emph{Flame data reduction pipeline}. Note that it is not necessary to select the file type every time you open a spectrum; SpecViz should be able to automatically recognize the file and correctly read in the \flame\ output.
+
+
 
 
 
