@@ -5,18 +5,21 @@
 ;*******************************************************************************
 
 
-PRO flame_combine_stack, fuel=fuel, filenames=filenames, diagnostics=diagnostics, $
+PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filenames, diagnostics=diagnostics, $
 	 output_filename=output_filename, noalign=noalign
 ;
 ; Read in FITS files and mean-stack them after a sigma clipping.
 ; Alignment is done using the gamma coordinate, which is the vertical wcs coordinate,
 ; unless the option /noalign is set.
 ; NB: the grid of the first filename is assumed for the output file
-; write multi-HDU output FITS file:
+;
+; Write multi-HDU output FITS file:
 ; HDU 0: stacked spectrum
 ; HDU 1: error spectrum
 ; HDU 2: sigma map [i.e., standard deviation of values for each pixel, including correction for correlated noise]
-; HDU 3: exptime map
+; HDU 3: model sky
+; HDU 4: exptime map
+; HDU 5: weight map
 ;
 
 	; number of frames
@@ -27,6 +30,10 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, diagnostics=diagnostics
 
 	; if there is only one frame, then print a warning
 	if N_frames EQ 1 then print, 'Warning: stacking only one frame'
+
+	; check that, if present, the sky frames are in the correct number
+	if n_elements(sky_filenames) NE 0 and n_elements(sky_filenames) NE N_frames then $
+	 	message, 'sky_filenames: wrong number of frames'
 
 
 	; construct the grid for the output image
@@ -48,6 +55,10 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, diagnostics=diagnostics
 	; cube for the error spectra
 	error_cube = dblarr( N_frames, N_x, N_y )
 	error_cube[*] = !values.d_nan
+
+	; cube for the sky spectra
+	sky_cube = dblarr( N_frames, N_x, N_y )
+	sky_cube[*] = !values.d_nan
 
 	; cube for the exptime
 	exptime_cube = dblarr( N_frames, N_x, N_y )
@@ -104,6 +115,12 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, diagnostics=diagnostics
 			error_cube[i_frame, *, bot_ref:top_ref] = err[*, bot_i:top_i]
 		endif
 
+		; if present, read the model sky
+		if n_elements(sky_filenames) GE 1 then begin
+			sky = mrdfits(sky_filenames[i_frame], 0, /silent)
+			sky_cube[i_frame, *, bot_ref:top_ref] = sky[*, bot_i:top_i]
+		endif
+
 		; make map of exposure time
 		exptime = sxpar(header, 'EXPTIME')
 		map_exptime = im*0.0 + exptime ; account for NaNs
@@ -144,6 +161,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, diagnostics=diagnostics
 	; turn masked pixels into NaNs
 	im_cube[where(mask_cube, /null)] = !values.d_nan
 	error_cube[where(mask_cube, /null)] = !values.d_nan
+	sky_cube[where(mask_cube, /null)] = !values.d_nan
 	exptime_cube[where(mask_cube, /null)] = !values.d_nan
 
 	; make a cube that flags pixels that are actually good
@@ -188,6 +206,9 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, diagnostics=diagnostics
 	; make the error spectrum
 	error_stack = sqrt( total( weight_cube^2 * error_cube^2, 1, /nan)  ) / total( weight_cube, 1, /nan)
 
+	; mean-stack the sky model
+	sky_stack = total( weight_cube * sky_cube, 1, /nan ) / total(weight_cube, 1, /nan)
+
 	; make a clean sigma image (i.e., excluding rejected pixels)
 	weight_tot_sq = total( weight_cube^2, 1, /nan )
 	weight_tot = total( weight_cube, 1, /nan )
@@ -209,6 +230,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, diagnostics=diagnostics
 	im_stack[w_void] = !values.d_nan
 	error_stack[w_void] = !values.d_nan
 	sigma_stack[w_void] = !values.d_nan
+	sky_stack[w_void] = !values.d_nan
 	exptime_stack[w_void] = 0.0
 
 	; make header array with the correct grid
@@ -231,6 +253,10 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, diagnostics=diagnostics
 	; add extension with the pixel standard deviation
 	sxaddpar, xten_hdr, 'EXTNAME', 'SIGMA'
 	writefits, output_filename, sigma_stack, xten_hdr, /append
+
+	; add extension with sky
+	sxaddpar, xten_hdr, 'EXTNAME', 'SKY'
+	writefits, output_filename, sky_stack, xten_hdr, /append
 
 	; add extension with exptime
 	sxaddpar, xten_hdr, 'EXTNAME', 'EXPTIME'
@@ -255,7 +281,7 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 		output_filename=output_filename, combined_filename=combined_filename
 ;
 ; make difference image
-; the input files must be written by flame_combine_stack and have four extensions
+; the input files must be written by flame_combine_stack and have six extensions
 ; if combined_filename is specified, then the ABcombined image is also written,
 ; using the gamma coordinate to align
 ; NB: the alignment is done in the "observed" frame using the YCUTOUT keyword
@@ -274,11 +300,14 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	sig1 = mrdfits(filename1, 2, sig_hdr, /silent)
 	sig2 = mrdfits(filename2, 2, /silent)
 
-	exptime1 = mrdfits(filename1, 3, exptime_hdr, /silent)
-	exptime2 = mrdfits(filename2, 3, /silent)
+	sky1 = mrdfits(filename1, 3, sky_hdr, /silent)
+	sky2 = mrdfits(filename2, 3, /silent)
 
-	weight1 = mrdfits(filename1, 4, weight_hdr, /silent)
-	weight2 = mrdfits(filename2, 4, /silent)
+	exptime1 = mrdfits(filename1, 4, exptime_hdr, /silent)
+	exptime2 = mrdfits(filename2, 4, /silent)
+
+	weight1 = mrdfits(filename1, 5, weight_hdr, /silent)
+	weight2 = mrdfits(filename2, 5, /silent)
 
 
 	; align the two frames
@@ -315,6 +344,9 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	; combine the sigma
 	sigdiff = sqrt( sig1[*,bot1:top1]^2 + sig2[*,bot2:top2]^2 )
 
+	; combine the sky
+	skydiff = sky1[*,bot1:top1] + sky2[*,bot2:top2]
+
 	; take only the exptime of A
 	exptimediff1 = exptime1[*,bot1:top1]
 	exptimediff2 = exptime2[*,bot2:top2]
@@ -337,6 +369,7 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	writefits, output_filename, imdiff, hdr_diff
 	writefits, output_filename, errdiff, err_hdr, /append
 	writefits, output_filename, sigdiff, sig_hdr, /append
+	writefits, output_filename, skydiff, sky_hdr, /append
 	writefits, output_filename, exptimediff, exptime_hdr, /append
 	writefits, output_filename, weightdiff, weight_hdr, /append
 	print, output_filename, ' written'
@@ -366,6 +399,7 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	cube_imdiff[*] = !values.d_nan
 	cube_errdiff = cube_imdiff
 	cube_sigdiff = cube_imdiff
+	cube_skydiff = cube_imdiff
 	cube_exptimediff = cube_imdiff
 	cube_weightdiff = cube_imdiff
 
@@ -378,6 +412,7 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	cube_imdiff[0,*,0+shiftA:Ny-1+shiftA] = imdiff
 	cube_errdiff[0,*,0+shiftA:Ny-1+shiftA] = errdiff
 	cube_sigdiff[0,*,0+shiftA:Ny-1+shiftA] = sigdiff
+	cube_skydiff[0,*,0+shiftA:Ny-1+shiftA] = skydiff
 	cube_exptimediff[0,*,0+shiftA:Ny-1+shiftA] = exptimediff1
 	cube_weightdiff[0,*,0+shiftA:Ny-1+shiftA] = weightdiff1
 
@@ -385,17 +420,18 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	cube_imdiff[1,*,0+shiftB:Ny-1+shiftB] = -imdiff
 	cube_errdiff[1,*,0+shiftB:Ny-1+shiftB] = errdiff
 	cube_sigdiff[1,*,0+shiftB:Ny-1+shiftB] = sigdiff
+	cube_skydiff[1,*,0+shiftB:Ny-1+shiftB] = skydiff
 	cube_exptimediff[1,*,0+shiftB:Ny-1+shiftB] = exptimediff2
 	cube_weightdiff[1,*,0+shiftB:Ny-1+shiftB] = weightdiff2
 
 	; weights for stacking
-	;cube_weights = (1.0/cube_errdiff^2)
 	cube_weights = cube_weightdiff
 
 	; finally stack the cubes
 	dbl_imdiff = total(cube_weights*cube_imdiff, 1, /nan) / total(cube_weights, 1, /nan)
 	dbl_errdiff = sqrt( total(cube_weights^2 * cube_errdiff^2, 1, /nan) ) / total(cube_weights, 1, /nan)
 	dbl_sigdiff = sqrt( total(cube_weights^2 * cube_sigdiff^2, 1, /nan) ) / total(cube_weights, 1, /nan)
+	dbl_skydiff = total(cube_weights*cube_skydiff, 1, /nan) / total(cube_weights, 1, /nan)
 	dbl_exptimediff = total(cube_exptimediff, 1, /nan)
 	dbl_weightdiff = total(cube_weights, 1, /nan)
 
@@ -405,6 +441,7 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 		dbl_imdiff[w_nan] = !values.d_nan
 		dbl_errdiff[w_nan] = !values.d_nan
 		dbl_sigdiff[w_nan] = !values.d_nan
+		dbl_skydiff[w_nan] = !values.d_nan
 	endif
 
 	; make the header for the double-combined spectrum
@@ -416,6 +453,7 @@ PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
 	writefits, combined_filename, dbl_imdiff, hdr_dbl
 	writefits, combined_filename, dbl_errdiff, err_hdr, /append
 	writefits, combined_filename, dbl_sigdiff, sig_hdr, /append
+	writefits, combined_filename, dbl_skydiff, sky_hdr, /append
 	writefits, combined_filename, dbl_exptimediff, exptime_hdr, /append
 	writefits, combined_filename, dbl_weightdiff, weight_hdr, /append
 	print, combined_filename, ' written'
@@ -481,26 +519,26 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	; the preferred version (stack_A > stack_B > stack_X)
 
 	if w_X ne !NULL then begin
-		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_X], diagnostics=fuel.diagnostics[w_X], $
-			output_filename=filename_prefix + '_X.fits'
-		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_X], diagnostics=fuel.diagnostics[w_X], $
-			output_filename=filename_prefix + '_skysub_X.fits'
+		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_X], sky_filenames=sky_filenames[w_X], $
+		 	diagnostics=fuel.diagnostics[w_X], output_filename=filename_prefix + '_X.fits'
+		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_X], sky_filenames=sky_filenames[w_X], $
+		 	diagnostics=fuel.diagnostics[w_X], output_filename=filename_prefix + '_skysub_X.fits'
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_X.fits'
 	endif
 
 	if w_B ne !NULL then begin
-		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_B], diagnostics=fuel.diagnostics[w_B], $
-		 	output_filename=filename_prefix + '_B.fits'
-		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_B], diagnostics=fuel.diagnostics[w_B], $
-		 	output_filename=filename_prefix + '_skysub_B.fits'
+		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_B], sky_filenames=sky_filenames[w_B], $
+			diagnostics=fuel.diagnostics[w_B], output_filename=filename_prefix + '_B.fits'
+		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_B], sky_filenames=sky_filenames[w_B], $
+			diagnostics=fuel.diagnostics[w_B], output_filename=filename_prefix + '_skysub_B.fits'
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B.fits'
 	endif
 
 	if w_A ne !NULL then begin
-		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_A], diagnostics=fuel.diagnostics[w_A], $
-			output_filename=filename_prefix + '_A.fits'
-		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_A], diagnostics=fuel.diagnostics[w_A], $
-			output_filename=filename_prefix + '_skysub_A.fits'
+		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_A], sky_filenames=sky_filenames[w_A], $
+			diagnostics=fuel.diagnostics[w_A], output_filename=filename_prefix + '_A.fits'
+		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_A], sky_filenames=sky_filenames[w_A], $
+			diagnostics=fuel.diagnostics[w_A], output_filename=filename_prefix + '_skysub_A.fits'
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A.fits'
 	endif
 
