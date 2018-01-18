@@ -8,20 +8,21 @@
 
 PRO flame_extract_slit, fuel, slit, dir=dir
 
+
 	; read data and make spatial profile
 	; ----------------------------------------------------------------------------
 
 	cgPS_open, dir + 'profile.' + string(slit.number, format='(I03)') + '.' + slit.name + '.ps'
 
 	; output file to be used for the extraction
-	spec2d_filename = slit.output_file
+	filename_spec2d = slit.output_file
 
   ; read in 2d spectrum
-  spec2d = mrdfits(spec2d_filename, 0, header, /silent)
+  spec2d = mrdfits(filename_spec2d, 0, header, /silent)
 
   ; read in 2d error spectrum
 	; WARNING: USING THE 'EMPIRICAL' ESTIMATE - this may be bad if you have too few frames
-  err2d = mrdfits(spec2d_filename, 2, /silent)
+  err2d = mrdfits(filename_spec2d, 2, /silent)
 
   ; create ivar image
   ivar2d = 1d/err2d^2
@@ -42,6 +43,7 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 
 	; cut away non positive pixels
 	profile[where(profile LT 0.0, /null)] = 0.0
+
 
 	; fit Gaussian to the peak
 	; ----------------------------------------------------------------------------
@@ -86,8 +88,8 @@ PRO flame_extract_slit, fuel, slit, dir=dir
   trace2d_ivar = ivar2d[*,w_boxcar]
 
   ; calculate boxcar extraction
-  spec1d_boxcar = total(trace2d,2)
-  ivar1d_boxcar = 1. / total(1./trace2d_ivar,2)
+  spec1d_boxcar = total(trace2d, 2)
+  ivar1d_boxcar = 1. / total(1./trace2d_ivar, 2)
 
 	; plot extracted spectrum
 	xrange = [min(lambda_1d, /nan), max(lambda_1d, /nan)]
@@ -100,8 +102,10 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 	; optimal extraction
 	; ----------------------------------------------------------------------------
 
-	; make weights using the Gaussian fit
-	weight1d = gaussian_model - gauss_param[3]
+	; make weights using either the Gaussian fit or the observed profile
+	if fuel.settings.extract_gaussian_profile then $
+		weight1d = gaussian_model - gauss_param[3] else $
+		weight1d = profile
 
 	; cut the profile beyond three sigma
 	weight1d[ where( abs(y_1d-gauss_param[1]) GT 3.0*gauss_param[2], /null ) ] = 0.0
@@ -131,7 +135,7 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 
 	erase
 	cgplot, lambda_1d, snr_optimal, xtit='Wavelength (um)', ytit='SNR', $
-		layout=[1,2,1], charsize=1, title='black: optimal; gray: boxcar', xrange=xrange, /xstyle
+		layout=[1,2,1], charsize=1, title='black: optimal extraction; gray: boxcar', xrange=xrange, /xstyle
 	cgplot, lambda_1d, snr_boxcar, /overplot, color='blk4'
 
 	cgplot, lambda_1d, median(snr_optimal/snr_boxcar-1.0, 7), $
@@ -148,11 +152,31 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 	; write FITS file
 	; ----------------------------------------------------------------------------
 
-	; make nice output structure
-	output_structure = { $
-		lambda: lambda_1d, $
-		flux: spec1d_optimal, $
-		ivar: ivar1d_optimal }
+	; output optimal extraction
+	if fuel.settings.extract_optimal then begin
+
+		; filename for the output file
+		filename = dir + 'spec1d.optimal.' + string(slit.number, format='(I03)') + '.' + slit.name + '.fits'
+
+		; make nice output structure
+		output_structure = { $
+			lambda: lambda_1d, $
+			flux: spec1d_optimal, $
+			ivar: ivar1d_optimal }
+
+	; output boxcar extraction
+endif else begin
+
+		; filename for the output file
+		filename = dir + 'spec1d.boxcar.' + string(slit.number, format='(I03)') + '.' + slit.name + '.fits'
+
+		; make nice output structure
+		output_structure = { $
+			lambda: lambda_1d, $
+			flux: spec1d_boxcar, $
+			ivar: ivar1d_boxcar }
+
+	endelse
 
 	; convert wavelength to angstrom in order to be compatible with SpecPro
 	output_structure.lambda *= 1d4
@@ -163,7 +187,6 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 	sxaddpar, header_output, 'TUNIT3', 'electron / (pix s)'
 
 	; write structure to FITS file
-	filename = dir + 'spec1d.optimal.' + string(slit.number, format='(I03)') + '.' + slit.name + '.fits'
 	mwrfits, output_structure, filename, header_output, /create
 
 
