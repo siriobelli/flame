@@ -473,49 +473,35 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	; stack all A, B, and X frames
 	;*************************************
 
+	; get all the rectified and skysub filenames
+	filenames_rectified = flame_util_replace_string(filenames,  '.fits', '_rectified.fits')
+	filenames_skysub_rectified = flame_util_replace_string(filenames,  '.fits', '_skysub_rectified.fits')
+
 	; go in reverse order of preference so that the output_file field at the end has
 	; the preferred version (stack_A > stack_B > stack_X)
 
 	if w_X ne !NULL then begin
-
-		stack_X_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_rectified.fits')
-		flame_combine_stack, fuel=fuel, filenames=stack_X_filenames, diagnostics=fuel.diagnostics[w_X], $
+		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_X], diagnostics=fuel.diagnostics[w_X], $
 			output_filename=filename_prefix + '_X.fits'
-
-		stack_X_skysub_filenames = flame_util_replace_string(filenames[w_X], '.fits', '_skysub_rectified.fits')
-		flame_combine_stack, fuel=fuel, filenames=stack_X_skysub_filenames, diagnostics=fuel.diagnostics[w_X], $
+		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_X], diagnostics=fuel.diagnostics[w_X], $
 			output_filename=filename_prefix + '_skysub_X.fits'
-
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_X.fits'
-
 	endif
 
 	if w_B ne !NULL then begin
-
-		stack_B_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_rectified.fits')
-		flame_combine_stack, fuel=fuel, filenames=stack_B_filenames, diagnostics=fuel.diagnostics[w_B], $
+		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_B], diagnostics=fuel.diagnostics[w_B], $
 		 	output_filename=filename_prefix + '_B.fits'
-
-		stack_B_skysub_filenames = flame_util_replace_string(filenames[w_B], '.fits', '_skysub_rectified.fits')
-		flame_combine_stack, fuel=fuel, filenames=stack_B_skysub_filenames, diagnostics=fuel.diagnostics[w_B], $
+		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_B], diagnostics=fuel.diagnostics[w_B], $
 		 	output_filename=filename_prefix + '_skysub_B.fits'
-
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B.fits'
-
 	endif
 
 	if w_A ne !NULL then begin
-
-		stack_A_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_rectified.fits')
-		flame_combine_stack, fuel=fuel, filenames=stack_A_filenames, diagnostics=fuel.diagnostics[w_A], $
+		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_A], diagnostics=fuel.diagnostics[w_A], $
 			output_filename=filename_prefix + '_A.fits'
-
-		stack_A_skysub_filenames = flame_util_replace_string(filenames[w_A], '.fits', '_skysub_rectified.fits')
-		flame_combine_stack, fuel=fuel, filenames=stack_A_skysub_filenames, diagnostics=fuel.diagnostics[w_A], $
+		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_A], diagnostics=fuel.diagnostics[w_A], $
 			output_filename=filename_prefix + '_skysub_A.fits'
-
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A.fits'
-
 	endif
 
 
@@ -524,28 +510,20 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 
 	if w_B NE !NULL and w_X ne !NULL then begin
-
 		flame_combine_diff, filename1=filename_prefix+'_B.fits', filename2=filename_prefix+'_X.fits', $
 			output_filename=filename_prefix + '_B-X.fits'
-
 		flame_combine_diff, filename1=filename_prefix+'_skysub_B.fits', filename2=filename_prefix+'_skysub_X.fits', $
 			output_filename=filename_prefix + '_skysub_B-X.fits'
-
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B-X.fits'
-
 	endif
 
 
 	if w_A NE !NULL and w_X ne !NULL then begin
-
 		flame_combine_diff, filename1=filename_prefix+'_A.fits', filename2=filename_prefix+'_X.fits', $
 			output_filename=filename_prefix + '_A-X.fits'
-
 		flame_combine_diff, filename1=filename_prefix+'_skysub_A.fits', filename2=filename_prefix+'_skysub_X.fits', $
 			output_filename=filename_prefix + '_skysub_A-X.fits'
-
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-X.fits'
-
 	endif
 
 
@@ -553,10 +531,8 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 		flame_combine_diff, filename1=filename_prefix+'_A.fits', filename2=filename_prefix+'_B.fits', $
 			output_filename=filename_prefix + '_A-B.fits', combined_filename=filename_prefix + '_ABcombined.fits'
-
 		flame_combine_diff, filename1=filename_prefix+'_skysub_A.fits', filename2=filename_prefix+'_skysub_B.fits', $
 			output_filename=filename_prefix + '_skysub_A-B.fits', combined_filename=filename_prefix + '_skysub_ABcombined.fits'
-
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-B.fits'
 
 		; if written, then use the ABcombined file
