@@ -20,12 +20,18 @@ PRO flame_extract_slit, fuel, slit, dir=dir
   ; read in 2d spectrum
   spec2d = mrdfits(filename_spec2d, 0, header, /silent)
 
-  ; read in 2d error spectrum
-	; WARNING: USING THE 'EMPIRICAL' ESTIMATE - this may be bad if you have too few frames
-  err2d = mrdfits(filename_spec2d, 2, /silent)
+  ; read in 2d theoretical error spectrum
+  err2d = mrdfits(filename_spec2d, 1, /silent)
 
-  ; create ivar image
-  ivar2d = 1d/err2d^2
+	; read in 2d empirical error spectrum
+	sig2d = mrdfits(filename_spec2d, 2, /silent)
+
+	; read in 2d sky
+  sky2d = mrdfits(filename_spec2d, 3, /silent)
+
+  ; create ivar images
+  ivar2d_th = 1d/err2d^2
+	ivar2d_emp = 1d/sig2d^2
 
   ; read in wavelength axis
 	lambda_1d = sxpar(header,'CRVAL1') + (findgen(sxpar(header,'NAXIS1')) - sxpar(header,'CRPIX1') + 1d) * sxpar(header,'CDELT1')
@@ -83,13 +89,17 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 	; boxcar extraction within +/- 2sigma
 	; ----------------------------------------------------------------------------
 
+	; define boxcar aperture (round up to include all relevant pixels)
 	w_boxcar = where( abs(y_1d-gauss_param[1]) LT 2.0*gauss_param[2]+0.49, /null )
-  trace2d = spec2d[*,w_boxcar]
-  trace2d_ivar = ivar2d[*,w_boxcar]
 
   ; calculate boxcar extraction
-  spec1d_boxcar = total(trace2d, 2)
-  ivar1d_boxcar = 1. / total(1./trace2d_ivar, 2)
+  spec1d_boxcar = total(spec2d[*,w_boxcar], 2, /nan)
+  ivar1d_boxcar = 1. / total(1./ivar2d_th[*,w_boxcar], 2, /nan)
+	ivar1d_boxcar_emp = 1. / total(1./ivar2d_emp[*,w_boxcar], 2, /nan)
+
+	; boxcar extraction for the sky
+	sky2d_boxcar = sky2d[*,w_boxcar]
+  sky1d_boxcar = total(sky2d_boxcar, 2, /nan)
 
 	; plot extracted spectrum
 	xrange = [min(lambda_1d, /nan), max(lambda_1d, /nan)]
@@ -111,14 +121,18 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 	weight1d[ where( abs(y_1d-gauss_param[1]) GT 3.0*gauss_param[2], /null ) ] = 0.0
 
 	; normalize by the integral
-	weight1d /= total(weight1d)
+	weight1d /= total(weight1d, /nan)
 
 	; extend weight to 2d frame
 	weight2d = replicate(1, (size(spec2d))[1] ) # weight1d
 
 	; optimal extraction
-  spec1d_optimal = total(weight2d*sqrt(ivar2d)*spec2d, 2, /nan) / total(weight2d^2*sqrt(ivar2d), 2, /nan)
-  ivar1d_optimal = total(weight2d^2*ivar2d, 2, /nan)
+  spec1d_optimal = total(weight2d*ivar2d_th*spec2d, 2, /nan) / total(weight2d^2*ivar2d_th, 2, /nan)
+  ivar1d_optimal = total(weight2d^2*ivar2d_th, 2, /nan)
+  ivar1d_optimal_emp = total(weight2d^2*ivar2d_emp, 2, /nan)
+
+	; optimal extraction of the sky
+	sky1d_optimal = total(weight2d*sky2d, 2, /nan) / total(weight2d^2, 2, /nan)
 
 	; plot extracted spectrum
 	cgplot, lambda_1d, ivarsmooth(spec1d_optimal, ivar1d_optimal, 7), $
@@ -162,7 +176,9 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 		output_structure = { $
 			lambda: lambda_1d, $
 			flux: spec1d_optimal, $
-			ivar: ivar1d_optimal }
+			ivar: ivar1d_optimal, $
+			ivar_empirical: ivar1d_optimal_emp, $
+			sky: sky1d_optimal }
 
 	; output boxcar extraction
 endif else begin
@@ -174,7 +190,9 @@ endif else begin
 		output_structure = { $
 			lambda: lambda_1d, $
 			flux: spec1d_boxcar, $
-			ivar: ivar1d_boxcar }
+			ivar: ivar1d_boxcar, $
+			ivar_empirical: ivar1d_boxcar_emp, $
+			sky: sky1d_boxcar }
 
 	endelse
 
@@ -184,11 +202,9 @@ endif else begin
 	; make new FITS header, with units
 	sxaddpar, header_output, 'TUNIT1', 'Angstrom'
 	sxaddpar, header_output, 'TUNIT2', 'electron / (pix s)'
-	sxaddpar, header_output, 'TUNIT3', 'electron / (pix s)'
 
 	; write structure to FITS file
 	mwrfits, output_structure, filename, header_output, /create
-
 
 END
 
