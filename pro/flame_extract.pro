@@ -39,16 +39,22 @@ PRO flame_extract_slit, fuel, slit, dir=dir
   ; spatial axis
   y_1d = findgen(sxpar(header,'NAXIS2'))
 
-	; integrate 2d spectrum
-  profile = total(spec2d, 1, /nan)
+	; obtain the median profile
+  profile = median(spec2d, dimension=1)
 
 	; show spatial profile
 	cgplot, y_1d, profile, charsize=1, $
 		xtitle='Position along the slit (pixel)', ytitle='Total flux', $
 		title = 'black: observed flux; red: Gaussian fit to the peak; orange: boxcar window'
 
+	; make clean copy of profile
+	profile = profile
+
 	; cut away non positive pixels
 	profile[where(profile LT 0.0, /null)] = 0.0
+
+	; cut away NaNs
+	profile[where(~finite(profile), /null)] = 0.0
 
 
 	; fit Gaussian to the peak
@@ -65,13 +71,20 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 	gaussian_model = gaussfit( y_1d, profile, gauss_param, nterms=4, $
 		estimates=est_param, sigma=gauss_err, chisq=chisq )
 
+	; calculate the rms of the profile, once the peak has been subtracted
+	profile_rms = stddev(profile - gaussian_model, /nan)
+
 	if ~finite(chisq) or $			; check that chi square makes sense
 		gauss_param[0] LT 0.0 or $	; check that the peak of the Gaussian is positive
 		gauss_param[0] LT 5.0*gauss_err[0] or $ 	; check that the SNR is high
+		gauss_param[0] LT 8.0*profile_rms or $ 	; check that the SNR is high (compared to the noise in the profile)
 	 	gauss_param[1] LT min(y_1d) or gauss_param[1] GT max(y_1d) or $ 			; check that the center of the Guassian is in the observed range
 		gauss_param[2] LT 0.1 or gauss_param[2] GT n_elements(profile) $		 	; check that the Gaussian width makes sense
 		then begin
-			print, 'No object was detected in the slit'
+			print, ''
+			print, 'slit ' + string(slit.number, format='(I03)') + ' - ' + slit.name + $
+				': no object was detected'
+			print, ''
 			cgPS_close
 			return
 	endif
@@ -206,6 +219,13 @@ endif else begin
 	; write structure to FITS file
 	mwrfits, output_structure, filename, header_output, /create
 
+	print, ''
+	print, 'slit ' + string(slit.number, format='(I03)') + ' - ' + slit.name + $
+		': 1D spectrum extracted'
+	print, filename
+	print, ''
+
+
 END
 
 
@@ -243,7 +263,6 @@ PRO flame_extract, fuel
 			endif
 		endif
 
-	  print, 'Extracting 1D spectrum for ' + strtrim(fuel.slits[i_slit].number,2), ' - ', fuel.slits[i_slit].name
 
 		flame_extract_slit, fuel, fuel.slits[i_slit], dir=extraction_dir
 
