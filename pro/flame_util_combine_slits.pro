@@ -51,16 +51,31 @@ PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_
   ; check that the units are the same
   if n_elements(uniq(cunit1)) NE 1 then message, 'Wavelength units are different: ' + strjoin(string(cunit1))
 
-  ; check that the wavelength axis is the same for all files
-  if n_elements(uniq(crval1)) NE 1 then message, 'Wavelength axes are different: CRVAL1 = ' + strjoin(string(crval1))
+  ; check that the wavelength scale is the same for all files
   if n_elements(uniq(crpix1)) NE 1 then message, 'Wavelength axes are different: CRPIX1 = ' + strjoin(string(crpix1))
   if n_elements(uniq(cdelt1)) NE 1 then message, 'Wavelength axes are different: CDELT1 = ' + strjoin(string(cdelt1))
-  print, 'Wavelength axis are identical for all files.'
+  print, 'Wavelength scale is the same for all files.'
 
-  ; find the smallest common dimensions
-  Nx = min(naxis1)
+
+  ; *************************** set up the output grid ***************************
+
+  ; find extrema of wavelengths
+  lambda_min = min(crval1)
+  lambda_max = max(crval1 + naxis1*cdelt1)
+
+  ; for each frame, how many pixels do we leave blank at the beginning of the grid?
+  pixel_padding = (crval1-lambda_min)/cdelt1[0]
+  print, 'Frames need to be shifted by the following pixel amount:', pixel_padding
+
+  ; check that the wavelength grids can be shifted and matched
+  if total( abs(pixel_padding-round(pixel_padding)) GT 0.05 ) NE 0.0 then $
+    print, 'WARNING! Wavelength grids are misaligned!'
+
+  ; number of pixels in the output grid
+  Nx = round( (lambda_max-lambda_min)/cdelt1[0] )
   Ny = min(naxis2)
   print, 'The output will be ', strtrim( Nx, 2), ' x ', strtrim(Ny, 2)
+
 
   ; *************************** read in spectra ***************************
 
@@ -70,7 +85,7 @@ PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_
   cube_sky = fltarr(Nx, Ny, N)
 
   ; create the lambda axis
-  lambda_axis = crval1[0] + (findgen(Nx) - crpix1[0] + 1d) * cdelt1[0]
+  lambda_axis = lambda_min + (dindgen(Nx) - lambda_min + 1d) * cdelt1[0]
 
   ; loop through all files and read them in
   for i=0, N-1 do begin
@@ -83,9 +98,10 @@ PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_
     if keyword_set(sky_filenames) then sky = mrdfits(sky_filenames[i], 0, /silent)
 
     ; trim them and save them in the array
-    cube[*,*,i] = spec[ 0:Nx-1 , 0:Ny-1 ]
-    cube_sigma[*,*,i] = spec_sigma[ 0:Nx-1 , 0:Ny-1 ]
-    if keyword_set(sky_filenames) then cube_sky[*,*,i] = sky[ 0:Nx-1 , 0:Ny-1 ]
+    cube[ pixel_padding[i]:pixel_padding[i]+naxis1[i]-1 , * , i ] = spec[ * , 0:Ny-1 ]
+    cube_sigma[ pixel_padding[i]:pixel_padding[i]+naxis1[i]-1 , * , i ] = spec_sigma[ * , 0:Ny-1 ]
+    if keyword_set(sky_filenames) then $
+      cube_sky[ pixel_padding[i]:pixel_padding[i]+naxis1[i]-1 , * , i ] = sky[ * , 0:Ny-1 ]
 
   endfor
 
