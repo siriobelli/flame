@@ -603,76 +603,139 @@ PRO flame_combine_multislit, fuel=fuel
 	if w_A eq !NULL or w_B eq !NULL then return
 
 	; dithering length (by definition; see flame_combine_oneslit)
-	dithering_length = abs( floor(diagnostics[w_A[0]].position) - floor(diagnostics[w_B[0]].position) )
+	dithering_length = floor(diagnostics[w_B[0]].position) - floor(diagnostics[w_A[0]].position)
 
 	; number of pixels along the spatial position
 	Nx = n_elements(*fuel.slits[0].rough_skylambda)
 
-	; calculate the vertical coordinate of the geometric center of each slit
-	slit_center = fltarr(n_elements(fuel.slits))
-	for i_slit=0, n_elements(fuel.slits)-1 do slit_center[i_slit] = $
-		poly( 0.5*Nx, fuel.slits[i_slit].bottom_poly) + 0.5*fuel.slits[i_slit].height
+	; calculate the top and bottom edges of the slits, in the middle of the detector
+	slit_bottom = fltarr(n_elements(fuel.slits))
+	for i_slit=0, n_elements(fuel.slits)-1 do slit_bottom[i_slit] = $
+		poly( 0.5*Nx, fuel.slits[i_slit].bottom_poly)
+	slit_top = slit_bottom + fuel.slits.height
 
-	; loop through the slits
+	; make plot that shows slit pairing
+	cgplot, [0], /nodata, xra=[0, 2.5], $
+	 	yra= [ min(slit_bottom)-1.2*abs(dithering_length), max(slit_top)+1.2*abs(dithering_length)], $
+		ytit='pixel position along the vertical direction', charsize=1
+
+	; for each slit show their name and position on the detector
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
+		cgplot, [1,1], [slit_bottom[i_slit], slit_top[i_slit]], /overplot, thick=3
+		cgplot, [0,3], slit_bottom[i_slit] + [0,0], /overplot, linestyle=2
+		cgplot, [0,3], slit_top[i_slit] + [0,0], /overplot, linestyle=2
+		cgtext, 0.9, 0.5*(slit_top+slit_bottom)[i_slit], 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+			' - ' + 'pos A', charsize=1, alignment=1
+	endfor
 
-		if fuel.slits[i_slit].skip then continue
+	; now shift them by the dithering length
+	for i_slit=0, n_elements(fuel.slits)-1 do begin
+		cgplot, [1.2,1.2], [slit_bottom[i_slit], slit_top[i_slit]] + dithering_length, $
+		 	/overplot, thick=3, color='red'
+		cgtext, 1.3, 0.5*(slit_top+slit_bottom)[i_slit] + dithering_length, 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+			' - ' + 'pos B', charsize=1, alignment=0, color='red'
+	endfor
 
-		; if the dithering length is clearly smaller than the slit height, then it is an on-slit dithering
-		if dithering_length LE 0.85*fuel.slits[i_slit].height then continue
-		; otherwise, check whether we have a good match among the slits
 
-		; this is the distance of this slit to every other slit
-		distance = slit_center-slit_center[i_slit]
+	; calculate the quality of each possible overlap and store it in a matrix
+	overlap_coefficient = fltarr(n_elements(fuel.slits), n_elements(fuel.slits))
 
-		; this is the difference between the distance and the dithering length. in units of the slit height
-		; (only match with slits that are above this one, to avoid double counting)
-		delta = (distance - dithering_length) / fuel.slits.height
+	; loop through the slits and fill in the matrix
+	for i_slit=0, n_elements(fuel.slits)-1 do $
+		for j_slit=0, n_elements(fuel.slits)-1 do begin
 
-		; select the slit with delta closest to zero
-		mindelta = min(abs(delta), j_slit)
+			; calculate the top and bottom edges of the possible pairing
+			top_edges = [slit_top[i_slit], slit_top[j_slit] + dithering_length]
+			bottom_edges = [slit_bottom[i_slit], slit_bottom[j_slit] + dithering_length]
 
-		; check that the candidate slit is not skipped
-		if fuel.slits[j_slit].skip then continue
+			; "overlap coefficient":
+			; 1: perfect overlap
+			; 0.01: tiny overlap
+			; less than 0: no overlap
+			; -1: infinitely far apart
+			overlap_coefficient[i_slit,j_slit] = ( min(top_edges)-max(bottom_edges) ) / ( max(top_edges)-min(bottom_edges) )
 
-		; if the dithering length falls within the central 50% of the slit, then we have a match
-		if abs(mindelta) LT 0.5 then $
-			; still need to check that these two slits are horizontally aligned
-			; do this by comparing the wavelength solutions
-			if fuel.slits[i_slit].outlambda_min eq fuel.slits[j_slit].outlambda_min then begin
+	endfor
 
-			print, ''
-			print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name + $
-				' with slit ' + strtrim(fuel.slits[j_slit].number, 2) + ' - ' + fuel.slits[j_slit].name
+	; check whether there are any overlaps:
+	if total( overlap_coefficient GT 0.0 ) EQ 0 then begin
+		print, 'WARNING: no slits could be paired'
+		return
+	endif
 
-			; prefix for file names
-			filename_prefix_i = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
-			 	'-' + fuel.slits[i_slit].name
-			filename_prefix_j = fuel.util.output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
-			 	'-' + fuel.slits[j_slit].name
+	; we don't care about negative coefficients (meaning no overlap)
+	overlap_coefficient = overlap_coefficient > 0.0
 
-			; calculate the signs so that the stacked A-B has positive signal
-			if floor(diagnostics[w_A[0]].position) GT floor(diagnostics[w_B[0]].position) then $
-				signs = [-1, 1] else $
-				signs = [1, -1]
+	print, ''
+	print, 'Overlap matrix:'
+	print, overlap_coefficient
+	print, 'Possible overlaps found: ', n_elements( where(overlap_coefficient GT 0.0) )
 
-			; combine the A-B stacks
-			outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
-				string(fuel.slits[j_slit].number, format='(I02)') + '_A-B.fits'
-			flame_util_combine_slits, [filename_prefix_i + '_A-B.fits', filename_prefix_j + '_A-B.fits'], $
-			 	output = outname, signs = signs, $
-				 sky_filenames=[filename_prefix_i + '_sky.fits', filename_prefix_j + '_sky.fits']
+	; let's keep track of the slits that have been paired
+	slit_paired = bytarr(n_elements(fuel.slits))
 
-			; combine the skysubtracted A-B stacks
-			outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
-			 string(fuel.slits[j_slit].number, format='(I02)') + '_skysub_A-B.fits'
- 			flame_util_combine_slits, [filename_prefix_i + '_skysub_A-B.fits', filename_prefix_j + '_skysub_A-B.fits'], $
- 			 	output = outname, signs = signs
+	; go through all possible pairings, in decreasing order of overlap coefficient
+	; stop when the pairing involves a slit that has already been paired
+	for pairing_number=1, n_elements(where(overlap_coefficient GT 0.0)) do begin
 
-			; update the file name of the final output
-			fuel.slits[i_slit].output_file = outname
+		; find the highest overlap coefficient
+		top_overlap = max(overlap_coefficient, ind2d)
+	 	i_slit = (array_indices(overlap_coefficient, ind2d))[0]
+		j_slit = (array_indices(overlap_coefficient, ind2d))[1]
 
+		; remove this overlap
+		overlap_coefficient[ind2d] = 0.0
+
+		; check if these slits have already been paired - in that case we are done
+		if slit_paired[i_slit] or slit_paired[j_slit] then break
+
+		; mark these slits as paired
+		slit_paired[i_slit] = 1
+		slit_paired[j_slit] = 1
+
+		print, ''
+		print, 'Pairing #' + strtrim(pairing_number)
+		print, 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+			' - ' +	'slit' + string(fuel.slits[j_slit].number, format='(I02)')
+		print, 'Overlap: ' + cgnumber_formatter(top_overlap*100.0, decimals=2) + ' %'
+
+		; check that both slits have actually been reduced
+		if fuel.slits[i_slit].skip or fuel.slits[j_slit].skip then begin
+			print, 'no combination; slits have been skipped'
+			continue
 		endif
+
+		print, ''
+		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name + $
+			' with slit ' + strtrim(fuel.slits[j_slit].number, 2) + ' - ' + fuel.slits[j_slit].name
+
+		; prefix for file names
+		filename_prefix_i = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+		 	'-' + fuel.slits[i_slit].name
+		filename_prefix_j = fuel.util.output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
+		 	'-' + fuel.slits[j_slit].name
+
+		; calculate the signs so that the stacked A-B has positive signal
+		if floor(diagnostics[w_A[0]].position) GT floor(diagnostics[w_B[0]].position) then $
+			signs = [-1, 1] else $
+			signs = [1, -1]
+
+		; combine the A-B stacks
+		outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
+			string(fuel.slits[j_slit].number, format='(I02)') + '_A-B.fits'
+		flame_util_combine_slits, [filename_prefix_i + '_A-B.fits', filename_prefix_j + '_A-B.fits'], $
+		 	output = outname, signs = signs, $
+			 sky_filenames=[filename_prefix_i + '_sky.fits', filename_prefix_j + '_sky.fits']
+
+		; combine the skysubtracted A-B stacks
+		outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
+		 string(fuel.slits[j_slit].number, format='(I02)') + '_skysub_A-B.fits'
+			flame_util_combine_slits, [filename_prefix_i + '_skysub_A-B.fits', filename_prefix_j + '_skysub_A-B.fits'], $
+			 	output = outname, signs = signs
+
+		; update the file name of the final output
+		fuel.slits[i_slit].output_file = outname
+		fuel.slits[j_slit].output_file = outname
 
 	endfor
 
@@ -793,6 +856,7 @@ PRO flame_combine, fuel
 
 		if fuel.slits[i_slit].skip then continue
 
+		print, ''
 		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name
 
 		; handle errors by ignoring that slit
