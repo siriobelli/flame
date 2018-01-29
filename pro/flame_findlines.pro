@@ -839,6 +839,10 @@ PRO flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=s
  	diff_lambda = abs( wavelength_solution_smooth - shift(wavelength_solution_smooth, 1, 0) )
  	lambda_delta = double(median(diff_lambda))
 
+ 	; round this value on a logarithmic scale - the idea here is to try
+ 	; to have the same value for slightly different datasets
+  outlambda_delta = 10.0^( round(alog10(lambda_delta)*20.0d)/20.0d )
+
   ; find the median wavelength of the first and last pixel
   lambda_first_pixel = median(wavelength_solution_smooth[0,*])
   lambda_last_pixel = median(wavelength_solution_smooth[-1,*])
@@ -851,12 +855,26 @@ PRO flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=s
 	lambda_min = lambda_first_pixel - 0.5*N_pix_y*lambda_delta
 	lambda_max = lambda_last_pixel + 0.5*N_pix_y*lambda_delta
 
- 	; find the rounded values, on a logarithmic scale
- 	; (the idea here is to try to have the same value for slightly different datasets)
-  ; and save output grid to the slit structure
-	slit.outlambda_min = 10.0^( floor(alog10(lambda_min)*100.0)/100.0 )
-	slit.outlambda_delta = 10.0^( round(alog10(lambda_delta)*20.0d)/20.0d )
-  slit.outlambda_Npix = round( (lambda_max - slit.outlambda_min) / slit.outlambda_delta )
+  ; calculate how many pixels (at the given wavelength scale)
+  ; are between 1 micron and lambda_min
+  Npix_1um = (lambda_min-1.0) / outlambda_delta
+
+  ; round this down to a number that is multiple of 100
+  Npix_1um_rounded = floor(Npix_1um/100.0)*100
+
+  ; take that distance from 1um as the initial wavelength for the output grid
+  outlambda_min = 1.0 + Npix_1um_rounded * outlambda_delta
+
+  ; this is the number of pixels needed to get to lambda_max
+  pixel_needed = (lambda_max-outlambda_min) / outlambda_delta
+
+  ; round it up to a multiple of 100
+  outlambda_Npix = ceil(pixel_needed/100.0)*100
+
+  ; save output grid to the slit structure
+	slit.outlambda_min = outlambda_min
+	slit.outlambda_delta = outlambda_delta
+  slit.outlambda_Npix = outlambda_Npix
 
 END
 
