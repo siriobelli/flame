@@ -276,197 +276,6 @@ END
 ;*******************************************************************************
 
 
-
-PRO flame_combine_diff, filename1=filename1, filename2=filename2, $
-		output_filename=output_filename, combined_filename=combined_filename
-;
-; make difference image
-; the input files must be written by flame_combine_stack and have six extensions
-; if combined_filename is specified, then the ABcombined image is also written,
-; using the gamma coordinate to align
-; NB: the alignment is done in the "observed" frame using the YCUTOUT keyword
-; from the FITS header
-;
-
-	; read in the two files
-	; ----------------------------------------------------------------------------
-
-	im1 = mrdfits(filename1, 0, hdr1, /silent)
-	im2 = mrdfits(filename2, 0, hdr2, /silent)
-
-	err1 = mrdfits(filename1, 1, err_hdr, /silent)
-	err2 = mrdfits(filename2, 1, /silent)
-
-	sig1 = mrdfits(filename1, 2, sig_hdr, /silent)
-	sig2 = mrdfits(filename2, 2, /silent)
-
-	sky1 = mrdfits(filename1, 3, sky_hdr, /silent)
-	sky2 = mrdfits(filename2, 3, /silent)
-
-	exptime1 = mrdfits(filename1, 4, exptime_hdr, /silent)
-	exptime2 = mrdfits(filename2, 4, /silent)
-
-	weight1 = mrdfits(filename1, 5, weight_hdr, /silent)
-	weight2 = mrdfits(filename2, 5, /silent)
-
-
-	; align the two frames
-	; ----------------------------------------------------------------------------
-
-	; read the y coordinate of the (0,0) pixel for each frame
-	ymin1 = round(sxpar(hdr1, 'YCUTOUT'))
-	ymin2 = round(sxpar(hdr2, 'YCUTOUT'))
-
-	; read the y coordinate of the (0,Ny) pixel for each frame
-	ymax1 = ymin1 + sxpar(hdr1, 'NAXIS2') - 1
-	ymax2 = ymin2 + sxpar(hdr2, 'NAXIS2') - 1
-
-	; determine the starting and ending pixels for the proper alignment of the frame
-	if ymin2 GE ymin1 then bot2 = 0 else bot2 = ymin1-ymin2
-	if ymin2 GE ymin1 then bot1 = ymin2-ymin1 else bot1 = 0
-	if ymax2 GE ymax1 then top2 = ymax1-ymin2  else top2 = ymax2-ymin2
-	if ymax2 GE ymax1 then top1 = ymax1-ymin1 else top1 = ymax2-ymin1
-
-	; read the gamma coordinate (to be used later on)
-	gamma_min1 = sxpar(hdr1, 'CRVAL2')
-	gamma_min2 = sxpar(hdr2, 'CRVAL2')
-
-
-	; combine the data
-	; ----------------------------------------------------------------------------
-
-	; make the difference image
-	imdiff = im1[*,bot1:top1] - im2[*,bot2:top2]
-
-	; combine the noise
-	errdiff = sqrt( err1[*,bot1:top1]^2 + err2[*,bot2:top2]^2 )
-
-	; combine the sigma
-	sigdiff = sqrt( sig1[*,bot1:top1]^2 + sig2[*,bot2:top2]^2 )
-
-	; combine the sky
-	skydiff = sky1[*,bot1:top1] + sky2[*,bot2:top2]
-
-	; take only the exptime of A
-	exptimediff1 = exptime1[*,bot1:top1]
-	exptimediff2 = exptime2[*,bot2:top2]
-	exptimediff = exptimediff1
-
-	; take only the weight of A
-	weightdiff1 = weight1[*,bot1:top1]
-	weightdiff2 = weight2[*,bot2:top2]
-	weightdiff = weightdiff1
-
-
-	; output file
-	; ----------------------------------------------------------------------------
-
-	; make the header for the combined spectrum
-	hdr_diff = hdr1
-	if ymin1 ne 0 then sxaddpar, hdr_diff, 'YCUTOUT', sxpar(hdr_diff, 'YCUTOUT')+bot1
-	if ymin1 ne 0 then sxaddpar, hdr_diff, 'CRVAL2', sxpar(hdr_diff, 'CRVAL2')+bot1
-
-	writefits, output_filename, imdiff, hdr_diff
-	writefits, output_filename, errdiff, err_hdr, /append
-	writefits, output_filename, sigdiff, sig_hdr, /append
-	writefits, output_filename, skydiff, sky_hdr, /append
-	writefits, output_filename, exptimediff, exptime_hdr, /append
-	writefits, output_filename, weightdiff, weight_hdr, /append
-	print, output_filename, ' written'
-
-
-	; double-combine frames
-	; ----------------------------------------------------------------------------
-
-	; if the keyword is not provided, then skip
-	if ~keyword_set(combined_filename) then return
-
-	; what is the nod amplitude?
-	nod = (gamma_min1-ymin1) - (gamma_min2-ymin2)
-	print, 'Nod amplitude: ' + strtrim(nod, 2) + ' rectified pixels'
-
-	; height of the A-B image
-	Ny = (size(imdiff))[2]
-
-	; if the nod amplitude is zero then something is wrong
-	if nod eq 0 then message, 'Nod amplitude cannot be zero'
-
-	; if the nod amplitude is almost the same as the frame height, then we are done
-	if abs(nod+0.0) GT 0.9*Ny then return
-
-	; make an empty cube for the stacking
-	cube_imdiff = dblarr( 2, (size(imdiff))[1], Ny + abs(nod) )
-	cube_imdiff[*] = !values.d_nan
-	cube_errdiff = cube_imdiff
-	cube_sigdiff = cube_imdiff
-	cube_skydiff = cube_imdiff
-	cube_exptimediff = cube_imdiff
-	cube_weightdiff = cube_imdiff
-
-	; determine the amount of vertical shifting
-	shiftA=0
-	shiftB=0
-	if nod GT 0 then shiftA+=nod else shiftB+=abs(nod)
-
-	; add the difference image in the first layer of the cube
-	cube_imdiff[0,*,0+shiftA:Ny-1+shiftA] = imdiff
-	cube_errdiff[0,*,0+shiftA:Ny-1+shiftA] = errdiff
-	cube_sigdiff[0,*,0+shiftA:Ny-1+shiftA] = sigdiff
-	cube_skydiff[0,*,0+shiftA:Ny-1+shiftA] = skydiff
-	cube_exptimediff[0,*,0+shiftA:Ny-1+shiftA] = exptimediff1
-	cube_weightdiff[0,*,0+shiftA:Ny-1+shiftA] = weightdiff1
-
-	; add the negative of the difference image in the second layer of the cube
-	cube_imdiff[1,*,0+shiftB:Ny-1+shiftB] = -imdiff
-	cube_errdiff[1,*,0+shiftB:Ny-1+shiftB] = errdiff
-	cube_sigdiff[1,*,0+shiftB:Ny-1+shiftB] = sigdiff
-	cube_skydiff[1,*,0+shiftB:Ny-1+shiftB] = skydiff
-	cube_exptimediff[1,*,0+shiftB:Ny-1+shiftB] = exptimediff2
-	cube_weightdiff[1,*,0+shiftB:Ny-1+shiftB] = weightdiff2
-
-	; weights for stacking
-	cube_weights = cube_weightdiff
-
-	; finally stack the cubes
-	dbl_imdiff = total(cube_weights*cube_imdiff, 1, /nan) / total(cube_weights, 1, /nan)
-	dbl_errdiff = sqrt( total(cube_weights^2 * cube_errdiff^2, 1, /nan) ) / total(cube_weights, 1, /nan)
-	dbl_sigdiff = sqrt( total(cube_weights^2 * cube_sigdiff^2, 1, /nan) ) / total(cube_weights, 1, /nan)
-	dbl_skydiff = total(cube_weights*cube_skydiff, 1, /nan) / total(cube_weights, 1, /nan)
-	dbl_exptimediff = total(cube_exptimediff, 1, /nan)
-	dbl_weightdiff = total(cube_weights, 1, /nan)
-
-	; set to NaNs pixels with exptime=0
-	w_nan = where(dbl_exptimediff eq 0.0, /null)
-	if w_nan NE !NULL then begin
-		dbl_imdiff[w_nan] = !values.d_nan
-		dbl_errdiff[w_nan] = !values.d_nan
-		dbl_sigdiff[w_nan] = !values.d_nan
-		dbl_skydiff[w_nan] = !values.d_nan
-	endif
-
-	; make the header for the double-combined spectrum
-	hdr_dbl = hdr_diff
-	if shiftA ne 0 then sxaddpar, hdr_dbl, 'YCUTOUT', sxpar(hdr_dbl, 'YCUTOUT')+shiftA
-	if shiftA ne 0 then sxaddpar, hdr_dbl, 'CRVAL2', sxpar(hdr_dbl, 'CRVAL2')+shiftA
-
-	; write out FITS file
-	writefits, combined_filename, dbl_imdiff, hdr_dbl
-	writefits, combined_filename, dbl_errdiff, err_hdr, /append
-	writefits, combined_filename, dbl_sigdiff, sig_hdr, /append
-	writefits, combined_filename, dbl_skydiff, sky_hdr, /append
-	writefits, combined_filename, dbl_exptimediff, exptime_hdr, /append
-	writefits, combined_filename, dbl_weightdiff, weight_hdr, /append
-	print, combined_filename, ' written'
-
-
-END
-
-
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
-
-
 PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	; parameter for sigma-clipping when combining the frames
@@ -543,35 +352,48 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 	endif
 
 
-	; make difference images
+	; if there is no AB nodding, then we are done
+	if ~fuel.input.AB_subtraction then return
+
+
+	; make difference images (A-B)
 	;*************************************
 
-
 	if w_B NE !NULL and w_X ne !NULL then begin
-		flame_combine_diff, filename1=filename_prefix+'_B.fits', filename2=filename_prefix+'_X.fits', $
-			output_filename=filename_prefix + '_B-X.fits'
-		flame_combine_diff, filename1=filename_prefix+'_skysub_B.fits', filename2=filename_prefix+'_skysub_X.fits', $
-			output_filename=filename_prefix + '_skysub_B-X.fits'
+
+		flame_util_combine_slits, filename_prefix + ['_B.fits', '_X.fits'], output_filename=filename_prefix + '_B-X.fits', $
+			/difference, /observed_frame
+		flame_util_combine_slits, filename_prefix + ['_skysub_B.fits', '_skysub_X.fits'], output_filename=filename_prefix + '_skysub_B-X.fits', $
+			/difference, /observed_frame
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B-X.fits'
+
 	endif
 
 
 	if w_A NE !NULL and w_X ne !NULL then begin
-		flame_combine_diff, filename1=filename_prefix+'_A.fits', filename2=filename_prefix+'_X.fits', $
-			output_filename=filename_prefix + '_A-X.fits'
-		flame_combine_diff, filename1=filename_prefix+'_skysub_A.fits', filename2=filename_prefix+'_skysub_X.fits', $
-			output_filename=filename_prefix + '_skysub_A-X.fits'
+
+		flame_util_combine_slits, filename_prefix + ['_A.fits', '_X.fits'], output_filename=filename_prefix + '_A-X.fits', $
+			/difference, /observed_frame
+		flame_util_combine_slits, filename_prefix + ['_skysub_A.fits', '_skysub_X.fits'], output_filename=filename_prefix + '_skysub_A-X.fits', $
+			/difference, /observed_frame
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-X.fits'
+
 	endif
 
 
 	if w_A NE !NULL and w_B ne !NULL then begin
 
-		flame_combine_diff, filename1=filename_prefix+'_A.fits', filename2=filename_prefix+'_B.fits', $
-			output_filename=filename_prefix + '_A-B.fits', combined_filename=filename_prefix + '_ABcombined.fits'
-		flame_combine_diff, filename1=filename_prefix+'_skysub_A.fits', filename2=filename_prefix+'_skysub_B.fits', $
-			output_filename=filename_prefix + '_skysub_A-B.fits', combined_filename=filename_prefix + '_skysub_ABcombined.fits'
+		flame_util_combine_slits, filename_prefix + ['_A.fits', '_B.fits'], output_filename=filename_prefix + '_A-B.fits', $
+			/difference, /observed_frame
+		flame_util_combine_slits, filename_prefix + ['_skysub_A.fits', '_skysub_B.fits'], output_filename=filename_prefix + '_skysub_A-B.fits', $
+			/difference, /observed_frame
 		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-B.fits'
+
+		; also make B-A for later use
+		flame_util_combine_slits, filename_prefix + ['_B.fits', '_A.fits'], output_filename=filename_prefix + '_B-A.fits', $
+			/difference, /observed_frame
+		flame_util_combine_slits, filename_prefix + ['_skysub_B.fits', '_skysub_A.fits'], output_filename=filename_prefix + '_skysub_B-A.fits', $
+			/difference, /observed_frame
 
 		; if written, then use the ABcombined file
 		if file_test(filename_prefix + '_skysub_ABcombined.fits') then $
@@ -592,6 +414,8 @@ PRO flame_combine_multislit, fuel=fuel
 ;
 ; if the dithering length matches the distance between two slits, then it means
 ; that these are the A and B positions for the same object, and we need to combine them
+; NB: this includes the on-slit nodding, i.e. when the dithering length is shorter
+; than the slit length
 ;
 
 	; identify the A and B positions
@@ -605,7 +429,7 @@ PRO flame_combine_multislit, fuel=fuel
 	; dithering length (by definition; see flame_combine_oneslit)
 	dithering_length = floor(diagnostics[w_B[0]].position) - floor(diagnostics[w_A[0]].position)
 
-	; number of pixels along the spatial position
+	; number of detector pixels along the horizontal direction
 	Nx = n_elements(*fuel.slits[0].rough_skylambda)
 
 	; calculate the top and bottom edges of the slits, in the middle of the detector
@@ -630,9 +454,9 @@ PRO flame_combine_multislit, fuel=fuel
 
 	; now shift them by the dithering length
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
-		cgplot, [1.2,1.2], [slit_bottom[i_slit], slit_top[i_slit]] + dithering_length, $
+		cgplot, [1.2,1.2], [slit_bottom[i_slit], slit_top[i_slit]] - dithering_length, $
 		 	/overplot, thick=3, color='red'
-		cgtext, 1.3, 0.5*(slit_top+slit_bottom)[i_slit] + dithering_length, 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+		cgtext, 1.3, 0.5*(slit_top+slit_bottom)[i_slit] - dithering_length, 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
 			' - ' + 'pos B', charsize=1, alignment=0, color='red'
 	endfor
 
@@ -645,8 +469,8 @@ PRO flame_combine_multislit, fuel=fuel
 		for j_slit=0, n_elements(fuel.slits)-1 do begin
 
 			; calculate the top and bottom edges of the possible pairing
-			top_edges = [slit_top[i_slit], slit_top[j_slit] + dithering_length]
-			bottom_edges = [slit_bottom[i_slit], slit_bottom[j_slit] + dithering_length]
+			top_edges = [slit_top[i_slit], slit_top[j_slit] - dithering_length]
+			bottom_edges = [slit_bottom[i_slit], slit_bottom[j_slit] - dithering_length]
 
 			; "overlap coefficient":
 			; 1: perfect overlap
@@ -715,23 +539,23 @@ PRO flame_combine_multislit, fuel=fuel
 		filename_prefix_j = fuel.util.output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
 		 	'-' + fuel.slits[j_slit].name
 
-		; calculate the signs so that the stacked A-B has positive signal
+		; calculate the nodding direction so that the stacked A-B has positive signal
 		if floor(diagnostics[w_A[0]].position) GT floor(diagnostics[w_B[0]].position) then $
-			signs = [-1, 1] else $
-			signs = [1, -1]
+			suffix = ['_B-A.fits', '_A-B.fits'] $
+		else $
+			suffix = ['_A-B.fits', '_B-A.fits']
 
 		; combine the A-B stacks
+		filenames = [filename_prefix_i + suffix[0], filename_prefix_j + suffix[1]]
 		outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
-			string(fuel.slits[j_slit].number, format='(I02)') + '_A-B.fits'
-		flame_util_combine_slits, [filename_prefix_i + '_A-B.fits', filename_prefix_j + '_A-B.fits'], $
-		 	output = outname, signs = signs, $
-			 sky_filenames=[filename_prefix_i + '_sky.fits', filename_prefix_j + '_sky.fits']
+			string(fuel.slits[j_slit].number, format='(I02)') + '.fits'
+		flame_util_combine_slits, filenames, output_filename=outname, /nan, /usesigma, /rectified_frame
 
 		; combine the skysubtracted A-B stacks
+		filenames = [filename_prefix_i + '_skysub' + suffix[0], filename_prefix_j + '_skysub' + suffix[1]]
 		outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
-		 string(fuel.slits[j_slit].number, format='(I02)') + '_skysub_A-B.fits'
-			flame_util_combine_slits, [filename_prefix_i + '_skysub_A-B.fits', filename_prefix_j + '_skysub_A-B.fits'], $
-			 	output = outname, signs = signs
+		 string(fuel.slits[j_slit].number, format='(I02)') + '_skysub.fits'
+	 	flame_util_combine_slits, filenames, output_filename=outname, /nan, /usesigma, /rectified_frame
 
 		; update the file name of the final output
 		fuel.slits[i_slit].output_file = outname
@@ -857,7 +681,7 @@ PRO flame_combine, fuel
 		if fuel.slits[i_slit].skip then continue
 
 		print, ''
-		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name
+		print, 'Stacking frames for slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name
 
 		; handle errors by ignoring that slit
 		if fuel.settings.stop_on_error eq 0 then begin
@@ -878,8 +702,9 @@ PRO flame_combine, fuel
 
 	endfor
 
-	; if there is more than one slit, it may be necessary to combine two different slits together
-	if n_elements(where(fuel.slits.skip eq 0, /null)) GT 1 and fuel.input.AB_subtraction then flame_combine_multislit, fuel=fuel
+
+	; if nodding, combine the As and the Bs
+	if fuel.input.AB_subtraction then flame_combine_multislit, fuel=fuel
 
 	; combine the SNR map of all slits that were reduced into one large FITS file
  	flame_combine_mask, fuel

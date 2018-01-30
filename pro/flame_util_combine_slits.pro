@@ -1,116 +1,15 @@
 
-PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_box, $
-    sky_filenames=sky_filenames, noweights=noweights, signs=signs
+
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
 ;
-; combine the flame output from different observations of the same object
-; if specified, alignment_box sets the region [x0, y0, x1, y1] (in pixels)
-; to be used for the vertical alignment before combining the spectra
+; TO BE TESTED
 ;
-; signs is an arrays of +1 and -1
-;
-
-  ; *************************** load headers ***************************
-
-  ; number of files to combine
-  N = n_elements(filenames)
-
-  ; check the signs
-  if ~keyword_set(signs) then signs = 1 + intarr(N)
-  if n_elements(signs) NE N then $
-    message, 'signs must have the same number of elements as the array of file names'
-
-  if ~keyword_set(output) then output='combined_frames.fits'
-
-  ; make the arrays for the header info
-  naxis1 = intarr(N)
-  naxis2 = intarr(N)
-  cunit1 = strarr(N)
-  crval1 = fltarr(N)
-  crval2 = fltarr(N)
-  crpix1 = fltarr(N)
-  crpix2 = fltarr(N)
-  cdelt1 = fltarr(N)
-
-  ; read all the headers and get the relevant information
-  for i=0, N-1 do begin
-    header = headfits(filenames[i])
-    naxis1[i] = sxpar(header, 'NAXIS1')
-    naxis2[i] = sxpar(header, 'NAXIS2')
-    cunit1[i] = strtrim(sxpar(header, 'CUNIT1'), 2)
-    crval1[i] = sxpar(header,'CRVAL1')
-    crval2[i] = sxpar(header,'CRVAL2')
-    crpix1[i] = sxpar(header,'CRPIX1')
-    crpix2[i] = sxpar(header,'CRPIX2')
-    cdelt1[i] = sxpar(header,'CDELT1')
-    print, 'reading header for ', filenames[i], $
-      '  -  size: ', strtrim( naxis1[i], 2), ' x ', strtrim(naxis2[i], 2)
-  endfor
-
-  ; *************************** check headers ***************************
-
-  ; check that the units are the same
-  if n_elements(uniq(cunit1)) NE 1 then message, 'Wavelength units are different: ' + strjoin(string(cunit1))
-
-  ; check that the wavelength scale is the same for all files
-  if n_elements(uniq(crpix1)) NE 1 then message, 'Wavelength axes are different: CRPIX1 = ' + strjoin(string(crpix1))
-  if n_elements(uniq(cdelt1)) NE 1 then message, 'Wavelength axes are different: CDELT1 = ' + strjoin(string(cdelt1))
-  print, 'Wavelength scale is the same for all files.'
-
-
-  ; *************************** set up the output grid ***************************
-
-  ; find extrema of wavelengths
-  lambda_min = min(crval1)
-  lambda_max = max(crval1 + naxis1*cdelt1)
-
-  ; for each frame, how many pixels do we leave blank at the beginning of the grid?
-  pixel_padding = (crval1-lambda_min)/cdelt1[0]
-  print, 'Frames need to be shifted by the following pixel amount:', pixel_padding
-
-  ; check that the wavelength grids can be shifted and matched
-  if total( abs(pixel_padding-round(pixel_padding)) GT 0.05 ) NE 0.0 then $
-    print, 'WARNING! Wavelength grids are misaligned!'
-
-  ; number of pixels in the output grid
-  Nx = round( (lambda_max-lambda_min)/cdelt1[0] )
-  Ny = min(naxis2)
-  print, 'The output will be ', strtrim( Nx, 2), ' x ', strtrim(Ny, 2)
-
-
-  ; *************************** read in spectra ***************************
-
-  ; create the 3D arrays
-  cube = fltarr(Nx, Ny, N)
-  cube_sigma = fltarr(Nx, Ny, N)
-  cube_sky = fltarr(Nx, Ny, N)
-
-  ; create the lambda axis
-  lambda_axis = lambda_min + (dindgen(Nx) - lambda_min + 1d) * cdelt1[0]
-
-  ; loop through all files and read them in
-  for i=0, N-1 do begin
-
-    print, 'Loading ', filenames[i]
-
-    ; read in the spectrum and error spectrum
-    spec = signs[i] * mrdfits(filenames[i], 0, /silent)
-    spec_sigma = mrdfits(filenames[i], 1, /silent)
-    if keyword_set(sky_filenames) then sky = mrdfits(sky_filenames[i], 0, /silent)
-
-    ; trim them and save them in the array
-    cube[ pixel_padding[i]:pixel_padding[i]+naxis1[i]-1 , * , i ] = spec[ * , 0:Ny-1 ]
-    cube_sigma[ pixel_padding[i]:pixel_padding[i]+naxis1[i]-1 , * , i ] = spec_sigma[ * , 0:Ny-1 ]
-    if keyword_set(sky_filenames) then $
-      cube_sky[ pixel_padding[i]:pixel_padding[i]+naxis1[i]-1 , * , i ] = sky[ * , 0:Ny-1 ]
-
-  endfor
-
-  ; make the SNR array
-  cube_snr = cube / cube_sigma
-
-  ; *************************** align spectra ***************************
-
-  if keyword_set(alignment_box) then begin
+FUNCTION flame_util_combine_slits_align, lambda_axis, cube, cube_sigma, alignment_box
 
     ; open plot file
     cgPS_open, 'flame_combine_observations.ps', /nomatch
@@ -130,6 +29,9 @@ PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_
     colors = 'red' + strtrim(indgen(8)+1,2)
     colors = [colors, colors, colors]
 
+    ; make the SNR array
+    cube_snr = cube / cube_sigma
+
     ; show the boxcar extraction of the SNR around the alignment box
     s = stddev( median( total( cube_snr[x0_ext:x1_ext, y0:y1, 0], 2), 3), /nan )
     cgplot, lambda_axis[x0_ext:x1_ext], median( total( cube_snr[x0_ext:x1_ext, y0:y1, 0], 2), 3), $
@@ -142,14 +44,6 @@ PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_
       title='error spectra', charsize=1, xtit='wavelength'
     for i=1, N-1 do cgplot, lambda_axis[x0_ext:x1_ext], total( cube_sigma[x0_ext:x1_ext, y0:y1, i], 2), $
       /overplot, color=colors[i]
-
-    ; show the sky spectra around the alignment box (if provided)
-    if keyword_set(sky_filenames) then begin
-      cgplot, lambda_axis[x0_ext:x1_ext], total( cube_sky[x0_ext:x1_ext, y0:y1, 0], 2), $
-        title='sky spectra', charsize=1, xtit='wavelength'
-      for i=1, N-1 do cgplot, lambda_axis[x0_ext:x1_ext], total( cube_sky[x0_ext:x1_ext, y0:y1, i], 2), $
-        /overplot, color=colors[i]
-    endif
 
     ; extract spatial profile of the galaxy
     profile = dblarr(y1-y0+1, N)
@@ -200,43 +94,291 @@ PRO flame_util_combine_slits, filenames, output=output, alignment_box=alignment_
     ; close plot file
     cgPS_close
 
+
+
+END
+
+
+
+
+
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+
+PRO flame_util_combine_slits, filenames, output_filename=output_filename, difference=difference, $
+    observed_frame=observed_frame, rectified_frame=rectified_frame, nan=nan, $
+    useweights=useweights, usesigma=usesigma, $
+    alignment_box=alignment_box, $
+    sky_filenames=sky_filenames
+;
+; This function can be used to combine - without any resampling - two or more 2D spectra, which must be in
+; the flame "output" format: FITS files with six extensions each (DATA, NOISE, SIGMA, SKY, EXPTIME, WEIGHT).
+; It is used in many situations: to combine the A and B frames of the same slit into an A-B;
+; to further combine the A-B with the shifted B-A for the same slit (on-slit nodding);
+; to combine a slit with another slit (paired-slit nodding); to combine different observations
+; of the same slit taken in different nights, etc.
+;
+; filenames (input) - a string array with the filenames to combine
+; output_filename (input, optional) - a string with the name for the output FITS file
+; /difference (input, optional) - if set, then the second spectrum is subtracted from the first one
+;   (works only if exactly two spectra are input)
+; /observed_frame (input, optional) - if set, the spatial alignment is done on the observed frame,
+;    i.e. using the YCUTOUT keyword from the FITS header
+; /rectified_frame (input, optional) - if set, the spatial alignment is done on the rectified frame,
+;    i.e. using the gamma coordinate (from the CRVAL2 keyword in the FITS header)
+; /useweights (input, optional) - if set, the weight map is used when stacking the spectra
+; /usesigma (input, optional) - if set, the sigma map is used for the weights
+; /nan (input, optional) - if set, NaNs are ignored when stacking the spectra
+;
+; TO BE CONTINUED
+;
+
+;
+; combine the flame output from different observations of the same object
+; if specified, alignment_box sets the region [x0, y0, x1, y1] (in pixels)
+; to be used for the vertical alignment before combining the spectra
+;
+;
+
+
+  ; *************************** test input ***************************
+
+  ; number of files to combine
+  N = n_elements(filenames)
+  if N LT 2 then message, 'At least two file names must be input'
+
+  ; set the output filename
+  if ~keyword_set(output_filename) then output_filename='stack.fits'
+
+  ; check the difference case
+  if keyword_set(difference) and N ne 2 then $
+    message, '/difference option can only be used when combining two files'
+
+
+  ; *************************** load coordinates from headers ***************************
+
+  ; make the arrays for the header info
+  naxis1 = intarr(N)
+  naxis2 = intarr(N)
+  crval1 = fltarr(N)
+  crval2 = fltarr(N)
+  crpix1 = fltarr(N)
+  crpix2 = fltarr(N)
+  cdelt1 = fltarr(N)
+  cdelt2 = fltarr(N)
+  ycutout = fltarr(N)
+
+  ; read all the headers and get the relevant information
+  ; (go in reverse order so that at the end the header is that of the first frame)
+  for i=N-1, 0, -1 do begin
+    header = headfits(filenames[i])
+    naxis1[i] = sxpar(header, 'NAXIS1')
+    naxis2[i] = sxpar(header, 'NAXIS2')
+    crval1[i] = sxpar(header, 'CRVAL1')
+    crval2[i] = sxpar(header, 'CRVAL2')
+    crpix1[i] = sxpar(header, 'CRPIX1')
+    crpix2[i] = sxpar(header, 'CRPIX2')
+    cdelt1[i] = sxpar(header, 'CDELT1')
+    cdelt2[i] = sxpar(header, 'CDELT2')
+    ycutout[i] = sxpar(header, 'YCUTOUT')
+    print, 'reading header for ', filenames[i], $
+      '  -  size: ', strtrim( naxis1[i], 2), ' x ', strtrim(naxis2[i], 2)
+  endfor
+
+
+  ; *************************** check headers ***************************
+
+  ; check that the wavelength scale is the same for all files
+  if n_elements(uniq(crpix1)) NE 1 then message, 'Wavelength axes are different: CRPIX1 = ' + strjoin(string(crpix1))
+  if n_elements(uniq(cdelt1)) NE 1 then message, 'Wavelength axes are different: CDELT1 = ' + strjoin(string(cdelt1))
+  if cdelt1[0] eq 0.0 then message, 'Wavelength axes are not defined!'
+
+
+  ; *************************** set up the common wavelength grid ***************************
+
+  ; find extrema of wavelengths
+  lambda_min = min(crval1)
+  lambda_max = max(crval1 + naxis1*cdelt1)
+
+  ; for each frame, how many pixels do we leave blank at the beginning of the grid?
+  pixel_padding = (crval1-lambda_min)/cdelt1[0]
+  print, 'Frames need to be shifted by the following pixel amount:', reverse(pixel_padding)
+
+  ; check that the wavelength grids can be shifted and matched
+  if total( abs(pixel_padding-round(pixel_padding)) GT 0.05 ) NE 0.0 then $
+    print, 'WARNING! Wavelength grids are misaligned!'
+
+  ; number of pixels in the output wavelength grid
+  Nx = round( (lambda_max-lambda_min)/cdelt1[0] )
+
+  ; create the lambda axis
+  lambda_axis = lambda_min + (dindgen(Nx) - lambda_min + 1d) * cdelt1[0]
+
+  ; update the header
+  sxaddpar, header, 'CRVAL1', lambda_min
+
+  ; define the x-pixel range that will be occupied by each frame in the common wavelength grid
+  x0 = round(pixel_padding)
+  x1 = round(pixel_padding + naxis1 - 1)
+
+
+  ; *************************** set up the common spatial grid ***************************
+
+  ; spatial alignment in the observed frame, i.e. on the detector
+  if keyword_set(observed_frame) then begin
+
+    ; find the extrema of the ycutout values
+    ycutout_min = min(ycutout)
+    ycutout_max = max(ycutout+naxis2)-1
+
+    ; update the YCUTOUT keyword in the header
+    sxaddpar, header, 'YCUTOUT', ycutout_min
+
+    ; number of pixels in the output spatial grid
+    Ny = round(ycutout_max - ycutout_min + 1)
+
+    ; define the y-pixel range that will be occupied by each frame in the common wavelength grid
+    y0 = round(ycutout-ycutout_min)
+    y1 = y0 + naxis2 - 1
+
   endif
+
+  ; spatial alignment in the rectified frame, i.e. on the sky
+  if keyword_set(rectified_frame) then begin
+
+  ; find the extrema of the CRVAL2 (i.e. gamma) values
+    gamma_min = min(crval2)
+    gamma_max = max(crval2+naxis2)-1
+
+    ; update the CRVAL2 keyword in the header
+    sxaddpar, header, 'CRVAL2', gamma_min
+
+    ; number of pixels in the output spatial grid
+    Ny = round( gamma_max - gamma_min + 1 )
+
+    ; define the y-pixel range that will be occupied by each frame in the common wavelength grid
+    y0 = round(crval2-gamma_min)
+    y1 = y0 + naxis2 - 1
+
+  endif
+
+  ;; NB: this assumes that all frames are vertically misplaced by integer number of pixels!!!
+
+  ; make sure that the type of alignment has been specified
+  if n_elements(y0) eq 0 then message, 'Either /observed_frame of /rectified_frame must be set'
+
+  ;; if keyword_set(alignment_box) then flame_util_combine_slits_align, lambda_axis, cube, cube_sigma, alignment_box
+
+
+  ; *************************** load spectra into cube ***************************
+
+  ; create the 3D arrays
+  cube_data = fltarr(Nx, Ny, N) + !values.d_nan
+  cube_error = fltarr(Nx, Ny, N) + !values.d_nan
+  cube_sigma = fltarr(Nx, Ny, N) + !values.d_nan
+  cube_sky = fltarr(Nx, Ny, N) + !values.d_nan
+  cube_exptime = fltarr(Nx, Ny, N) + !values.d_nan
+  cube_weight = fltarr(Nx, Ny, N) + !values.d_nan
+  print, 'The output will be ', strtrim( Nx, 2), ' x ', strtrim(Ny, 2)
+
+  ; loop through all files and load them in
+  ; (go in reverse order so that at the end the extension headers are those of the first frame)
+  for i_file=N-1, 0, -1 do begin
+
+    print, 'Loading ', filenames[i_file]
+
+    ; read in all the extensions
+    im_data =    mrdfits(filenames[i_file], 0, hdr_data, /silent)
+  	im_error =   mrdfits(filenames[i_file], 1, hdr_error, /silent)
+  	im_sigma =   mrdfits(filenames[i_file], 2, hdr_sigma, /silent)
+  	im_sky =     mrdfits(filenames[i_file], 3, hdr_sky, /silent)
+  	im_exptime = mrdfits(filenames[i_file], 4, hdr_exptime, /silent)
+  	im_weight =  mrdfits(filenames[i_file], 5, hdr_weight, /silent)
+
+    ; load the 2D spectra into the right position of the cube
+    cube_data[    x0[i_file]:x1[i_file] , y0[i_file]:y1[i_file] , i_file ] = im_data
+    cube_error[   x0[i_file]:x1[i_file] , y0[i_file]:y1[i_file] , i_file ] = im_error
+    cube_sigma[   x0[i_file]:x1[i_file] , y0[i_file]:y1[i_file] , i_file ] = im_sigma
+    cube_sky[     x0[i_file]:x1[i_file] , y0[i_file]:y1[i_file] , i_file ] = im_sky
+    cube_exptime[ x0[i_file]:x1[i_file] , y0[i_file]:y1[i_file] , i_file ] = im_exptime
+    cube_weight[  x0[i_file]:x1[i_file] , y0[i_file]:y1[i_file] , i_file ] = im_weight
+
+  endfor
+
 
   ; *************************** combine spectra ***************************
 
-  ; option 1: weighted mean of each pixel
-  if ~keyword_set(noweights) then begin
-    cube_weight = 1.0/cube_sigma^2
-    spec_tot = total( cube*cube_weight , 3, /nan) / total( cube_weight , 3, /nan)
-    spec_sigma_tot = 1.0 / sqrt( total( cube_weight , 3, /nan) )
-    if keyword_set(sky_filenames) then $  ; NB: the skies are always combined linearly, with no weights
-      ;sky_tot = total( cube_sky*cube_weight , 3, /nan) / total( cube_weight , 3, /nan)
-      sky_tot = mean(cube_sky, dimension=3, /nan)
-  endif
+  ; for the A-B case the stack is not an average, so there are different rules
+  if keyword_set(difference) then begin
 
-  ; ; option 2: weighted mean, all pixels in one frame have the same weight
-  ; frame_typical_sigma = median( median(cube_sigma, dimension=1), dimension=1)
-  ; cube_weight = cube * 0.0
-  ; for i=0, N-1 do cube_weight[*,*,i] = 1.0 / frame_typical_sigma[i]^2
-  ; spec_tot = total( cube*cube_weight , 3, /nan) / total( cube_weight , 3, /nan)
-  ; spec_sigma_tot = sqrt( total( cube_sigma^2 * cube_weight^2 , 3, /nan) / (total( cube_weight , 3, /nan))^2 )
+    ; flip the sign of the B frame
+    cube_data[*,*,1] *= -1d
 
-  ; option 3: arithmetic mean
-  if keyword_set(noweights) then begin
-    spec_tot = mean(cube, dimension=3, /nan)
-    spec_sigma_tot = sqrt( total( cube_sigma^2, 3, /nan) ) / float(N)
-    if keyword_set(sky_filenames) then $
-      sky_tot = mean(cube_sky, dimension=3, /nan)
-  endif
+    ; subtract B from A
+    stack_data = total(cube_data, 3, nan=nan)
 
-  ; read the header of the first input frame
-  header0 = headfits(filenames[0])
+    ; make the error spectra
+    stack_error = sqrt( total( cube_error^2, 3, nan=nan) )
+    stack_sigma = sqrt( total( cube_sigma^2, 3, nan=nan) )
 
-  ; write spectra
-	writefits, output, spec_tot, header0
-  writefits, output, spec_sigma_tot, /append
-    if keyword_set(sky_filenames) then $
-      writefits, flame_util_replace_string(output, '.fits', '_sky.fits'), sky_tot, header0
+    ; add the sky
+  	stack_sky = total(cube_sky, 3, nan=nan)
+
+    ; us the exposure time and the weight map of the A frame
+	  stack_exptime = cube_exptime[*,*,0]
+	  stack_weight = cube_weight[*,*,0]
+
+  endif else begin
+
+    ; weights for the stacking
+    weights = cube_data
+    weights[*] = 1.0
+    if keyword_set(useweights) then weights = cube_weight
+    if keyword_set(usesigma) then   weights = 1.0/cube_sigma^2
+
+  	; mean-stack the frames
+  	stack_data = total(weights*cube_data, 3, nan=nan) / total(weights, 3, nan=nan)
+
+  	; make the error spectra
+  	stack_error = sqrt( total( weights^2 * cube_error^2, 3, nan=nan) ) / total(weights, 3, nan=nan)
+  	stack_sigma = sqrt( total( weights^2 * cube_sigma^2, 3, nan=nan) ) / total(weights, 3, nan=nan)
+
+  	; mean-stack the sky model
+  	stack_sky = total(weights*cube_sky, 3, nan=nan) / total(weights, 3, nan=nan)
+
+    ; add the exposure time and the weights
+  	stack_exptime = total(cube_exptime, 3, nan=nan)
+  	stack_weight = total(cube_weight, 3, nan=nan)
+
+  endelse
+
+  ; NB: do we need this?
+	; set to NaNs pixels with exptime=0
+	w_nan = where(stack_exptime eq 0.0, /null)
+	if w_nan NE !NULL then begin
+		stack_data[w_nan] = !values.d_nan
+		stack_error[w_nan] = !values.d_nan
+		stack_sigma[w_nan] = !values.d_nan
+		stack_sky[w_nan] = !values.d_nan
+	endif
+
+
+  ; *************************** write output ***************************
+
+
+	; write out FITS file
+	writefits, output_filename, stack_data, header
+  writefits, output_filename, stack_error, hdr_error, /append
+  writefits, output_filename, stack_sigma, hdr_sigma, /append
+  writefits, output_filename, stack_sky, hdr_sky, /append
+  writefits, output_filename, stack_exptime, hdr_exptime, /append
+  writefits, output_filename, stack_weight, hdr_weight, /append
+	print, output_filename, ' written'
 
 
 END
