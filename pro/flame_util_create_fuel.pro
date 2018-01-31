@@ -170,6 +170,7 @@ FUNCTION flame_util_create_fuel, input
     badpix_sigma : 7.0, $
     badpix_flatcorrection : 0.20, $
     trace_slit_with_emlines : 0, $
+    trace_slit_xmargin: 20, $
     trace_slit_ymargin: 12, $
     trace_slit_polydegree: 2, $
     roughwavecal_R : [500, 1000, 3000], $

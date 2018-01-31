@@ -242,10 +242,13 @@ PRO flame_slitid_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top
     ; check that the peak of the initial pixel is above the min flux (otherwise search2d does not work)
     if cutout_zeroed[x_line, Ny/2] LT min_flux then continue
 
+    ; margin to leave to either side of each line
+    xmargin = fuel.settings.trace_slit_xmargin
+
     ; make a copy of the cutout, using only the pixels around the line
     cutout_thisline = cutout_zeroed
-    cutout_thisline[0:x_line-15,*]=min(cutout_zeroed)
-    cutout_thisline[x_line+15:-1,*]=min(cutout_zeroed)
+    cutout_thisline[0:(x_line-xmargin)>0,*]=min(cutout_zeroed)
+    cutout_thisline[(x_line+xmargin)<(Nx-1):-1,*]=min(cutout_zeroed)
 
     ; find the 2D region corresponding to the emission line
     w_line = search2d( cutout_thisline, x_line, Ny/2, min_flux, max(cutout_zeroed) )
