@@ -82,4 +82,6 @@
 
   flame_checkdata, fuel
 
+  flame_extract, fuel
+
 END
