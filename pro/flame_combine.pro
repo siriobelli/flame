@@ -117,6 +117,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 
 		; if present, read the model sky
 		if n_elements(sky_filenames) GE 1 then begin
+			print, sky_filenames[i_frame]
 			sky = mrdfits(sky_filenames[i_frame], 0, /silent)
 			sky_cube[i_frame, *, bot_ref:top_ref] = sky[*, bot_i:top_i]
 		endif
@@ -161,7 +162,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 	; turn masked pixels into NaNs
 	im_cube[where(mask_cube, /null)] = !values.d_nan
 	error_cube[where(mask_cube, /null)] = !values.d_nan
-	sky_cube[where(mask_cube, /null)] = !values.d_nan
+	;sky_cube[where(mask_cube, /null)] = !values.d_nan
 	exptime_cube[where(mask_cube, /null)] = !values.d_nan
 
 	; make a cube that flags pixels that are actually good
@@ -188,13 +189,13 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 		weights[w_noweight] = 0.0
 	endif
 
-	; make the weight cube
-	weight_cube = im_cube
-	weight_cube[*]=0.0
-	for i_frame=0,N_frames-1 do weight_cube[i_frame, *, *] = weights[i_frame]
+	; make the "flat" weight cube - each layer of the cube has only one value
+	flat_weight_cube = im_cube
+	flat_weight_cube[*]=0.0
+	for i_frame=0,N_frames-1 do flat_weight_cube[i_frame, *, *] = weights[i_frame]
 
-	; add the good pixel mask, so that weights are zero for bad pixels
-	weight_cube *= finite(im_cube)
+	; multiply by the good pixel mask, so that weights are zero for bad pixels
+	weight_cube = flat_weight_cube * finite(im_cube)
 
 
 	; make stack and output files
@@ -206,8 +207,8 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 	; make the error spectrum
 	error_stack = sqrt( total( weight_cube^2 * error_cube^2, 1, /nan)  ) / total( weight_cube, 1, /nan)
 
-	; mean-stack the sky model
-	sky_stack = total( weight_cube * sky_cube, 1, /nan ) / total(weight_cube, 1, /nan)
+	; mean-stack the sky model - the model is ideal and does not need to be masked
+	sky_stack = total( flat_weight_cube * sky_cube, 1, /nan ) / total(flat_weight_cube, 1, /nan)
 
 	; make a clean sigma image (i.e., excluding rejected pixels)
 	weight_tot_sq = total( weight_cube^2, 1, /nan )
@@ -230,7 +231,6 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 	im_stack[w_void] = !values.d_nan
 	error_stack[w_void] = !values.d_nan
 	sigma_stack[w_void] = !values.d_nan
-	sky_stack[w_void] = !values.d_nan
 	exptime_stack[w_void] = 0.0
 
 	; make header array with the correct grid
@@ -317,7 +317,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 	; combine sky spectra
 	;*************************************
 
-	; rectified but non-sky-subtracted files
+	; rectified model of sky
 	sky_filenames = flame_util_replace_string(filenames, '.fits', '_skymodel_rectified.fits')
 
 	; stack and get the sky spectrum

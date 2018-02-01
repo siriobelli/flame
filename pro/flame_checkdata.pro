@@ -288,13 +288,14 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 
 	; filename of the output sky stack
 	skystack_filename = fuel.util.output_dir + 'spec2d' + path_sep() + $
-	 	'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name + '_sky.fits'
+	 	fuel.slits[i_slit].output_file
 
 	; load the sky spectrum
-	sky_spec2d = mrdfits(skystack_filename, 0, header, /silent)
+	sky_spec2d = mrdfits(skystack_filename, 3, header, /silent)
+	header = headfits(skystack_filename)
 
 	; extract 1D spectrum
-	sky_spec =  mean(sky_spec2d, dimension=2, /nan)
+	sky_spec =  median(sky_spec2d, dimension=2)
 
 	; get the wavelength calibration from the header
  	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )

@@ -326,10 +326,10 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
     stack_error = sqrt( total( cube_error^2, 3, nan=nan) )
     stack_sigma = sqrt( total( cube_sigma^2, 3, nan=nan) )
 
-    ; add the sky
-  	stack_sky = total(cube_sky, 3, nan=nan)
+    ; use the sky of the A frame
+  	stack_sky = cube_sky[*,*,0]
 
-    ; us the exposure time and the weight map of the A frame
+    ; use the exposure time and the weight map of the A frame
 	  stack_exptime = cube_exptime[*,*,0]
 	  stack_weight = cube_weight[*,*,0]
 
@@ -356,16 +356,6 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
   	stack_weight = total(cube_weight, 3, nan=nan)
 
   endelse
-
-  ; NB: do we need this?
-	; set to NaNs pixels with exptime=0
-	w_nan = where(stack_exptime eq 0.0, /null)
-	if w_nan NE !NULL then begin
-		stack_data[w_nan] = !values.d_nan
-		stack_error[w_nan] = !values.d_nan
-		stack_sigma[w_nan] = !values.d_nan
-		stack_sky[w_nan] = !values.d_nan
-	endif
 
 
   ; *************************** write output ***************************
