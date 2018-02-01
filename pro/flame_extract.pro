@@ -6,16 +6,20 @@
 
 
 
-PRO flame_extract_slit, fuel, slit, dir=dir
+PRO flame_extract_slit, fuel, slit
 
+	; if needed, create extraction directory in the output directory
+  extraction_dir = fuel.util.output_dir + 'spec1d' + path_sep()
+  if ~file_test(extraction_dir) then file_mkdir, extraction_dir
 
 	; read data and make spatial profile
 	; ----------------------------------------------------------------------------
 
-	cgPS_open, dir + 'profile.' + string(slit.number, format='(I03)') + '.' + slit.name + '.ps'
+	ps_filename = flame_util_replace_string(extraction_dir + 'profile.' + slit.output_file, '.fits', '.ps')
+	cgPS_open, ps_filename, /nomatch
 
 	; output file to be used for the extraction
-	filename_spec2d = slit.output_file
+	filename_spec2d = fuel.util.output_dir + 'spec2d' + path_sep() + slit.output_file
 
   ; read in 2d spectrum
   spec2d = mrdfits(filename_spec2d, 0, header, /silent)
@@ -74,8 +78,8 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 	; calculate the rms of the profile, once the peak has been subtracted
 	profile_rms = stddev(profile - gaussian_model, /nan)
 
-	if ~finite(chisq) or $			; check that chi square makes sense
-		gauss_param[0] LT 0.0 or $	; check that the peak of the Gaussian is positive
+	if ~finite(chisq) or chisq LE 0.0 or  $			; check that chi square makes sense
+		gauss_param[0] LE 0.0 or $	; check that the peak of the Gaussian is positive
 		gauss_param[0] LT 5.0*gauss_err[0] or $ 	; check that the SNR is high
 		gauss_param[0] LT 8.0*profile_rms or $ 	; check that the SNR is high (compared to the noise in the profile)
 	 	gauss_param[1] LT min(y_1d) or gauss_param[1] GT max(y_1d) or $ 			; check that the center of the Guassian is in the observed range
@@ -179,11 +183,12 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 	; write FITS file
 	; ----------------------------------------------------------------------------
 
+
 	; output optimal extraction
 	if fuel.settings.extract_optimal then begin
 
 		; filename for the output file
-		filename = dir + 'spec1d.optimal.' + string(slit.number, format='(I03)') + '.' + slit.name + '.fits'
+		filename = extraction_dir + 'spec1d.optimal.' + string(slit.number, format='(I03)') + '.' + slit.output_file
 
 		; make nice output structure
 		output_structure = { $
@@ -197,7 +202,7 @@ PRO flame_extract_slit, fuel, slit, dir=dir
 endif else begin
 
 		; filename for the output file
-		filename = dir + 'spec1d.boxcar.' + string(slit.number, format='(I03)') + '.' + slit.name + '.fits'
+		filename = extraction_dir + 'spec1d.boxcar.' + string(slit.number, format='(I03)') + '.' + slit.output_file
 
 		; make nice output structure
 		output_structure = { $
@@ -239,9 +244,8 @@ PRO flame_extract, fuel
 
 	flame_util_module_start, fuel, 'flame_extract'
 
-	; if needed, create extraction directory in the output directory
-  extraction_dir = fuel.util.output_dir + 'extraction' + path_sep()
-  if ~file_test(extraction_dir) then file_mkdir, extraction_dir
+	; keep track of the spectra already extracted (useful for the "paired slits" nodding)
+	slits_extracted = []
 
 	; extract 1D spectrum for each slit
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
@@ -263,9 +267,14 @@ PRO flame_extract, fuel
 			endif
 		endif
 
+		; check if this slit has already been combined with another, and extracted
+		if total(slits_extracted eq fuel.slits[i_slit].output_file) GT 0 then continue
 
-		flame_extract_slit, fuel, fuel.slits[i_slit], dir=extraction_dir
+		; extract the 1D spectrum for this slit
+		flame_extract_slit, fuel, fuel.slits[i_slit]
 
+		; add this slit to the list of the ones that have been extracted
+		slits_extracted = [slits_extracted, fuel.slits[i_slit].output_file]
 
 	endfor
 

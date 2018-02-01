@@ -276,13 +276,21 @@ END
 ;*******************************************************************************
 
 
-PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
+PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 
 	; parameter for sigma-clipping when combining the frames
 	sigma_clip = fuel.settings.combine_sigma_clip
 
-	; prefix for output file names
-	filename_prefix = fuel.util.output_dir + 'slit' + $
+	; output directory
+	if keyword_set(skysub) then $
+	 	output_dir = fuel.util.output_dir + 'spec2d_skysub' + path_sep() else $
+		output_dir = fuel.util.output_dir + 'spec2d' + path_sep()
+
+	; create output directory if it does not exist
+  if file_test(output_dir) eq 0 then file_mkdir, output_dir
+
+	; prefix for output file names (excluding directory path)
+	filename_prefix = 'slit' + $
 		string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name
 
 	; input filenames for this slit
@@ -314,41 +322,36 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	; stack and get the sky spectrum
 	flame_combine_stack, fuel=fuel, filenames=sky_filenames, diagnostics=fuel.diagnostics, $
-		output_filename = filename_prefix + '_sky.fits', /noalign
+		output_filename = output_dir + filename_prefix + '_sky.fits', /noalign
 
 
 	; stack all A, B, and X frames
 	;*************************************
 
 	; get all the rectified and skysub filenames
-	filenames_rectified = flame_util_replace_string(filenames,  '.fits', '_rectified.fits')
-	filenames_skysub_rectified = flame_util_replace_string(filenames,  '.fits', '_skysub_rectified.fits')
+	if keyword_set(skysub) then $
+		filenames_rectified = flame_util_replace_string(filenames,  '.fits', '_skysub_rectified.fits') else $
+		filenames_rectified = flame_util_replace_string(filenames,  '.fits', '_rectified.fits')
 
 	; go in reverse order of preference so that the output_file field at the end has
 	; the preferred version (stack_A > stack_B > stack_X)
 
 	if w_X ne !NULL then begin
 		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_X], sky_filenames=sky_filenames[w_X], $
-		 	diagnostics=fuel.diagnostics[w_X], output_filename=filename_prefix + '_X.fits'
-		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_X], sky_filenames=sky_filenames[w_X], $
-		 	diagnostics=fuel.diagnostics[w_X], output_filename=filename_prefix + '_skysub_X.fits'
-		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_X.fits'
+		 	diagnostics=fuel.diagnostics[w_X], output_filename=output_dir + filename_prefix + '_X.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_X.fits'
 	endif
 
 	if w_B ne !NULL then begin
 		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_B], sky_filenames=sky_filenames[w_B], $
-			diagnostics=fuel.diagnostics[w_B], output_filename=filename_prefix + '_B.fits'
-		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_B], sky_filenames=sky_filenames[w_B], $
-			diagnostics=fuel.diagnostics[w_B], output_filename=filename_prefix + '_skysub_B.fits'
-		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B.fits'
+			diagnostics=fuel.diagnostics[w_B], output_filename=output_dir + filename_prefix + '_B.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_B.fits'
 	endif
 
 	if w_A ne !NULL then begin
 		flame_combine_stack, fuel=fuel, filenames=filenames_rectified[w_A], sky_filenames=sky_filenames[w_A], $
-			diagnostics=fuel.diagnostics[w_A], output_filename=filename_prefix + '_A.fits'
-		flame_combine_stack, fuel=fuel, filenames=filenames_skysub_rectified[w_A], sky_filenames=sky_filenames[w_A], $
-			diagnostics=fuel.diagnostics[w_A], output_filename=filename_prefix + '_skysub_A.fits'
-		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A.fits'
+			diagnostics=fuel.diagnostics[w_A], output_filename=output_dir + filename_prefix + '_A.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_A.fits'
 	endif
 
 
@@ -361,46 +364,69 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel
 
 	if w_B NE !NULL and w_X ne !NULL then begin
 
-		flame_util_combine_slits, filename_prefix + ['_B.fits', '_X.fits'], output_filename=filename_prefix + '_B-X.fits', $
+		flame_util_combine_slits, output_dir + filename_prefix + ['_B.fits', '_X.fits'], output_filename=output_dir + filename_prefix + '_B-X.fits', $
 			/difference, /observed_frame
-		flame_util_combine_slits, filename_prefix + ['_skysub_B.fits', '_skysub_X.fits'], output_filename=filename_prefix + '_skysub_B-X.fits', $
-			/difference, /observed_frame
-		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_B-X.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_B-X.fits'
 
 	endif
 
 
 	if w_A NE !NULL and w_X ne !NULL then begin
 
-		flame_util_combine_slits, filename_prefix + ['_A.fits', '_X.fits'], output_filename=filename_prefix + '_A-X.fits', $
+		flame_util_combine_slits, output_dir + filename_prefix + ['_A.fits', '_X.fits'], output_filename=output_dir + filename_prefix + '_A-X.fits', $
 			/difference, /observed_frame
-		flame_util_combine_slits, filename_prefix + ['_skysub_A.fits', '_skysub_X.fits'], output_filename=filename_prefix + '_skysub_A-X.fits', $
-			/difference, /observed_frame
-		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-X.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_A-X.fits'
 
 	endif
 
 
 	if w_A NE !NULL and w_B ne !NULL then begin
 
-		flame_util_combine_slits, filename_prefix + ['_A.fits', '_B.fits'], output_filename=filename_prefix + '_A-B.fits', $
+		flame_util_combine_slits, output_dir + filename_prefix + ['_A.fits', '_B.fits'], output_filename=output_dir + filename_prefix + '_A-B.fits', $
 			/difference, /observed_frame
-		flame_util_combine_slits, filename_prefix + ['_skysub_A.fits', '_skysub_B.fits'], output_filename=filename_prefix + '_skysub_A-B.fits', $
-			/difference, /observed_frame
-		fuel.slits[i_slit].output_file = filename_prefix + '_skysub_A-B.fits'
+		fuel.slits[i_slit].output_file = filename_prefix + '_A-B.fits'
 
 		; also make B-A for later use
-		flame_util_combine_slits, filename_prefix + ['_B.fits', '_A.fits'], output_filename=filename_prefix + '_B-A.fits', $
+		flame_util_combine_slits, output_dir + filename_prefix + ['_B.fits', '_A.fits'], output_filename=output_dir + filename_prefix + '_B-A.fits', $
 			/difference, /observed_frame
-		flame_util_combine_slits, filename_prefix + ['_skysub_B.fits', '_skysub_A.fits'], output_filename=filename_prefix + '_skysub_B-A.fits', $
-			/difference, /observed_frame
-
-		; if written, then use the ABcombined file
-		if file_test(filename_prefix + '_skysub_ABcombined.fits') then $
-			fuel.slits[i_slit].output_file = filename_prefix + '_skysub_ABcombined.fits'
 
 	endif
 
+
+END
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+
+PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
+
+		print, ''
+		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name + $
+			' with slit ' + strtrim(fuel.slits[j_slit].number, 2) + ' - ' + fuel.slits[j_slit].name
+
+		; prefix for file names
+		filename_prefix_i = output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
+		 	'-' + fuel.slits[i_slit].name
+		filename_prefix_j = output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
+		 	'-' + fuel.slits[j_slit].name
+
+		; make sure that the stacked A-B has positive signal
+		if dithering_length GT 0 then $
+			suffix = ['_A-B.fits', '_B-A.fits'] $
+		else $
+			suffix = ['_B-A.fits', '_A-B.fits']
+
+		; combine the A-B stacks
+		filenames = [filename_prefix_i + suffix[0], filename_prefix_j + suffix[1]]
+		outname =  'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
+			string(fuel.slits[j_slit].number, format='(I02)') + '.fits'
+		flame_util_combine_slits, filenames, output_filename = output_dir + outname, /nan, /usesigma, /rectified_frame
+
+		; update the file name of the final output
+		fuel.slits[i_slit].output_file = outname
+		fuel.slits[j_slit].output_file = outname
 
 END
 
@@ -529,37 +555,15 @@ PRO flame_combine_multislit, fuel=fuel
 			continue
 		endif
 
-		print, ''
-		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name + $
-			' with slit ' + strtrim(fuel.slits[j_slit].number, 2) + ' - ' + fuel.slits[j_slit].name
+		; combine the two slits (or one slit with itself)
 
-		; prefix for file names
-		filename_prefix_i = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
-		 	'-' + fuel.slits[i_slit].name
-		filename_prefix_j = fuel.util.output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
-		 	'-' + fuel.slits[j_slit].name
+		; regular
+		output_dir = fuel.util.output_dir + 'spec2d' + path_sep()
+		flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
 
-		; calculate the nodding direction so that the stacked A-B has positive signal
-		if floor(diagnostics[w_A[0]].position) GT floor(diagnostics[w_B[0]].position) then $
-			suffix = ['_B-A.fits', '_A-B.fits'] $
-		else $
-			suffix = ['_A-B.fits', '_B-A.fits']
-
-		; combine the A-B stacks
-		filenames = [filename_prefix_i + suffix[0], filename_prefix_j + suffix[1]]
-		outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
-			string(fuel.slits[j_slit].number, format='(I02)') + '.fits'
-		flame_util_combine_slits, filenames, output_filename=outname, /nan, /usesigma, /rectified_frame
-
-		; combine the skysubtracted A-B stacks
-		filenames = [filename_prefix_i + '_skysub' + suffix[0], filename_prefix_j + '_skysub' + suffix[1]]
-		outname = fuel.util.output_dir + 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
-		 string(fuel.slits[j_slit].number, format='(I02)') + '_skysub.fits'
-	 	flame_util_combine_slits, filenames, output_filename=outname, /nan, /usesigma, /rectified_frame
-
-		; update the file name of the final output
-		fuel.slits[i_slit].output_file = outname
-		fuel.slits[j_slit].output_file = outname
+		; skysub
+		output_dir = fuel.util.output_dir + 'spec2d_skysub' + path_sep()
+		flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
 
 	endfor
 
@@ -572,11 +576,15 @@ END
 ;*******************************************************************************
 
 
-PRO flame_combine_mask, fuel
+PRO flame_combine_mosaic, fuel, skysub=skysub
 	;
 	; combine the flux of all reduced slits into one large FITS file and do the same for the SNR map
 	; NB: data will be resampled, this output should not be used for science
 	;
+
+	if keyword_set(skysub) then $
+		output_dir = fuel.util.output_dir + 'spec2d_skysub' + path_sep() else $
+		output_dir = fuel.util.output_dir + 'spec2d' + path_sep()
 
 	; select all the slits that were reduced
 	w_slits = where(fuel.slits.skip eq 0, /null)
@@ -586,6 +594,9 @@ PRO flame_combine_mask, fuel
 	; sort the slits by y position on the mask
 	slits = slits[sort(slits.approx_top + slits.approx_bottom)]
 
+	; 2D spectra to be used for the mosaic
+	filenames = output_dir + 'slit' + string(slits.number, format='(I02)') + '-' + slits.name + '_A-B.fits'
+
 	; empty arrays with the lambda scale of all frames
 	lambda_min = []
 	lambda_step = []
@@ -593,7 +604,7 @@ PRO flame_combine_mask, fuel
 
 	; read all headers and get the wavelength scales
 	for i_slit=0, n_elements(slits)-1 do begin
-		header = headfits(slits[i_slit].output_file)
+		header = headfits(filenames[i_slit])
 		lambda_min = [lambda_min, sxpar(header, 'CRVAL1')]
 		lambda_step = [lambda_step, sxpar(header, 'CDELT1')]
 		N_x = [N_x, sxpar(header, 'NAXIS1')]
@@ -621,8 +632,8 @@ PRO flame_combine_mask, fuel
 	for i_slit=0, n_elements(slits)-1 do begin
 
 		; read in the data and the error and calculate snr
-		flux = mrdfits(slits[i_slit].output_file, 0, /silent)
-		error = mrdfits(slits[i_slit].output_file, 1, /silent)
+		flux = mrdfits(filenames[i_slit], 0, /silent)
+		error = mrdfits(filenames[i_slit], 1, /silent)
 		snr = flux/error
 
 		; make the original wavelength grid
@@ -652,12 +663,12 @@ PRO flame_combine_mask, fuel
 	SXADDPAR, header, 'CDELT1', lambda_delta
 
 	; output flux map
-	output_filename = fuel.util.output_dir + 'combined_flux.fits'
+	output_filename = output_dir + 'mosaic_flux.fits'
 	writefits, output_filename, flux_map, header
 	print, output_filename, ' written'
 
 	; output SNR map
-	output_filename = fuel.util.output_dir + 'combined_SNR.fits'
+	output_filename = output_dir + 'mosaic_SNR.fits'
 	writefits, output_filename, snr_map, header
 	print, output_filename, ' written'
 
@@ -699,6 +710,7 @@ PRO flame_combine, fuel
 		endif
 
 		flame_combine_oneslit, i_slit=i_slit, fuel=fuel
+		flame_combine_oneslit, i_slit=i_slit, fuel=fuel, /skysub
 
 	endfor
 
@@ -707,7 +719,8 @@ PRO flame_combine, fuel
 	if fuel.input.AB_subtraction then flame_combine_multislit, fuel=fuel
 
 	; combine the SNR map of all slits that were reduced into one large FITS file
- 	flame_combine_mask, fuel
+ 	flame_combine_mosaic, fuel
+	flame_combine_mosaic, fuel, /skysub
 
 
 	flame_util_module_end, fuel

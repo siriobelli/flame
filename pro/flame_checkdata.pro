@@ -9,6 +9,9 @@ PRO flame_checkdata_refstar, fuel
 	; check if the reference star has been specified
 	if fuel.input.star_y_A eq 0.0 then return
 
+	; set the output directory without skysub
+	output_dir = fuel.util.output_dir + 'spec2d' + path_sep()
+
 	; x coordinate where the star trace is certainly visible
 	star_x = mean(fuel.settings.star_x_range)
 
@@ -34,7 +37,7 @@ PRO flame_checkdata_refstar, fuel
 	; --------------------------------------
 
 	; load output file
-	ref_spec = mrdfits(fuel.slits[i_ref].output_file, 0, header, /silent)
+	ref_spec = mrdfits(output_dir + fuel.slits[i_ref].output_file, 0, header, /silent)
 
 	; get the wavelength calibration from the header
  	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
@@ -284,8 +287,8 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	;-------------------------------------
 
 	; filename of the output sky stack
-	skystack_filename = fuel.util.output_dir + 'slit' + $
-		string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name + '_sky.fits'
+	skystack_filename = fuel.util.output_dir + 'spec2d' + path_sep() + $
+	 	'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '-' + fuel.slits[i_slit].name + '_sky.fits'
 
 	; load the sky spectrum
 	sky_spec2d = mrdfits(skystack_filename, 0, header, /silent)
