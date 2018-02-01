@@ -37,7 +37,7 @@ PRO flame_checkdata_refstar, fuel
 	; --------------------------------------
 
 	; load output file
-	ref_spec = mrdfits(output_dir + fuel.slits[i_ref].output_file, 0, header, /silent)
+	ref_spec = mrdfits(output_dir + fuel.slits[i_ref].output_combined_file, 0, header, /silent)
 
 	; get the wavelength calibration from the header
  	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )

@@ -15,11 +15,11 @@ PRO flame_extract_slit, fuel, slit
 	; read data and make spatial profile
 	; ----------------------------------------------------------------------------
 
-	ps_filename = flame_util_replace_string(extraction_dir + 'profile.' + slit.output_file, '.fits', '.ps')
+	ps_filename = flame_util_replace_string(extraction_dir + 'profile.' + slit.output_combined_file, '.fits', '.ps')
 	cgPS_open, ps_filename, /nomatch
 
 	; output file to be used for the extraction
-	filename_spec2d = fuel.util.output_dir + 'spec2d' + path_sep() + slit.output_file
+	filename_spec2d = fuel.util.output_dir + 'spec2d' + path_sep() + slit.output_combined_file
 
   ; read in 2d spectrum
   spec2d = mrdfits(filename_spec2d, 0, header, /silent)
@@ -188,7 +188,7 @@ PRO flame_extract_slit, fuel, slit
 	if fuel.settings.extract_optimal then begin
 
 		; filename for the output file
-		filename = extraction_dir + 'spec1d.optimal.' + string(slit.number, format='(I03)') + '.' + slit.output_file
+		filename = extraction_dir + 'spec1d.optimal.' + string(slit.number, format='(I03)') + '.' + slit.output_combined_file
 
 		; make nice output structure
 		output_structure = { $
@@ -202,7 +202,7 @@ PRO flame_extract_slit, fuel, slit
 endif else begin
 
 		; filename for the output file
-		filename = extraction_dir + 'spec1d.boxcar.' + string(slit.number, format='(I03)') + '.' + slit.output_file
+		filename = extraction_dir + 'spec1d.boxcar.' + string(slit.number, format='(I03)') + '.' + slit.output_combined_file
 
 		; make nice output structure
 		output_structure = { $
@@ -268,13 +268,13 @@ PRO flame_extract, fuel
 		endif
 
 		; check if this slit has already been combined with another, and extracted
-		if total(slits_extracted eq fuel.slits[i_slit].output_file) GT 0 then continue
+		if total(slits_extracted eq fuel.slits[i_slit].output_combined_file) GT 0 then continue
 
 		; extract the 1D spectrum for this slit
 		flame_extract_slit, fuel, fuel.slits[i_slit]
 
 		; add this slit to the list of the ones that have been extracted
-		slits_extracted = [slits_extracted, fuel.slits[i_slit].output_file]
+		slits_extracted = [slits_extracted, fuel.slits[i_slit].output_combined_file]
 
 	endfor
 

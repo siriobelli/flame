@@ -392,6 +392,10 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 
 	endif
 
+	; for now, the "combined" output is the same as the simple output
+	; if needed, this field will be updated later
+	fuel.slits[i_slit].output_combined_file = fuel.slits[i_slit].output_file
+
 
 END
 
@@ -424,9 +428,9 @@ PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, di
 			string(fuel.slits[j_slit].number, format='(I02)') + '.fits'
 		flame_util_combine_slits, filenames, output_filename = output_dir + outname, /nan, /usesigma, /rectified_frame
 
-		; update the file name of the final output
-		fuel.slits[i_slit].output_file = outname
-		fuel.slits[j_slit].output_file = outname
+		; update the file name of the final *combined* output
+		fuel.slits[i_slit].output_combined_file = outname
+		fuel.slits[j_slit].output_combined_file = outname
 
 END
 
@@ -595,7 +599,7 @@ PRO flame_combine_mosaic, fuel, skysub=skysub
 	slits = slits[sort(slits.approx_top + slits.approx_bottom)]
 
 	; 2D spectra to be used for the mosaic
-	filenames = output_dir + 'slit' + string(slits.number, format='(I02)') + '-' + slits.name + '_A-B.fits'
+	filenames = output_dir + slits.output_file
 
 	; empty arrays with the lambda scale of all frames
 	lambda_min = []
