@@ -117,7 +117,6 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 
 		; if present, read the model sky
 		if n_elements(sky_filenames) GE 1 then begin
-			print, sky_filenames[i_frame]
 			sky = mrdfits(sky_filenames[i_frame], 0, /silent)
 			sky_cube[i_frame, *, bot_ref:top_ref] = sky[*, bot_i:top_i]
 		endif
@@ -313,16 +312,8 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 	; read in a header with the wavelength and gamma calibration
 	header = headfits(flame_util_replace_string(filenames[0], '.fits', '_rectified.fits'))
 
-
-	; combine sky spectra
-	;*************************************
-
 	; rectified model of sky
 	sky_filenames = flame_util_replace_string(filenames, '.fits', '_skymodel_rectified.fits')
-
-	; stack and get the sky spectrum
-	flame_combine_stack, fuel=fuel, filenames=sky_filenames, diagnostics=fuel.diagnostics, $
-		output_filename = output_dir + filename_prefix + '_sky.fits', /noalign
 
 
 	; stack all A, B, and X frames
