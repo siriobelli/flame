@@ -6,10 +6,22 @@
 
 
 
-PRO flame_extract_slit, fuel, slit
+PRO flame_extract_slit, fuel, slit, skysub=skysub
+
+
+	; set up directories
+	; ----------------------------------------------------------------------------
+
+	; easy way to deal with names of directories
+	if keyword_set(skysub) then skysub_string = '_skysub' else skysub_string = ''
+
+	; directory from which to extract the spectra
+	spec2d_dir = fuel.util.output_dir + 'spec2d' + skysub_string + path_sep()
+
+	; directory where to save the 1D spectra
+	extraction_dir = fuel.util.output_dir + 'spec1d' + skysub_string + path_sep()
 
 	; if needed, create extraction directory in the output directory
-  extraction_dir = fuel.util.output_dir + 'spec1d' + path_sep()
   if ~file_test(extraction_dir) then file_mkdir, extraction_dir
 
 	; read data and make spatial profile
@@ -19,7 +31,7 @@ PRO flame_extract_slit, fuel, slit
 	cgPS_open, ps_filename, /nomatch
 
 	; output file to be used for the extraction
-	filename_spec2d = fuel.util.output_dir + 'spec2d' + path_sep() + slit.output_combined_file
+	filename_spec2d = spec2d_dir + slit.output_combined_file
 
   ; read in 2d spectrum
   spec2d = mrdfits(filename_spec2d, 0, header, /silent)
@@ -87,7 +99,7 @@ PRO flame_extract_slit, fuel, slit
 		then begin
 			print, ''
 			print, 'slit ' + string(slit.number, format='(I03)') + ' - ' + slit.name + $
-				': no object was detected'
+				 skysub_string + ': no object was detected'
 			print, ''
 			cgPS_close
 			return
@@ -226,7 +238,7 @@ endif else begin
 
 	print, ''
 	print, 'slit ' + string(slit.number, format='(I03)') + ' - ' + slit.name + $
-		': 1D spectrum extracted'
+		 skysub_string + ': 1D spectrum extracted'
 	print, filename
 	print, ''
 
@@ -272,6 +284,7 @@ PRO flame_extract, fuel
 
 		; extract the 1D spectrum for this slit
 		flame_extract_slit, fuel, fuel.slits[i_slit]
+		flame_extract_slit, fuel, fuel.slits[i_slit], /skysub
 
 		; add this slit to the list of the ones that have been extracted
 		slits_extracted = [slits_extracted, fuel.slits[i_slit].output_combined_file]
