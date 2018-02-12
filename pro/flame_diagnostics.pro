@@ -193,12 +193,14 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   ; x range in which to fit a Gaussian to the star trace
   xrange=fuel.settings.star_x_range
 
-  ; estimate width of trace in pixels: 0.8 arcsec (compromise between seeing-limited and ARGOS)
+  ; estimate width of trace in pixels: assume a seeing of 0.8 arcsec
   est_seeing = 0.8  ; FWHM in arcsec
   est_width = (est_seeing / 2.355) / fuel.instrument.pixel_scale   ; sigma in pixels
 
   ; determine the vertical range to consider for finding the star trace
-  half_range = 5.0 * est_width
+  if fuel.settings.star_y_window eq 0 then $
+    half_range = 6.0 * est_width else $
+    half_range = fuel.settings.star_y_window / 2
 
   ; find expected position of star trace
   if offset_pos eq 'A' then ycenter = fuel.input.star_y_A $
