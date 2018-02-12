@@ -88,12 +88,16 @@ PRO flame_extract_slit, fuel, slit, skysub=skysub
 		estimates=est_param, sigma=gauss_err, chisq=chisq )
 
 	; calculate the rms of the profile, once the peak has been subtracted
-	profile_rms = stddev(profile - gaussian_model, /nan)
+	profile_residuals = profile - gaussian_model
+	w_trace = where( abs(y_1d-gauss_param[1]) LT 5.0*gauss_param[2], /null)
+	if w_trace EQ !NULL then $
+	 	profile_rms = stddev(profile_residuals, /nan) else $
+		profile_rms = stddev(profile_residuals[w_trace], /nan)
 
 	if ~finite(chisq) or chisq LE 0.0 or  $			; check that chi square makes sense
 		gauss_param[0] LE 0.0 or $	; check that the peak of the Gaussian is positive
 		gauss_param[0] LT 5.0*gauss_err[0] or $ 	; check that the SNR is high
-		gauss_param[0] LT 8.0*profile_rms or $ 	; check that the SNR is high (compared to the noise in the profile)
+		gauss_param[0] LT 5.0*profile_rms or $ 	; check that the peak is high compared to the noise in the profile
 	 	gauss_param[1] LT min(y_1d) or gauss_param[1] GT max(y_1d) or $ 			; check that the center of the Guassian is in the observed range
 		gauss_param[2] LT 0.1 or gauss_param[2] GT n_elements(profile) $		 	; check that the Gaussian width makes sense
 		then begin
