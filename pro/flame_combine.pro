@@ -447,6 +447,8 @@ PRO flame_combine_multislit, fuel=fuel
 	; if either the A or B positions do not exist, then we are done
 	if w_A eq !NULL or w_B eq !NULL then return
 
+	cgPS_open, fuel.util.intermediate_dir + 'slit_pairing.ps', /nomatch
+
 	; dithering length (by definition; see flame_combine_oneslit)
 	dithering_length = floor(diagnostics[w_B[0]].position) - floor(diagnostics[w_A[0]].position)
 
@@ -460,26 +462,28 @@ PRO flame_combine_multislit, fuel=fuel
 	slit_top = slit_bottom + fuel.slits.height
 
 	; make plot that shows slit pairing
-	cgplot, [0], /nodata, xra=[0, 2.5], $
+	cgplot, [0], /nodata, xra=[0, 2.2], /xstyle, $
 	 	yra= [ min(slit_bottom)-1.2*abs(dithering_length), max(slit_top)+1.2*abs(dithering_length)], $
-		ytit='pixel position along the vertical direction', charsize=1
+		ytit='pixel position along the vertical direction', charsize=1, xtickformat='(A1)', xticks=1
 
 	; for each slit show their name and position on the detector
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
-		cgplot, [1,1], [slit_bottom[i_slit], slit_top[i_slit]], /overplot, thick=3
+		cgplot, [1,1], [slit_bottom[i_slit], slit_top[i_slit]], /overplot, thick=4
 		cgplot, [0,3], slit_bottom[i_slit] + [0,0], /overplot, linestyle=2
 		cgplot, [0,3], slit_top[i_slit] + [0,0], /overplot, linestyle=2
 		cgtext, 0.9, 0.5*(slit_top+slit_bottom)[i_slit], 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
-			' - ' + 'pos A', charsize=1, alignment=1
+			' - ' + 'pos A', charsize=0.8, alignment=1
 	endfor
 
 	; now shift them by the dithering length
 	for i_slit=0, n_elements(fuel.slits)-1 do begin
 		cgplot, [1.2,1.2], [slit_bottom[i_slit], slit_top[i_slit]] - dithering_length, $
-		 	/overplot, thick=3, color='red'
+		 	/overplot, thick=4, color='red'
 		cgtext, 1.3, 0.5*(slit_top+slit_bottom)[i_slit] - dithering_length, 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
-			' - ' + 'pos B', charsize=1, alignment=0, color='red'
+			' - ' + 'pos B', charsize=0.8, alignment=0, color='red'
 	endfor
+
+	cgps_close
 
 
 	; calculate the quality of each possible overlap and store it in a matrix
