@@ -500,7 +500,7 @@ PRO flame_combine_multislit, fuel=fuel
 			; "overlap coefficient":
 			; 1: perfect overlap
 			; 0.01: tiny overlap
-			; less than 0: no overlap
+			; less or equal to 0: no overlap
 			; -1: infinitely far apart
 			overlap_coefficient[i_slit,j_slit] = ( min(top_edges)-max(bottom_edges) ) / ( max(top_edges)-min(bottom_edges) )
 
@@ -524,7 +524,6 @@ PRO flame_combine_multislit, fuel=fuel
 	slit_paired = bytarr(n_elements(fuel.slits))
 
 	; go through all possible pairings, in decreasing order of overlap coefficient
-	; stop when the pairing involves a slit that has already been paired
 	for pairing_number=1, n_elements(where(overlap_coefficient GT 0.0)) do begin
 
 		; find the highest overlap coefficient
@@ -535,24 +534,27 @@ PRO flame_combine_multislit, fuel=fuel
 		; remove this overlap
 		overlap_coefficient[ind2d] = 0.0
 
-		; check if these slits have already been paired - in that case we are done
-		if slit_paired[i_slit] or slit_paired[j_slit] then break
-
-		; mark these slits as paired
-		slit_paired[i_slit] = 1
-		slit_paired[j_slit] = 1
-
 		print, ''
-		print, 'Pairing #' + strtrim(pairing_number)
+		print, 'Pairing #' + strtrim(pairing_number, 2)
 		print, 'slit' + string(fuel.slits[i_slit].number, format='(I02)') + $
-			' - ' +	'slit' + string(fuel.slits[j_slit].number, format='(I02)')
+			' + ' +	'slit' + string(fuel.slits[j_slit].number, format='(I02)')
 		print, 'Overlap: ' + cgnumber_formatter(top_overlap*100.0, decimals=2) + ' %'
+
+		; check if these slits have already been paired - in that case move on
+		if slit_paired[i_slit] or slit_paired[j_slit] then begin
+			print, 'slit has already been paired'
+			continue
+		endif
 
 		; check that both slits have actually been reduced
 		if fuel.slits[i_slit].skip or fuel.slits[j_slit].skip then begin
 			print, 'no combination; slits have been skipped'
 			continue
 		endif
+
+		; mark these slits as paired
+		slit_paired[i_slit] = 1
+		slit_paired[j_slit] = 1
 
 		; combine the two slits (or one slit with itself)
 
