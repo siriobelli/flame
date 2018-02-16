@@ -2,7 +2,7 @@
 \BOOKMARK [1][-]{section.2}{Installation}{}% 2
 \BOOKMARK [2][-]{subsection.2.1}{Requirements}{section.2}% 3
 \BOOKMARK [2][-]{subsection.2.2}{Download}{section.2}% 4
-\BOOKMARK [1][-]{section.3}{Setting up the Data Reduction}{}% 5
+\BOOKMARK [1][-]{section.3}{Setting Up the Data Reduction}{}% 5
 \BOOKMARK [2][-]{subsection.3.1}{Basic input}{section.3}% 6
 \BOOKMARK [3][-]{subsubsection.3.1.1}{Science frames}{subsection.3.1}% 7
 \BOOKMARK [3][-]{subsubsection.3.1.2}{Nodding}{subsection.3.1}% 8
@@ -35,5 +35,5 @@
 \BOOKMARK [2][-]{subsection.5.1}{LUCI at LBT}{section.5}% 35
 \BOOKMARK [2][-]{subsection.5.2}{LRIS at Keck}{section.5}% 36
 \BOOKMARK [2][-]{subsection.5.3}{MOSFIRE at Keck}{section.5}% 37
-\BOOKMARK [2][-]{subsection.5.4}{Diagnostics for data from unsupported instruments}{section.5}% 38
+\BOOKMARK [2][-]{subsection.5.4}{Diagnostics for unsupported instruments}{section.5}% 38
 \BOOKMARK [2][-]{subsection.5.5}{How to add support for a new instrument}{section.5}% 39
