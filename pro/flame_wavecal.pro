@@ -211,20 +211,6 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; save into slit structure
 	*cutout.lambda_coeff = lambda_coeff
 
-	; finally, output the actual wavelength calibration as a 2D array
-
-	; create empty frame that will contain the wavelength solution
-	wavelength_solution = im * 0.0
-
-	; apply the polynomial transformation to calculate lambda at each point of the 2D grid
-	for ix=0, N_imx-1 do $
-		for iy=0, N_imy-1 do begin
-			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, *cutout.lambda_coeff )
-		endfor
-
-	; write the accurate solution to a FITS file
-	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
-
 
 END
 
@@ -508,19 +494,6 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 
 	; save into slit structure
 	*cutout.lambda_coeff = lambda_coeff
-
-	; finally, output the actual wavelength calibration as a 2D array
-
-	; create empty frame that will contain the wavelength solution
-	wavelength_solution = im * 0.0
-
-	; apply the polynomial transformation to calculate lambda at each point of the 2D grid
-	for ix=0, N_imx-1 do $
-		for iy=0, N_imy-1 do $
-			wavelength_solution[ix, iy] = flame_util_transform_coord(ix, iy, *cutout.lambda_coeff )
-
-	; write the accurate solution to a FITS file
-	writefits, flame_util_replace_string(cutout.filename, '.fits', '_wavecal_2D.fits'), wavelength_solution, hdr
 
 
 END
