@@ -17,7 +17,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 ; HDU 0: stacked spectrum
 ; HDU 1: error spectrum
 ; HDU 2: sigma map [i.e., standard deviation of values for each pixel, including correction for correlated noise]
-; HDU 3: model sky
+; HDU 3: model sky [if skysub is not performed, this is just zeroes]
 ; HDU 4: exptime map
 ; HDU 5: weight map
 ;
@@ -116,10 +116,11 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 		endif
 
 		; if present, read the model sky
-		if n_elements(sky_filenames) GE 1 then begin
-			sky = mrdfits(sky_filenames[i_frame], 0, /silent)
-			sky_cube[i_frame, *, bot_ref:top_ref] = sky[*, bot_i:top_i]
-		endif
+		if n_elements(sky_filenames) GE 1 then $
+			if sky_filenames[i_frame] NE '' then begin
+				sky = mrdfits(sky_filenames[i_frame], 0, /silent)
+				sky_cube[i_frame, *, bot_ref:top_ref] = sky[*, bot_i:top_i]
+			endif
 
 		; make map of exposure time
 		exptime = sxpar(header, 'EXPTIME')
@@ -313,8 +314,10 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 	header = headfits(flame_util_replace_string(filenames[0], '.fits', '_rectified.fits'))
 
 	; rectified model of sky
-	sky_filenames = flame_util_replace_string(filenames, '.fits', '_skymodel_rectified.fits')
-
+	if fuel.settings.skysub then $
+		sky_filenames = flame_util_replace_string(filenames, '.fits', '_skymodel_rectified.fits') $
+	else $
+		sky_filenames = replicate('', n_elements(filenames))
 
 	; stack all A, B, and X frames
 	;*************************************
@@ -563,8 +566,10 @@ PRO flame_combine_multislit, fuel=fuel
 		flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
 
 		; skysub
-		output_dir = fuel.util.output_dir + 'spec2d_skysub' + path_sep()
-		flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
+		if fuel.settings.skysub then begin
+			output_dir = fuel.util.output_dir + 'spec2d_skysub' + path_sep()
+			flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
+		endif
 
 	endfor
 
@@ -711,7 +716,8 @@ PRO flame_combine, fuel
 		endif
 
 		flame_combine_oneslit, i_slit=i_slit, fuel=fuel
-		flame_combine_oneslit, i_slit=i_slit, fuel=fuel, /skysub
+		if fuel.settings.skysub then $
+			flame_combine_oneslit, i_slit=i_slit, fuel=fuel, /skysub
 
 	endfor
 
@@ -721,7 +727,8 @@ PRO flame_combine, fuel
 
 	; combine the SNR map of all slits that were reduced into one large FITS file
  	flame_combine_mosaic, fuel
-	flame_combine_mosaic, fuel, /skysub
+	if fuel.settings.skysub then $
+		flame_combine_mosaic, fuel, /skysub
 
 
 	flame_util_module_end, fuel

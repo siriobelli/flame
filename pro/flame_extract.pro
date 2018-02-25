@@ -288,7 +288,8 @@ PRO flame_extract, fuel
 
 		; extract the 1D spectrum for this slit
 		flame_extract_slit, fuel, fuel.slits[i_slit]
-		flame_extract_slit, fuel, fuel.slits[i_slit], /skysub
+		if fuel.settings.skysub then $
+			flame_extract_slit, fuel, fuel.slits[i_slit], /skysub
 
 		; add this slit to the list of the ones that have been extracted
 		slits_extracted = [slits_extracted, fuel.slits[i_slit].output_combined_file]

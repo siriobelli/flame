@@ -153,16 +153,6 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	rel_range = fuel.settings.skysub_plot_range
 	xrange=breakpoints[ [n_elements(breakpoints)*rel_range[0], n_elements(breakpoints)*rel_range[1]] ]
 
-	; plot all pixels in a small wavelength range
-	cgplot, pixel_wavelength[w_good], pixel_flux[w_good], psym=3, color='blk3', /nodata, $
-		xtit='wavelength (micron)', xra=xrange, title=file_basename(slit_filename), /ynozero
-
-	; plot all pixels in gray
-	cgplot, pixel_wavelength, pixel_flux, psym=16, color='blk3', /overplot
-
-	; plot good points in black
-	cgplot, pixel_wavelength[w_good], pixel_flux[w_good], psym=16, /overplot, color='black'
-
 	; calculate B-spline model of the sky - using the final selection of pixels
 	sset = bspline_iterfit(pixel_wavelength[w_good], pixel_flux[w_good], nord=bspline_nord, $
 		fullbkpt=breakpoints, $
@@ -171,12 +161,27 @@ PRO flame_skysub_oneframe, fuel=fuel, cutout=cutout
 	; wavelength axis finely sampled
 	wl_axis = min(pixel_wavelength) + (max(pixel_wavelength) - min(pixel_wavelength)) * dindgen( N_lambda_pix * 10 ) / double(N_lambda_pix * 10)
 
-	; overplot the B-spline model
-	cgplot, wl_axis, bspline_valu(wl_axis, sset), /overplot, color='red'
+	; show plots
+	if fuel.settings.skysub_plot then begin
 
-	; ; show pixels that were masked out
-	; if where(~outmask, /null) NE !NULL then $
-	; 	cgplot, pixel_wavelength[where(~outmask, /null)], pixel_flux[where(~outmask, /null)], /overplot, psym=16, color='blue'
+		; plot all pixels in a small wavelength range
+		cgplot, pixel_wavelength[w_good], pixel_flux[w_good], psym=3, color='blk3', /nodata, $
+			xtit='wavelength (micron)', xra=xrange, title=file_basename(slit_filename), /ynozero
+
+		; plot all pixels in gray
+		cgplot, pixel_wavelength, pixel_flux, psym=16, color='blk3', /overplot
+
+		; plot good points in black
+		cgplot, pixel_wavelength[w_good], pixel_flux[w_good], psym=16, /overplot, color='black'
+
+		; overplot the B-spline model
+		cgplot, wl_axis, bspline_valu(wl_axis, sset), /overplot, color='red'
+
+		; ; show pixels that were masked out
+		; if where(~outmask, /null) NE !NULL then $
+		; 	cgplot, pixel_wavelength[where(~outmask, /null)], pixel_flux[where(~outmask, /null)], /overplot, psym=16, color='blue'
+
+	endif
 
 	; generate sky model for the whole slit
 	sky_model = bspline_valu(wavelength_solution, sset)
@@ -202,16 +207,19 @@ END
 
 
 
-; ---------------------------------------------------------------------------------------------------------------------------
-
+;-------------------------------------------------------------------------------
 
 
 
 
 PRO flame_skysub, fuel
 
-	flame_util_module_start, fuel, 'flame_skysub'
+	if fuel.settings.skysub eq 0 then begin
+		print, 'Skipping sky subtraction'
+		return
+	endif
 
+	flame_util_module_start, fuel, 'flame_skysub'
 
  	; loop through all the slits & frames
 	for i_slit=0, n_elements(fuel.slits)-1 do begin

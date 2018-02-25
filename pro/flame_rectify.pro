@@ -131,6 +131,9 @@ PRO flame_rectify, fuel
 			flame_rectify_one, fuel, filename, lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
 				output_name = flame_util_replace_string(filename, '.fits', '_rectified.fits'), slit=this_slit
 
+			; if we are not doing sky subtraction, then we are done
+			if fuel.settings.skysub eq 0 then continue
+
 			; rectify sky model
 			flame_rectify_one, fuel, flame_util_replace_string(filename, '.fits', '_skymodel.fits'), lambda_coeff=*this_cutout.lambda_coeff, gamma_coeff=*this_cutout.gamma_coeff, $
 				output_name = flame_util_replace_string(filename, '.fits', '_skymodel_rectified.fits'), slit=this_slit
