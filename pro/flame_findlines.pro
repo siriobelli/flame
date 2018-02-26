@@ -548,7 +548,7 @@ PRO flame_findlines_diagnostics, fuel, slit
   Nfr = n_elements(slit.cutouts)
 
   ; start plot
-	cgPS_open, file_dirname(slit.cutouts[0].filename, /mark_directory) + 'line_identification.ps', /nomatch
+	cgPS_open, file_dirname(slit.cutouts[0].filename, /mark_directory) + 'summary_line_identification.ps', /nomatch
 
 
 	; take care of the frame numbers for the x axis titles (see also flame_diagnostics)
@@ -682,45 +682,60 @@ PRO flame_findlines_diagnostics, fuel, slit
   endif
 
 
+  ; unique lines and their properties
+	;----------------------------------------------------------------------------------
+
+  ; identify unique lines
+  line_lambda = speclines_plus.lambda
+  uniq_lambda = line_lambda[UNIQ(line_lambda, SORT(line_lambda))]
+
+  ; for each line, count the number of frames and detections
+  uniq_framecount = intarr( n_elements(uniq_lambda) )
+  uniq_detections = intarr( n_elements(uniq_lambda) )
+  for i_line=0, n_elements(uniq_lambda)-1 do begin
+    frames = speclines_plus[where(speclines_plus.lambda eq uniq_lambda[i_line])].frame
+    uniq_framecount[i_line] = n_elements(frames[UNIQ(frames, SORT(frames))])
+    uniq_detections[i_line] = n_elements(speclines_plus[where(speclines_plus.lambda eq uniq_lambda[i_line])])
+  endfor
+
+  ; sort unique lines by total number of detections
+  s = sort(-uniq_detections)
+
+  ; write out detailed list of line detections
+  forprint, uniq_lambda[s], uniq_detections[s], uniq_framecount[s], $
+    textout=file_dirname(slit.cutouts[0].filename, /mark_directory) + 'summary_line_identification.txt', $
+    comment = '# wavelength    number of detections    frames in which it is detected'
+
+  ; identify possibly problematic lines
+  w_probl = where(uniq_detections LT 0.33*median(uniq_detections), /null)
+  if w_probl NE !NULL then begin
+    print, '***'
+    print, 'These lines have fewer detections; you may want to check them:'
+    forprint, uniq_lambda[w_probl]
+    print, '***'
+  endif
+
+
   ; PLOT 2: properties for three representative lines
 	;----------------------------------------------------------------------------------
 
-  ; number of pixels along the x direction
-  Npix = n_elements(*slit.rough_skylambda)
-  if Npix eq 0 then Npix = n_elements(*slit.rough_arclambda)
+  ; get the approximate lambda axis
+  if n_elements(*slit.rough_skylambda) ne 0 then $
+    lambda_range = *slit.rough_skylambda else $
+    lambda_range = *slit.rough_arclambda
 
   ; identify "best" line in each third of the slit
   bestlines = [-1d, -1d, -1d]
-  bins = [0.0, 0.33, 0.66, 1.0]
+  bins = lambda_range[0] + [0.0, 0.33, 0.66, 1.0] * (lambda_range[-1]-lambda_range[0])
 
   for j=0,2 do begin
 
     ; select all lines in this third of the slit
-    w_third = where(speclines_plus.x GE bins[j]*Npix AND speclines_plus.x LT bins[j+1]*Npix, /null)
+    w_third = where(uniq_lambda GE bins[j] AND uniq_lambda LT bins[j+1], /null)
     if w_third eq !NULL then continue
 
-    ; identify unique lines
-    line_lambda = speclines_plus[w_third].lambda
-    uniq_lambda = line_lambda[UNIQ(line_lambda, SORT(line_lambda))]
-
-    ; count the number of frames with such line
-    uniq_framecount = intarr( n_elements(uniq_lambda) )
-    uniq_totlines = intarr( n_elements(uniq_lambda) )
-    for i_line=0, n_elements(uniq_lambda)-1 do begin
-      frames = speclines_plus[where(speclines_plus.lambda eq uniq_lambda[i_line])].frame
-      uniq_framecount[i_line] = n_elements(frames[UNIQ(frames, SORT(frames))])
-      uniq_totlines[i_line] = n_elements(speclines_plus[where(speclines_plus.lambda eq uniq_lambda[i_line])])
-    endfor
-
-    ; choose the line present in the largest number of frames
-    w_line = where(uniq_framecount eq max(uniq_framecount), complement=w_not, /null)
-
-    ; if there is a tie, then count the total number of identifications
-    if n_elements(w_line) GT 1 then begin
-      uniq_totlines[w_not] = 0  ; make sure we only consider the lines in the tie
-      w_line = $
-        where(uniq_framecount eq max(uniq_framecount) AND uniq_totlines eq max(uniq_totlines), /null)
-    endif
+    ; choose the line with the highest number of identifications
+    w_line = w_third[where(uniq_detections[w_third] eq max(uniq_detections[w_third]), /null)]
 
     ; save the best line in this third
     bestlines[j] = uniq_lambda[w_line[0]]
