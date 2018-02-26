@@ -49,7 +49,7 @@ PRO flame_checkdata_refstar, fuel
  	; -----------------------------
 
 	; get an idea of the seeing from the diagnostics
-	approx_seeing = median(fuel.diagnostics.seeing)		; FWHM, in arcsec
+	approx_seeing = median([fuel.diagnostics.seeing])		; FWHM, in arcsec
 	approx_seeing /= fuel.instrument.pixel_scale		; FWHM, in pixels
 
 	; make the y-axis
@@ -62,7 +62,7 @@ PRO flame_checkdata_refstar, fuel
 	est_peak = max(ref_profile, est_center)
 
 	; fit a gaussian to the integrated profile
-	wfit = where( abs(yaxis-est_center) LT 1.5*approx_seeing and finite(ref_profile) )
+	wfit = where( abs(yaxis-est_center) LT 1.5*approx_seeing and finite(ref_profile), /null )
   fit_result = gaussfit(yaxis[wfit], ref_profile[wfit], ref_coeff, nterms=4, $
     estimates=[ est_peak, est_center, 3.0, 0.0], $
     chisq=chisq, sigma=coeff_err)

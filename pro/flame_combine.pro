@@ -16,7 +16,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 ; Write multi-HDU output FITS file:
 ; HDU 0: stacked spectrum
 ; HDU 1: error spectrum
-; HDU 2: sigma map [i.e., standard deviation of values for each pixel, including correction for correlated noise]
+; HDU 2: sigma map [i.e., standard deviation of values for each pixel, including correction for correlated noise; it is NaNs for less than two frames]
 ; HDU 3: model sky [if skysub is not performed, this is just zeroes]
 ; HDU 4: exptime map
 ; HDU 5: weight map
@@ -223,6 +223,9 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 	; see Eq. 9 in Fruchter & Hook 2002, and also footnote 20 in Kriek et al. 2015
 	sigma_stack *= 1.5
 
+	; for two frames, the sigma map should not be used; set it to NaNs
+	if N_frames LE 2 then sigma_stack[*] = !values.d_NaN
+
 	; make final map of exptime
 	exptime_stack = total(exptime_cube, 1, /nan)
 
@@ -348,6 +351,9 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 		fuel.slits[i_slit].output_file = filename_prefix + '_A.fits'
 	endif
 
+	; for now, the "combined" output is the same as the simple output
+	; if needed, this field will be updated later
+	fuel.slits[i_slit].output_combined_file = fuel.slits[i_slit].output_file
 
 	; if there is no AB nodding, then we are done
 	if ~fuel.input.AB_subtraction then return
@@ -420,7 +426,7 @@ PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, di
 		filenames = [filename_prefix_i + suffix[0], filename_prefix_j + suffix[1]]
 		outname =  'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
 			string(fuel.slits[j_slit].number, format='(I02)') + '.fits'
-		flame_util_combine_slits, filenames, output_filename = output_dir + outname, /nan, /usesigma, /rectified_frame
+		flame_util_combine_slits, filenames, output_filename = output_dir + outname, /nan, /usenoise, /rectified_frame
 
 		; update the file name of the final *combined* output
 		fuel.slits[i_slit].output_combined_file = outname

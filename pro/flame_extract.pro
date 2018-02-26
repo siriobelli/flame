@@ -78,7 +78,8 @@ PRO flame_extract_slit, fuel, slit, skysub=skysub
 
 	; estimate parameters of the Gaussian
 	est_peak = max(profile)
-  est_center = 0.5*n_elements(profile)
+  ;est_center = 0.5*n_elements(profile)
+	est_center = total(y_1d*profile, /nan) / total(profile, /nan)
 	est_sigma = 2.0
 	est_cont = median(profile)
 	est_param = [est_peak, est_center, est_sigma, est_cont]

@@ -112,7 +112,7 @@ END
 
 PRO flame_util_combine_slits, filenames, output_filename=output_filename, difference=difference, $
     observed_frame=observed_frame, rectified_frame=rectified_frame, nan=nan, $
-    useweights=useweights, usesigma=usesigma, $
+    useweights=useweights, usenoise=usenoise, usesigma=usesigma, $
     alignment_box=alignment_box, $
     sky_filenames=sky_filenames
 ;
@@ -132,6 +132,7 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
 ; /rectified_frame (input, optional) - if set, the spatial alignment is done on the rectified frame,
 ;    i.e. using the gamma coordinate (from the CRVAL2 keyword in the FITS header)
 ; /useweights (input, optional) - if set, the weight map is used when stacking the spectra
+; /usenoise (input, optional) - if set, the (theoretical) noise map is used for the weights
 ; /usesigma (input, optional) - if set, the sigma map is used for the weights
 ; /nan (input, optional) - if set, NaNs are ignored when stacking the spectra
 ;
@@ -339,6 +340,7 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
     weights = cube_data
     weights[*] = 1.0
     if keyword_set(useweights) then weights = cube_weight
+    if keyword_set(usenoise) then   weights = 1.0/cube_error^2
     if keyword_set(usesigma) then   weights = 1.0/cube_sigma^2
 
   	; mean-stack the frames
