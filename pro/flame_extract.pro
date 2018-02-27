@@ -137,7 +137,7 @@ PRO flame_extract_slit, fuel, slit, skysub=skysub
 
 	; plot extracted spectrum
 	xrange = [min(lambda_1d, /nan), max(lambda_1d, /nan)]
-	cgplot, lambda_1d, ivarsmooth(spec1d_boxcar, ivar1d_boxcar, 7), $
+	cgplot, lambda_1d, median(spec1d_boxcar, 7), $
 		charsize=1, xtitle='Wavelength (um)', ytitle='Boxcar-extracted flux', $
 		title = 'black: observed flux, blue; observed uncertainty', xrange=xrange, /xstyle
  	cgplot, lambda_1d, 1.0/sqrt(ivar1d_boxcar), /overplot, color='blue'
@@ -169,7 +169,7 @@ PRO flame_extract_slit, fuel, slit, skysub=skysub
 	sky1d_optimal = total(weight2d*sky2d, 2, /nan) / total(weight2d^2, 2, /nan)
 
 	; plot extracted spectrum
-	cgplot, lambda_1d, ivarsmooth(spec1d_optimal, ivar1d_optimal, 7), $
+	cgplot, lambda_1d, median(spec1d_optimal, 7), $
 		charsize=1, xtitle='Wavelength (um)', ytitle='Optimally extracted flux', $
 		title = 'black: observed flux, blue; observed uncertainty', xrange=xrange, /xstyle
  	cgplot, lambda_1d, 1.0/sqrt(ivar1d_optimal), /overplot, color='blue'
