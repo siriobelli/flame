@@ -537,8 +537,19 @@ PRO flame_combine_multislit, fuel=fuel
 
 		; find the highest overlap coefficient
 		top_overlap = max(overlap_coefficient, ind2d)
-	 	i_slit = (array_indices(overlap_coefficient, ind2d))[0]
-		j_slit = (array_indices(overlap_coefficient, ind2d))[1]
+
+		; if there is only one slit, then it's easy
+		if n_elements(overlap_coefficient) EQ 1 then begin
+
+			i_slit = 0
+			j_slit = 0
+
+		endif else begin
+
+		 	i_slit = (array_indices(overlap_coefficient, ind2d))[0]
+			j_slit = (array_indices(overlap_coefficient, ind2d))[1]
+
+		endelse
 
 		; remove this overlap
 		overlap_coefficient[ind2d] = 0.0
