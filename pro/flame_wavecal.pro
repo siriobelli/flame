@@ -136,7 +136,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 	; check that we have enough points to calculate warping polynomial
 	if n_elements(speclines) LT 5 then message, 'not enough data points for a wavelength solution'
 
-	; loops are used to throw away outliers and make the fit more robust
+	; this loop is used to throw away outliers and make the fit more robust
 	WHILE n_elements(speclines) LT Ngoodpix AND n_elements(speclines) GE 5 DO BEGIN
 
 		; save old number of good speclines
@@ -151,7 +151,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		; check that mpfit worked
 		if status_l LE 0 then message, 'mpfit did not find a good solution'
 
-		w_outliers = where( abs(best_resid) GT 3.0*stddev(best_resid), complement=w_goodpix, /null)
+		w_outliers = where( abs(best_resid) GT fuel.settings.wavecal_sigmaclip*stddev(best_resid), complement=w_goodpix, /null)
 		print, strtrim( n_elements(w_outliers), 2) + ' outliers rejected. ', format='(a,$)'
 
 		; keep only the non-outliers

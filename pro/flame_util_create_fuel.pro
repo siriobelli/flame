@@ -183,6 +183,7 @@ FUNCTION flame_util_create_fuel, input
     findlines_linefit_window: 6.0, $       ; in units of expected linewidth
     wavesolution_order_x: 3, $
     wavesolution_order_y: 2, $
+    wavecal_sigmaclip: 3.0, $
     shift_arcs_Nmin_lines: 1, $
     illumination_correction : 1, $
     skysub: 1, $
