@@ -494,9 +494,10 @@ PRO flame_diagnostics, fuel
 
   forprint, diagnostics.frame_num, '    ' + '    ' + cgnumber_formatter(diagnostics.offset_pos, decimals=2), $
     '    ' + cgnumber_formatter(diagnostics.seeing, decimals=2), '    ' + cgnumber_formatter(diagnostics.flux, decimals=1), $
-    '    ' + cgnumber_formatter(diagnostics.flux/median([diagnostics.flux]), decimals=2), '    ' + cgnumber_formatter(diagnostics.position, decimals=1), $
+    '    ' + cgnumber_formatter(diagnostics.flux/median([diagnostics.flux]), decimals=2), '    ' + cgnumber_formatter(diagnostics.position, decimals=1), '    ' $
+    + cgnumber_formatter(diagnostics.airmass, decimals=3), $
     textout=fuel.util.intermediate_dir + 'diagnostics.txt', $
-    comment = '# frame number   offset    seeing    flux    normalized flux    position '
+    comment = '# frame number   offset    seeing    flux    normalized flux    position    airmass'
 
 
   ; 4 - add diagnostics to the fuel structure
