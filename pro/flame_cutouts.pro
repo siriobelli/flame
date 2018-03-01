@@ -31,11 +31,17 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   ; Set to NaN all pixels outside the slit
   im[w_outside_slit] = !values.d_nan
 
-  ; convert indices to 2D
-  w_slit2d = array_indices(im, w_slit)
+  ; do we need to trim?
+  if total(abs(fuel.settings.trim_slit)) ne 0 then begin
+    x0 = fuel.settings.trim_slit[0]
+    x1 = fuel.settings.trim_slit[1]
+  endif else begin
+    x0 = 0
+    x1 = (size(im))[1]-1
+  endelse    
 
   ; extract the slit as a rectangle
-  this_cutout = im[ * , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
+  this_cutout = im[ x0:x1 , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
 
   ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
   this_cutout[*, 0] = !values.d_nan
@@ -81,7 +87,7 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
     im_sigma[w_outside_slit] = !values.d_nan
 
     ; extract the slit as a rectangle
-    this_cutout_sigma = im_sigma[ * , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
+    this_cutout_sigma = im_sigma[ x0:x1 , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
 
     ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
     this_cutout_sigma[*, 0] = !values.d_nan
@@ -143,6 +149,14 @@ PRO flame_cutout_oneslit, fuel, i_slit
   ; add the cutout filenames to the slits structure
   fuel.slits[i_slit].cutouts.filename = output_filenames
 
+  ; if trimming was performed, adjust the approximate wavelength range
+  if total(abs(fuel.settings.trim_slit)) ne 0 then begin
+    new_lambda0_min = min(fuel.slits[i_slit].range_lambda0) + $
+      fuel.settings.trim_slit[0] * min(fuel.slits[i_slit].range_delta_lambda)
+    new_lambda0_max = max(fuel.slits[i_slit].range_lambda0) + $
+      fuel.settings.trim_slit[0] * max(fuel.slits[i_slit].range_delta_lambda)
+    fuel.slits[i_slit].range_lambda0 = [new_lambda0_min, new_lambda0_max]
+  endif
 
   ; cutout the corresponding arc
   if fuel.util.arc.n_frames gt 0 then begin

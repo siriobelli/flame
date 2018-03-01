@@ -173,6 +173,7 @@ FUNCTION flame_util_create_fuel, input
     trace_slit_xmargin: 20, $
     trace_slit_ymargin: 12, $
     trace_slit_polydegree: 2, $
+    trim_slit: [0, 0], $
     roughwavecal_R : [500, 1000, 3000], $
     roughwavecal_smooth_window: 20, $
     roughwavecal_split: 0, $
