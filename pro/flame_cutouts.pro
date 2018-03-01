@@ -38,14 +38,16 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
   endif else begin
     x0 = 0
     x1 = (size(im))[1]-1
-  endelse    
+  endelse
 
   ; extract the slit as a rectangle
   this_cutout = im[ x0:x1 , slit_structure.yrange_cutout[0] : slit_structure.yrange_cutout[1] ]
 
-  ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
+  ; set to NaN the edges of the cutout (to avoid extrapolations)
   this_cutout[*, 0] = !values.d_nan
   this_cutout[*,-1] = !values.d_nan
+  this_cutout[0, *] = !values.d_nan
+  this_cutout[-1,*] = !values.d_nan
 
   ; add the horizontal trivial coordinate to the FITS header
 	SXADDPAR, Header, 'CTYPE1', 'LINEAR'
@@ -92,6 +94,8 @@ PRO flame_cutout_extract, fuel, slit_structure, input_filename, output_filename,
     ; set to NaN the top and bottom edges of the cutout (to avoid extrapolations)
     this_cutout_sigma[*, 0] = !values.d_nan
     this_cutout_sigma[*,-1] = !values.d_nan
+    this_cutout_sigma[0,*] = !values.d_nan
+    this_cutout_sigma[-1,*] = !values.d_nan
 
     ; write this out
     writefits, output_filename, this_cutout_sigma, /append
