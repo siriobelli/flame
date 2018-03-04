@@ -235,6 +235,7 @@ endif else begin
 	output_structure.lambda *= 1d4
 
 	; make new FITS header, with units
+	header_output = header
 	sxaddpar, header_output, 'TUNIT1', 'Angstrom'
 	sxaddpar, header_output, 'TUNIT2', 'electron / (pix s)'
 
