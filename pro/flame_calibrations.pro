@@ -18,6 +18,8 @@ PRO flame_calibrations_median_combine, filenames, outfilename, vertical_shift=ve
 
   ; utility to median-combine frames
   ; optionally, apply a vertical shift
+  ; NB: first apply a scaling to each frame to match the median values; this is
+  ; useful when using sky flats with a quickly varying sky brightness
 
   ; read the filenames
   print, 'median combining the following frames:'
@@ -38,7 +40,17 @@ PRO flame_calibrations_median_combine, filenames, outfilename, vertical_shift=ve
     ; read in all frames into the cube
     for i=0, n_elements(filenames)-1 do cube[*,*,i] = readfits(filenames[i])
 
-    ; take the median
+    ; calculate the sky value (here taken as the median pixel value) of each frame
+    sky_value = make_array( n_elements(filenames), type=data_type )
+    for i=0, n_elements(filenames)-1 do sky_value[i] = median(cube[*,*,i])
+
+    ; take as reference the median sky value
+    ref_value = median(sky_value)
+
+    ; scale every frame so that the combination is not biased
+    for i=0, n_elements(filenames)-1 do cube[*,*,i] *= ref_value / sky_value[i]
+
+    ; median-combine the frames
     master = median(cube, dimension=3, /even)
 
   endelse
