@@ -63,9 +63,6 @@ PRO flame_extract_slit, fuel, slit, skysub=skysub
 		xtitle='Position along the slit (pixel)', ytitle='Total flux', $
 		title = 'black: observed flux; red: Gaussian fit to the peak; orange: boxcar window'
 
-	; make clean copy of profile
-	profile = profile
-
 	; cut away non positive pixels
 	profile[where(profile LT 0.0, /null)] = 0.0
 
@@ -76,12 +73,15 @@ PRO flame_extract_slit, fuel, slit, skysub=skysub
 	; fit Gaussian to the peak
 	; ----------------------------------------------------------------------------
 
+	; median filter the profile to get rid of noise peaks
+	if n_elements(profile) GT 20 then profile_sm = median(profile, 9) else profile_sm = median(profile, 5)
+
 	; estimate parameters of the Gaussian
-	est_peak = max(profile)
+	est_peak = max(profile_sm, est_center)
   ;est_center = 0.5*n_elements(profile)
-	est_center = total(y_1d*profile, /nan) / total(profile, /nan)
+	;est_center = total(y_1d*profile, /nan) / total(profile, /nan)
 	est_sigma = 2.0
-	est_cont = median(profile)
+	est_cont = median(profile_sm)
 	est_param = [est_peak, est_center, est_sigma, est_cont]
 
 	; Gaussian fit
