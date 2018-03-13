@@ -236,6 +236,10 @@ endif else begin
 
 	; make new FITS header, with units
 	header_output = header
+ 	sxdelpar, header_output, 'naxis'
+	sxdelpar, header_output, 'naxis1'
+	sxdelpar, header_output, 'naxis2'
+	sxdelpar, header_output, 'bitpix'
 	sxaddpar, header_output, 'TUNIT1', 'Angstrom'
 	sxaddpar, header_output, 'TUNIT2', 'electron / (pix s)'
 
