@@ -418,7 +418,7 @@ FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
 
 
   ; if it is defined, the use the master dark to identify bad pixels ----------------
-  if master_dark ne !NULL then begin
+  if master_dark ne !NULL and fuel.settings.badpix_usedark then begin
 
       print, ''
       print, 'using master dark frame to identify bad pixels'
@@ -458,7 +458,7 @@ FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
 
 
   ; if it is defined, the use the master pixel flat to identify bad pixels ----------------
-  if master_pixelflat ne !NULL then begin
+  if master_pixelflat ne !NULL and fuel.settings.badpix_useflat then begin
 
       print, ''
       print, 'using master pixel flat field to identify bad pixels'
@@ -555,7 +555,7 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
 
 
   ; CORRECTION 2: dark frame
-  if master_dark NE !NULL then begin
+  if master_dark NE !NULL and fuel.settings.darksub_data then begin
 
     ; check that dimensions are right
     if (size(master_dark))[1] NE size_science[1] OR (size(master_dark))[1] NE size_science[1] then $
@@ -568,7 +568,7 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
 
 
   ; CORRECTION 3: pixel flat field
-  if master_pixelflat NE !NULL then begin
+  if master_pixelflat NE !NULL and fuel.settings.flatfield_data then begin
 
     ; check that dimensions are right
     if (size(master_pixelflat))[1] NE size_science[1] OR (size(master_pixelflat))[1] NE size_science[1] then $

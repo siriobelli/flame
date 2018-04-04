@@ -166,9 +166,13 @@ FUNCTION flame_util_create_fuel, input
     linelist_filename: data_dir + 'sky_line_list_R3000.dat', $
     star_x_range: [1000, 1200], $
     star_y_window: 0, $
-    clean_individual_frames : 0, $
-    badpix_sigma : 7.0, $
+    clean_individual_frames: 0, $
+    badpix_useflat: 1, $
+    badpix_usedark: 1, $
+    badpix_sigma: 7.0, $
     badpix_flatcorrection : 0.20, $
+    flatfield_data: 1, $
+    darksub_data: 1, $
     trace_slit_with_emlines : 0, $
     trace_slit_xmargin: 20, $
     trace_slit_ymargin: 12, $
