@@ -597,11 +597,13 @@ PRO flame_wavecal, fuel
 			*fuel.slits[i_slit].illumflat_cutout.lambda_coeff = *fuel.slits[i_slit].cutouts[0].lambda_coeff
 
 
-		; make summary plot showing all the speclines and residuals
+		; make summary plot showing all the speclines and residuals (if not using the arcs)
 		print, ''
-		cgPS_open, file_dirname(this_slit.cutouts[0].filename, /mark_directory) + 'summary_wavecal.ps', /nomatch
-			flame_util_check_wavecal, slit=this_slit, diagnostics=fuel.diagnostics
-		cgPS_close
+		if fuel.util.arc.n_frames EQ 0 then begin
+			cgPS_open, file_dirname(this_slit.cutouts[0].filename, /mark_directory) + 'summary_wavecal.ps', /nomatch
+				flame_util_check_wavecal, slit=this_slit, diagnostics=fuel.diagnostics
+			cgPS_close
+		endif
 
 
 	endfor
