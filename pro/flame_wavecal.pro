@@ -483,8 +483,15 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	endelse
 
 
+	; if we are not applying the shift then we are done
+	if fuel.settings.shift_arcs EQ 0 then begin
+		print, 'Wavelength shift NOT applied to the data; using the arcs wavelength solution.'
+		return
+	endif
+
 	; apply shift to rectification
 	; --------------------------------------------------
+	print, 'Applying wavelength shift to the arcs wavelength solution.'
 
 	; start with the rectification form the arcs
 	lambda_coeff = *slit.arc_cutout.lambda_coeff
