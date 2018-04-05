@@ -159,6 +159,7 @@ PRO flame_wavecal_2D_calibration, fuel=fuel, slit=slit, cutout=cutout, $
 		theoretical_lambdax = theoretical_lambdax[w_goodpix]
 
 	ENDWHILE
+	print, ''
 
 	; -------------------------------------------------------
 	; plot the individual detections on a 2D view of the slit
@@ -595,7 +596,16 @@ PRO flame_wavecal, fuel
 		if fuel.util.illumflat.n_frames GT 0 then $
 			*fuel.slits[i_slit].illumflat_cutout.lambda_coeff = *fuel.slits[i_slit].cutouts[0].lambda_coeff
 
+
+		; make summary plot showing all the speclines and residuals
+		print, ''
+		cgPS_open, file_dirname(this_slit.cutouts[0].filename, /mark_directory) + 'summary_wavecal.ps', /nomatch
+			flame_util_check_wavecal, slit=this_slit, diagnostics=fuel.diagnostics
+		cgPS_close
+
+
 	endfor
+
 
 
   flame_util_module_end, fuel
