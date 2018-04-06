@@ -27,10 +27,10 @@
 \contentsline {subsection}{\numberline {4.9}\texttt {flame\_wavecal}}{15}{subsection.4.9}
 \contentsline {subsection}{\numberline {4.10}\texttt {flame\_illumcorr}}{17}{subsection.4.10}
 \contentsline {subsection}{\numberline {4.11}\texttt {flame\_skysub}}{17}{subsection.4.11}
-\contentsline {subsection}{\numberline {4.12}\texttt {flame\_rectify}}{18}{subsection.4.12}
-\contentsline {subsection}{\numberline {4.13}\texttt {flame\_combine}}{18}{subsection.4.13}
+\contentsline {subsection}{\numberline {4.12}\texttt {flame\_rectify}}{19}{subsection.4.12}
+\contentsline {subsection}{\numberline {4.13}\texttt {flame\_combine}}{19}{subsection.4.13}
 \contentsline {subsection}{\numberline {4.14}\texttt {flame\_checkdata}}{19}{subsection.4.14}
-\contentsline {subsection}{\numberline {4.15}\texttt {flame\_extract}}{20}{subsection.4.15}
+\contentsline {subsection}{\numberline {4.15}\texttt {flame\_extract}}{19}{subsection.4.15}
 \contentsline {section}{\numberline {5}Supported Instruments}{20}{section.5}
 \contentsline {subsection}{\numberline {5.1}LUCI at LBT}{21}{subsection.5.1}
 \contentsline {subsection}{\numberline {5.2}LRIS at Keck}{21}{subsection.5.2}
