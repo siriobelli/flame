@@ -456,7 +456,7 @@ PRO flame_combine_multislit, fuel=fuel
 	; if either the A or B positions do not exist, then we are done
 	if w_A eq !NULL or w_B eq !NULL then return
 
-	cgPS_open, fuel.util.intermediate_dir + 'slit_pairing.ps', /nomatch
+	cgPS_open, fuel.util.output_dir + 'slit_pairing.ps', /nomatch
 
 	; dithering length (by definition; see flame_combine_oneslit)
 	dithering_length = floor(diagnostics[w_B[0]].position) - floor(diagnostics[w_A[0]].position)
