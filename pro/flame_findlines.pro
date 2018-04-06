@@ -698,11 +698,8 @@ PRO flame_findlines_diagnostics, fuel, slit
     uniq_detections[i_line] = n_elements(speclines_plus[where(speclines_plus.lambda eq uniq_lambda[i_line])])
   endfor
 
-  ; sort unique lines by total number of detections
-  s = sort(-uniq_detections)
-
   ; write out detailed list of line detections
-  forprint, uniq_lambda[s], uniq_detections[s], uniq_framecount[s], $
+  forprint, uniq_lambda, uniq_detections, uniq_framecount[s], $
     textout=file_dirname(slit.cutouts[0].filename, /mark_directory) + 'summary_line_identification.txt', $
     comment = '# wavelength    number of detections    frames in which it is detected'
 
