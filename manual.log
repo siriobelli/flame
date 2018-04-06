@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  31 JAN 2018 14:27
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  6 APR 2018 10:59
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -505,38 +505,64 @@ Package: afterpage 1995/10/27 v1.08 After-Page Package (DPC)
 \AP@partial=\box38
 \AP@footins=\box39
 ))
-LaTeX Font Info:    Try loading font information for T1+ppl on input line 39.
+(/usr/share/texlive/texmf-dist/tex/latex/caption/caption.sty
+Package: caption 2013/05/02 v3.3-89 Customizing captions (AR)
 
-(/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1ppl.fd
+(/usr/share/texlive/texmf-dist/tex/latex/caption/caption3.sty
+Package: caption3 2013/05/02 v1.6-88 caption3 kernel (AR)
+Package caption3 Info: TeX engine: e-TeX on input line 57.
+\captionmargin=\dimen158
+\captionmargin@=\dimen159
+\captionwidth=\dimen160
+\caption@tempdima=\dimen161
+\caption@indent=\dimen162
+\caption@parindent=\dimen163
+\caption@hangindent=\dimen164
+Package caption Info: Unknown document class (or package),
+(caption)             standard defaults will be used.
+)
+
+Package caption Warning: Unsupported document class (or package) detected,
+(caption)                usage of the caption package is not recommended.
+See the caption package documentation for explanation.
+
+Package caption Info: \@makecaption = \long macro:#1#2->\vskip 2ex\noindent #1\
+ #2\par .
+\c@ContinuedFloat=\count131
+Package caption Info: hyperref package is loaded.
+Package caption Info: listings package is loaded.
+)
+LaTeX Font Info:    Try loading font information for T1+ppl on input line 41.
+ (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1ppl.fd
 File: t1ppl.fd 2001/06/04 font definitions for T1/ppl.
 )
 
 LaTeX Font Warning: Font shape `T1/ppl/b/' undefined
-(Font)              using `T1/ppl/b/n' instead on input line 39.
+(Font)              using `T1/ppl/b/n' instead on input line 41.
 
 (./manual.aux)
 \openout1 = `manual.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 50.
-LaTeX Font Info:    ... okay on input line 50.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 50.
-LaTeX Font Info:    ... okay on input line 50.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 50.
-LaTeX Font Info:    ... okay on input line 50.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 50.
-LaTeX Font Info:    ... okay on input line 50.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 50.
-LaTeX Font Info:    ... okay on input line 50.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 50.
-LaTeX Font Info:    ... okay on input line 50.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 50.
-LaTeX Font Info:    ... okay on input line 50.
-LaTeX Font Info:    Try loading font information for T1+lmr on input line 50.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 52.
+LaTeX Font Info:    ... okay on input line 52.
+LaTeX Font Info:    Try loading font information for T1+lmr on input line 52.
  (/usr/share/texmf/tex/latex/lm/t1lmr.fd
 File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 \AtBeginShipoutBox=\box40
-Package hyperref Info: Link coloring OFF on input line 50.
+Package hyperref Info: Link coloring OFF on input line 52.
 
 (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
@@ -544,30 +570,30 @@ Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
 Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
 )
-\c@section@level=\count131
+\c@section@level=\count132
 )
-LaTeX Info: Redefining \ref on input line 50.
-LaTeX Info: Redefining \pageref on input line 50.
-LaTeX Info: Redefining \nameref on input line 50.
+LaTeX Info: Redefining \ref on input line 52.
+LaTeX Info: Redefining \pageref on input line 52.
+LaTeX Info: Redefining \nameref on input line 52.
 
 (./manual.out) (./manual.out)
 \@outlinefile=\write4
 \openout4 = `manual.out'.
 
-\c@lstlisting=\count132
+\c@lstlisting=\count133
 
 (/usr/share/texlive/texmf-dist/tex/context/base/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count133
-\scratchdimen=\dimen158
+\scratchcounter=\count134
+\scratchdimen=\dimen165
 \scratchbox=\box41
-\nofMPsegments=\count134
-\nofMParguments=\count135
+\nofMPsegments=\count135
+\nofMParguments=\count136
 \everyMPshowfont=\toks28
-\MPscratchCnt=\count136
-\MPscratchDim=\dimen159
-\MPnumerator=\count137
-\makeMPintoPDFobject=\count138
+\MPscratchCnt=\count137
+\MPscratchDim=\dimen166
+\MPnumerator=\count138
+\makeMPintoPDFobject=\count139
 \everyMPtoPDFconversion=\toks29
 ) (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2010/02/09 v2.5 Base part for package epstopdf
@@ -585,33 +611,35 @@ File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
 ABD: EveryShipout initializing macros
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 66.
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: End \AtBeginDocument code.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 68.
  (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 66.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 68.
 (/usr/share/texmf/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 66.
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 68.
 
 
 (/usr/share/texmf/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 66.
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 68.
 
 
 (/usr/share/texmf/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <14.4> on input line 66.
+(Font)              <14.4> on input line 68.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 66.
+(Font)              <10> on input line 68.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 66.
-LaTeX Font Info:    Try loading font information for T1+lmtt on input line 69.
+(Font)              <7> on input line 68.
+LaTeX Font Info:    Try loading font information for T1+lmtt on input line 71.
 
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
@@ -619,7 +647,7 @@ File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 <cover.pdf, id=163, 458.08812pt x 653.78427pt>
 File: cover.pdf Graphic file (type pdf)
  <use cover.pdf>
-Package pdftex.def Info: cover.pdf used on input line 74.
+Package pdftex.def Info: cover.pdf used on input line 76.
 (pdftex.def)             Requested size: 592.1244pt x 845.08113pt.
  [1
 
@@ -636,115 +664,151 @@ pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has
 been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.87 \newpage
+l.91 \newpage
               [1]
-Overfull \hbox (21.60205pt too wide) in paragraph at lines 95--97
-\T1/lmr/m/n/10 (2017). For com-ments, bug re-ports, or sug-ges-tions please con
--tact \T1/lmtt/m/n/10 sirio@mpe.mpg.de\T1/lmr/m/n/10 . 
- []
-
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 120.
+(Font)              <8> on input line 122.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 120.
-LaTeX Font Info:    Try loading font information for T1+pcr on input line 126.
-(/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1pcr.fd
+(Font)              <6> on input line 122.
+LaTeX Font Info:    Try loading font information for T1+pcr on input line 128.
+ (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
-) [2]
-LaTeX Font Info:    Try loading font information for OMS+lmr on input line 153.
+)
+[2]
+LaTeX Font Info:    Try loading font information for OMS+lmr on input line 155.
 
-
-(/usr/share/texmf/tex/latex/lm/omslmr.fd
+ (/usr/share/texmf/tex/latex/lm/omslmr.fd
 File: omslmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `OMS/lmr/m/n' in size <10> not available
-(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 153.
+(Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 155.
  [3]
-LaTeX Font Info:    Try loading font information for T1+cmtt on input line 203.
+LaTeX Font Info:    Try loading font information for T1+cmtt on input line 205.
 
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/t1cmtt.fd
 File: t1cmtt.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 ) [4] [5] [6]
-Overfull \hbox (2.58382pt too wide) in paragraph at lines 324--325
+Underfull \hbox (badness 5345) in paragraph at lines 326--327
 []\T1/lmr/m/n/10 After the ini-tial-iza-tion, the user has com-plete con-trol o
-ver the \T1/lmtt/m/n/10 fuel.settings
+ver the
  []
 
-[7]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 414.
- <diagnostics.pdf, id=323, 503.8825pt x 392.46625pt>
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 422.
+[7] [8] <diagnostics.pdf, id=338, 503.8825pt x 392.46625pt>
 File: diagnostics.pdf Graphic file (type pdf)
- <use diagnostics.pdf>
-Package pdftex.def Info: diagnostics.pdf used on input line 421.
+
+<use diagnostics.pdf>
+Package pdftex.def Info: diagnostics.pdf used on input line 429.
 (pdftex.def)             Requested size: 310.4979pt x 241.84138pt.
 
-Overfull \hbox (11.68602pt too wide) in paragraph at lines 426--427
-[]\T1/lmr/m/n/10 Starting with the y co-or-di-nates spec-i-fied by the user in 
-\T1/cmtt/m/n/10 fuel.startrace_y_pos\T1/lmr/m/n/10 ,
+Underfull \hbox (badness 10000) in paragraph at lines 434--435
+[]\T1/lmr/m/n/10 Starting with the y co-or-di-nates spec-i-fied by the user in
  []
 
-[8] [9 <./diagnostics.pdf>] <slits.png, id=355, 618.05907pt x 618.05907pt>
+
+Underfull \hbox (badness 1701) in paragraph at lines 434--435
+\T1/cmtt/m/n/10 fuel.startrace_y_pos\T1/lmr/m/n/10 , this mod-ule de-tects the 
+ref-er-ence star po-si-tion
+ []
+
+[9 <./diagnostics.pdf>] [10] <slits.png, id=362, 618.05907pt x 618.05907pt>
 File: slits.png Graphic file (type png)
 
 <use slits.png>
-Package pdftex.def Info: slits.png used on input line 472.
+Package pdftex.def Info: slits.png used on input line 486.
 (pdftex.def)             Requested size: 241.49895pt x 241.49474pt.
- [10] [11 <./slits.png>]
-<wavecal1.pdf, id=369, 498.86375pt x 422.57875pt>
+ [11] [12 <./slits.png>] [13]
+<wavecal1.pdf, id=386, 498.86375pt x 422.57875pt>
 File: wavecal1.pdf Graphic file (type pdf)
  <use wavecal1.pdf>
-Package pdftex.def Info: wavecal1.pdf used on input line 523.
+Package pdftex.def Info: wavecal1.pdf used on input line 557.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
 
-<wavecal2.pdf, id=370, 498.86375pt x 422.57875pt>
+<wavecal2.pdf, id=387, 498.86375pt x 422.57875pt>
 File: wavecal2.pdf Graphic file (type pdf)
  <use wavecal2.pdf>
-Package pdftex.def Info: wavecal2.pdf used on input line 525.
+Package pdftex.def Info: wavecal2.pdf used on input line 559.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
 
-<wavecal3.pdf, id=371, 498.86375pt x 422.57875pt>
+<wavecal3.pdf, id=388, 498.86375pt x 422.57875pt>
 File: wavecal3.pdf Graphic file (type pdf)
  <use wavecal3.pdf>
-Package pdftex.def Info: wavecal3.pdf used on input line 527.
+Package pdftex.def Info: wavecal3.pdf used on input line 561.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
- [12]
-<wavecal_accurate.pdf, id=384, 510.90875pt x 422.57875pt>
-File: wavecal_accurate.pdf Graphic file (type pdf)
+ [14 <./wavecal1.pdf> <./wavecal2.pdf> <./wavecal3.pdf>]
+<number_lines.pdf, id=414, 471.7625pt x 370.38374pt>
+File: number_lines.pdf Graphic file (type pdf)
+ <use number_lines.pdf>
+Package pdftex.def Info: number_lines.pdf used on input line 591.
+(pdftex.def)             Requested size: 241.49895pt x 189.6053pt.
 
-<use wavecal_accurate.pdf>
-Package pdftex.def Info: wavecal_accurate.pdf used on input line 549.
-(pdftex.def)             Requested size: 241.49895pt x 199.74689pt.
- [13 <./wavecal1.pdf> <./wavecal2.pdf> <./wavecal3.pdf>] [14 <./wavecal_accurat
-e.pdf>] [15]
-(/usr/share/texlive/texmf-dist/tex/latex/tools/.tex File ignored) [16] [17]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 669.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 669.
+<speclines.png, id=415, 1068.99374pt x 204.765pt>
+File: speclines.png Graphic file (type png)
+ <use speclines.png>
+Package pdftex.def Info: speclines.png used on input line 599.
+(pdftex.def)             Requested size: 345.0pt x 66.0854pt.
+ [15 <./number_lines.pdf>] <residuals.pdf, id=428, 492.84125pt x 375.4025pt>
+File: residuals.pdf Graphic file (type pdf)
 
-(./manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 669.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 669.
+<use residuals.pdf>
+Package pdftex.def Info: residuals.pdf used on input line 620.
+(pdftex.def)             Requested size: 241.49895pt x 183.95456pt.
+
+
+LaTeX Warning: Command \r invalid in math mode on input line 630.
+
+[16 <./speclines.png>] [17 <./residuals.pdf>]
+<oversample_05.png, id=444, 1050.92625pt x 370.38374pt>
+File: oversample_05.png Graphic file (type png)
+
+<use oversample_05.png>
+Package pdftex.def Info: oversample_05.png used on input line 670.
+(pdftex.def)             Requested size: 241.49895pt x 85.10735pt.
+ <oversample_1.png, id=445, 1050.92625pt x 370.38374pt>
+File: oversample_1.png Graphic file (type png)
+
+<use oversample_1.png>
+Package pdftex.def Info: oversample_1.png used on input line 671.
+(pdftex.def)             Requested size: 241.49895pt x 85.10735pt.
+ <oversample_2.png, id=446, 1050.92625pt x 370.38374pt>
+File: oversample_2.png Graphic file (type png)
+
+<use oversample_2.png>
+Package pdftex.def Info: oversample_2.png used on input line 672.
+(pdftex.def)             Requested size: 241.49895pt x 85.10735pt.
+ [18] [19 <./oversample_05.png> <./oversample_1.png> <./oversample_2.png>] [20]
+ (/usr/share/texlive/texmf-dist/tex/latex/tools/.tex
+File ignored) [21]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 775.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 775.
+ (./manual.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 775.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 775.
 Package rerunfilecheck Info: File `manual.out' has not changed.
 (rerunfilecheck)             Checksum: B57E0ECD9BC1BF408EC59E2E2EC0F705;2648.
 
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 669.
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 775.
  ) 
 Here is how much of TeX's memory you used:
- 15625 strings out of 494946
- 273354 string characters out of 6177758
- 341829 words of memory out of 5000000
- 18414 multiletter control sequences out of 15000+600000
- 78134 words of font info for 58 fonts, out of 8000000 for 9000
+ 16686 strings out of 494946
+ 292649 string characters out of 6177758
+ 367239 words of memory out of 5000000
+ 19454 multiletter control sequences out of 15000+600000
+ 85713 words of font info for 61 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 63i,10n,57p,1020b,1613s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc} </afs/mpe.mpg.de/home/sirio/.
-texmf-var/fonts/pk/ljfour/jknappen/ec/ectt0800.600pk>{/usr/share/texmf/fonts/en
-c/dvips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/s
-hare/texmf/fonts/enc/dvips/lm/lm-mathsy.enc} </afs/mpe.mpg.de/home/sirio/.texmf
+ 63i,10n,92p,1195b,1669s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dv
+ips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share
+/texmf/fonts/enc/dvips/lm/lm-mathsy.enc} </afs/mpe.mpg.de/home/sirio/.texmf-var
+/fonts/pk/ljfour/jknappen/ec/ectt0800.600pk> </afs/mpe.mpg.de/home/sirio/.texmf
 -var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk>{/usr/share/texlive/texmf-dist/
 fonts/enc/dvips/base/8r.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb>
 </usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type
@@ -753,17 +817,19 @@ sr/share/texmf/fonts/type1/public/lm/lmmi10.pfb></usr/share/texmf/fonts/type1/p
 ublic/lm/lmmi8.pfb></usr/share/texmf/fonts/type1/public/lm/lmr10.pfb></usr/shar
 e/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm
 /lmr6.pfb></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb></usr/share/texmf/fo
-nts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb
-></usr/share/texmf/fonts/type1/public/lm/lmri8.pfb></usr/share/texmf/fonts/type
-1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb></usr/
-share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/publ
-ic/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.pfb></usr/share
-/texmf/fonts/type1/public/lm/lmtt8.pfb></usr/share/texlive/texmf-dist/fonts/typ
-e1/urw/courier/ucrr8a.pfb>
-Output written on manual.pdf (18 pages, 1290960 bytes).
+nts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmr9.pfb><
+/usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1
+/public/lm/lmri8.pfb></usr/share/texmf/fonts/type1/public/lm/lmri9.pfb></usr/sh
+are/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public
+/lm/lmsy8.pfb></usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/te
+xmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lm
+tt12.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt8.pfb></usr/share/texmf/fo
+nts/type1/public/lm/lmtt9.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/co
+urier/ucrr8a.pfb>
+Output written on manual.pdf (22 pages, 2263940 bytes).
 PDF statistics:
- 591 PDF objects out of 1000 (max. 8388607)
- 491 compressed objects within 5 object streams
- 124 named destinations out of 1000 (max. 500000)
- 360 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 645 PDF objects out of 1000 (max. 8388607)
+ 522 compressed objects within 6 object streams
+ 131 named destinations out of 1000 (max. 500000)
+ 385 words of extra memory for PDF output out of 10000 (max. 10000000)
 

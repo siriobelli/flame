@@ -8,6 +8,8 @@
 \usepackage{graphicx}
 \usepackage{deluxetable}
 \usepackage[firstpage=true]{background}
+\usepackage[font=small]{caption}
+
 
 %\newcommand{\flame}{\texttt{flame}}
 \newcommand{\flame}{\emph{Flame}}
@@ -78,6 +80,8 @@
 \newpage
 \tableofcontents
 
+\begin{sloppypar}
+
 % ***********************************************************************************************
 % ***********************************************************************************************
 %									1. INTRODUCTION
@@ -92,9 +96,7 @@
 
 Although created specifically for the LUCI instrument at the Large Binocular Telescope, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. For simplicity, the present document describes in detail the reduction of LUCI data. Section \ref{sec:instruments} explains how to use \flame\ with other supported instruments, and how it is possible to implement support for new instruments. There is also a minimal version of \flame\ (see Section \ref{sec:minimal}) that can be used to run simple diagnostics on data from virtually any instrument, and that can be particularly useful while observing.
 
-If you made use of \flame\ in your work, please cite Belli, Contursi \& Davies (2017).
-For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}.
-
+If you made use of \flame\ in your work, please cite Belli, Contursi \& Davies (2017). For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}.
 
 
 % ***********************************************************************************************
@@ -331,7 +333,6 @@ After the initialization, the user has complete control over the \texttt{fuel.se
   \makebox[\textwidth][c]{
   \begin{tabular}{llll}
     \hline
-    \smallskip
     Field    & Default Value   & Routine   & Description \\
              & (for LUCI)      &           & \\
     \hline
@@ -341,8 +342,12 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     star\_x\_range 			          & [1000, 1200]  & diagnostics   	 & range of pixel x-coordinate to consider for the reference star trace \\
     star\_y\_window               & $\simeq$4 arcsec & diagnostics   & range of pixel y-coordinate to consider for the reference star trace \\
     clean\_individual\_frames     & 0             & calibrations     & identify and mask cosmic rays in each frame \\
+    badpix\_useflat               & 1             & calibrations     & use pixel flat field (if provided) to identify bad pixels \\
+    badpix\_usedark               & 1             & calibrations     & use dark frames (if provided) to identify bad pixels \\
     badpix\_sigma                 & 7.0           & calibrations     & sigma clipping to identify bad pixels in the master dark frame \\
     badpix\_flatcorrection        & 0.20          & calibrations     & values beyond this deviation in the master pixel flat are bad pixels \\
+    flatfield\_data               & 1             & calibrations     & divide the science data by the master pixel flat field (if provided) \\
+    darksub\_data                 & 1             & calibrations     & subtract the master dark (if provided) by the science data \\
     trace\_slit\_with\_emlines    & 1             & slitid           & use arcs or sky lines to trace slit edges \\
     trace\_slit\_xmargin          & 20            & slitid           & horizontal margin (in pixels) to consider around each emission line \\
     trace\_slit\_ymargin          & 12            & slitid           & vertical margin (in pixels) to consider beyond the expected slit edge \\
@@ -356,8 +361,11 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     findlines\_linefit\_window    & 6.0           & findlines        & window used for Gaussian fitting, in units of expected line width \\
     wavesolution\_order\_x        & 3             & wavecal          & polynomial degree for the wavelength solution, along x \\
     wavesolution\_order\_y        & 2             & wavecal          & polynomial degree for the wavelength solution, along y \\
+    shift\_arcs                   & 1             & wavecal          & apply wavelength shift calculated from sky lines to the arcs solution \\
     shift\_arcs\_Nmin\_lines      & 1             & wavecal          & minimum number of sky lines needed for shifting the arcs solution \\
     illumination\_correction      & 1             & illumcorr        & apply illumination correction derived from sky lines \\
+    skysub                        & 1             & skysub           & construct and subtract a model of the sky \\
+    skysub\_plot                  & 0             & skysub           & while fitting the sky, show pop-up windows with the b-spline fit \\
     skysub\_plot\_range           & [0.4, 0.6]    & skysub           & fractional range of the x axis to plot during sky subtraction \\
     skysub\_bspline\_oversample   & 1.0           & skysub           & breakpoints separation for the b-spline model, in units of pixels \\
     skysub\_reject\_fraction      & 0.10          & skysub           & fraction of pixels to reject at each loop \\
@@ -460,11 +468,17 @@ This step and the previous ones can be run on virtually any data set without any
 % ---------------------------------------------------
 \subsection{\texttt{flame\_calibrations}}
 
-This module applies a number of calibrations to the raw science frames. First, the bad pixel mask is generated from the input dark and/or flat frames. If neither dark nor flat field frames were supplied, then the default bad pixel mask, stored in flame/data/LUCI, is used.
+This module applies a number of calibrations to the raw science frames. First, the bad pixel mask is generated from the input dark and/or flat frames. If neither dark nor flat field frames were supplied, then the default bad pixel mask, stored in flame/data/LUCI, is used. The flat field correction and dark subtraction are then performed.
 
-The user can choose whether individual frames must be cleaned of cosmic rays using L.A.Cosmic (this is generally not needed for LUCI data, as long as the number of frames is enough for sigma-clipping), and the parameters used to identify bad pixels from the master dark and flat field.
+In order to offer the maximum flexibility, individual corrections can be turned on or off \emph{even when the corresponding frames have been supplied to \flame}. For example, if the pixel flat field frames are provided, the user can choose whether they should be used for the flat field correction, for the bad pixel identification, or both, via the \code{settings.flatfield\_data} and \code{settings.badpix\_useflat} options. Analogous settings apply to the dark frames.
 
-The corrected science frames are saved in the intermediate/frames/ directory. Each FITS file contains a second extension with the error spectrum, which is calculated as the combination of read-out noise and Poisson noise.
+When using the flat field to construct the bad pixel mask, the option \code{settings.badpix\_flatcorrection} controls the threshold used to identify bad pixels. A similar option exists for when the darks are used. If darks and flats are not used then the default bad pixel mask will be used. Users that wish to skip the bad pixel flagging altogether need to additionally set the value of \code{fuel.instrument.default\_badpixel\_mask = 'none'}
+
+The user can also choose to clean individual frames of cosmic rays using L.A.Cosmic (this is generally not needed for LUCI data, as long as the number of frames is enough for sigma-clipping).
+
+\medskip
+\noindent
+\textbf{Outputs.} After all the calibrations have been applied, the corrected science frames are saved in the intermediate/frames/ directory. Each FITS file contains a second extension with the error spectrum, which is calculated as the combination of read-out noise and Poisson noise. The \code{master\_slitflat.fits} file is saved in the intermediate directory. Additional files may be saved, depending to the options used. These include the master flats and darks, the median pixel flat (which is a simple median stack, not normalized, and is used to obtain the master file), the bad pixel mask, and ps files showing the distribution of pixel values in the master flats and/or darks and the threshold used to identify the bad pixels. If present, the master pixel flat and bad pixel mask should be checked to make sure they look reasonable.
 
 
 \begin{figure}[htbp]
@@ -478,26 +492,40 @@ The corrected science frames are saved in the intermediate/frames/ directory. Ea
 \subsection{\texttt{flame\_slitid}}
 \label{sec:slitid}
 
-The module \texttt{flame\_slitid} is responsible for detecting the slits from the multi-object slitmask. If slit flat field frames are not supplied, the central three science frames will be stacked and used to generate the master slit flat. The vertical coordinates of the slit edges calculated during the initialization are used. However, the physical position of the mask with respect to the detector is typically difficult to predict and varies slightly from one night to the other. To account for this, a vertical shift is calculated by identifying the slit edges.
+The module \texttt{flame\_slitid} is responsible for detecting the slits from the multi-object slitmask, using the master slit flat file. The vertical coordinates of the slit edges calculated during the initialization are used. However, the physical position of the mask with respect to the detector is typically difficult to predict and varies slightly from one night to the other. To account for this, a vertical shift is calculated by identifying the slit edges.
 
-Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure.
+Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure. The order of the polynomial can be specified via the settings.
 
-In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges. It is possible to use the continuum emission instead, by specifying settings.trace\_slit\_with\_emlines$ = 0$. Using lamp flats or arc frames as slit flat field is also an option. The user can also change the order of the polynomial describing the slit edge and the cutout size used for the slit identification.
+In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges. It is possible to use the continuum emission instead, by specifying \code{settings.trace\_slit\_with\_emlines}$ = 0$. Using lamp flats or arc frames as slit flat field is also an option.
 
-This module creates the file file slits.reg, which is a ds9 region file that can be loaded on top of any science frame and will show the slit edges (see Figure \ref{fig:slits}). This can be used to check the slit detection and also to identify which slit on the science frame corresponds to which target. The raw detection of the sky lines are saved in slits\_raw.reg.
+\medskip
+\noindent
+\textbf{Outputs.} This module creates the file file slits.reg, which is a ds9 region file that can be loaded on top of the slit flat (or any science frame) and will show the slit edges (see Figure \ref{fig:slits}). This can be used to check the slit detection and also to identify which slit on the science frame corresponds to which target. The raw detection (i.e., before the polynomial fit) of the slit edges are saved in slits\_raw.reg.
 
-If the slit identification fails or is not accurate, one alternative is to use the longslit option to manually select the region within one slit to reduce. By default the longslit option assumes that the slit is spatially centered on the mask. If this assumption causes a wildly wrong initial guess for the wavelength range, it is possible to override this value by changing the \texttt{fuel.slits.range\_lambda0} variable, which is a 2-element array containing the minimum and maximum values to be considered for the wavelength of the first pixel.
+\medskip
+\noindent
+\textbf{Troubleshooting.} If the slit identification fails or is not accurate, the user can change the size of the cutout used for the slit identification. If emission lines are used, a cutout is produced around each line, and the horizontal dimension of the cutout can also be changed. In these cases the slits\_raw.reg file is more helpful because it shows the individual detections, and can be used to guide the tweaking of the parameters.
+
+In very difficult cases, an alternative approach is to use the longslit option to manually select the region within one slit to reduce. By default the longslit option assumes that the slit is \emph{spatially} centered on the mask. If this assumption causes a wildly wrong initial guess for the wavelength range, it is possible to override this value by changing the \texttt{fuel.slits.range\_lambda0} variable, which is a 2-element array containing the minimum and maximum values to be considered for the wavelength of the first pixel.
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_cutouts}}
 
-Using the slit definition from the previous step, the slits are extracted from each corrected frame and saved as FITS files. All the cutouts corresponding to the same slit are saved in the directory slitxx, where xx is the slit number.
+Using the slit definition from the previous step, the slits are extracted from each corrected frame and saved as FITS files.
+
+\medskip
+\noindent
+\textbf{Outputs.} For each slit, all the cutouts are saved in the directory slitxx, where xx is the slit number.
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_spatialcal}}
 
 The spatial rectification is calculated starting from the slit edges, and is corrected for nodding and dithering using the results of the diagnostics. The coefficients of the coordinate transformation $\gamma(x,y)$ are stored for each cutout in the fuel.slits structure.
+
+\medskip
+\noindent
+No outputs are created during this step.
 
 
 % ---------------------------------------------------
@@ -512,9 +540,15 @@ In \flame, the wavelength calibration is split into three steps. The first step 
 \item Finally, another cross-correlation is performed at the native spectral resolution.
 \end{enumerate}
 
-For each slit, plots illustrating the successive comparisons of observed and model sky spectra are saved as ps files (rough\_wavelength\_calibration.ps). An example is shown in Figure \ref{fig:wavecal_approx}.
+\medskip
+\noindent
+\textbf{Outputs.} For each slit, plots illustrating the successive comparisons of observed and model sky spectra are saved as ps files (rough\_wavelength\_calibration.ps) in the slit directory. An example is shown in Figure \ref{fig:wavecal_approx}.
 
-If the sky spectrum includes a strong contribution from continuum emission, as is often the case for the thermal emission in the K band, it may be necessary to fit and subtract a low-order polynomial to the observed spectrum before comparing it to the model. This is controlled by the parameter settings.roughwavecal\_smooth\_window.
+\medskip
+\noindent
+\textbf{Troubleshooting.} The spectral resolution $R$ used in the three steps is stored in \code{settings.roughwavecal\_R} and can be tweaked when the default values are not satisfactory. When the wavelength solution is highly non-linear, or the wavelength range is extended, it may be difficult to obtain an accurate fit using a second-order polynomial. In these cases the user can set \code{settings.roughwavecal\_split}, and the third step will be performed on the two halves of the spectrum separately, with a substantial increase in the flexibility of the wavelength solution.
+
+If the sky spectrum includes a strong contribution from continuum emission, as is often the case for the thermal emission in the K band, it may be necessary to fit and subtract a low-order polynomial to the observed spectrum before comparing it to the model. This is controlled by the parameter \code{settings.roughwavecal\_smooth\_window}.
 
 
 \begin{figure*}[tbp]
@@ -537,17 +571,33 @@ If the sky spectrum includes a strong contribution from continuum emission, as i
 
 The previous procedure gives only a rough wavelength calibration that is valid for the pixel rows at the center of the slits. Since the wavelength solution typically varies with spatial coordinate within the slit (particularly for tilted slits), the calibration needs to be calculated for each individual pixel row, which is done in this step.
 
-Initially, the spectrum of the central pixel row is extracted, and the individual OH emission lines are identified using the rough wavelength solution. A Gaussian fit is performed on each line, and the $x$ pixel coordinate corresponding to the center is stored. It is therefore necessary that the calibration found in the previous step is accurate to within the window used in the Gaussian fit, otherwise the identification of the OH lines will not be possible. The relation between the $x$ coordinate and the expected wavelength of each OH line is then fit with a low order polynomial (see example in Figure \ref{fig:speclines}). This procedure is then repeated for the next pixel row, using the wavelength solution from the previous pixel row as first guess. This is always a good assumption as long as the wavelength solution varies smoothly with position, without abrupt changes from one pixel position to the next.
+Initially, the spectrum of the central pixel row is extracted, and the individual OH emission lines are identified using the rough wavelength solution. A Gaussian fit is performed on each line, and the $x$ pixel coordinate corresponding to the center is stored. It is therefore necessary that the calibration found in the previous step is accurate to within the window used in the Gaussian fit, otherwise the identification of the OH lines will not be possible. The relation between the $x$ coordinate and the expected wavelength of each OH line is then fit with a low order polynomial (see example in Figure \ref{fig:speclines}). This procedure is then repeated for the next pixel row, using the wavelength solution from the previous pixel row as first guess. This is always a good assumption as long as the wavelength solution varies smoothly with position, without abrupt changes from one pixel position to the next. After all the pixel rows have been processed, the final result is a number of $x,y$ coordinates of detected OH lines, which is stored in the \fuel\ structure.
 
-After all the pixel rows have been processed, the final result is a number of $x,y$ coordinates of detected OH lines, and the corresponding theoretical wavelength. A ds9 region file (OHlines.reg) showing the detected location of the OH lines is produced.
+\medskip
+\noindent
+\textbf{Outputs.} In the slit directories, the file \code{summary\_line\_identification.ps} should be checked to get an idea of the quality and quantity of line identification. From these plots it is possible to see if there are frames with a low number of line identification, if the lines cover the 2D spectra uniformly, and what is the frame-to-frame drift along the spectral direction. A corresponding text file lists the wavelength of all the lines that were identified so that problematic lines can be easily identified and, if needed, removed from the line list. For a more thorough examination of individual frames, the \code{*speclines.ps} files show the identifications and the temporary wavelength solution for each individual pixel row in each frame. The \code{*speclines.reg} files can be loaded in ds9 on top of the corresponding cutout to see the individual detections, as shown in Figure \ref{fig:speclines}. Line identification are shown at each pixel row with red crosses; blue crosses mark those lines for which the wavelength is not accurately known, and that will be used for the rectification but not for the absolute wavelength calibration.
 
-It is possible for difficult cases (e.g., few or weak lines, or slits heavily tilted), that the parameters controlling this step need to be tweaked (see Table \ref{tab:settings}).
+When using arcs, the summary files is not generated, but the \code{*speclines.ps} file for the arcs should be checked instead.
+
+\medskip
+\noindent
+\textbf{Troubleshooting.} The first thing to check in case of poor line identification is that the previous step was successful. Without a reasonable starting guess for the wavelength solution it will not be possible to correctly identify and measure the lines. If the lines are far apart and there is no risk of mis-identifying them, it is possible to widen the window around the expected wavelength used to search for the line. This helps particularly if the quality of the rough wavelength calibration is poor.
+
+In cases where the lines are very weak or infrequent (for example in some spectral regions in the K band), it may be necessary to tweak the settings in order to change the minimum number of lines identified on a single pixel row required to fit a wavelength solution, or the polynomial degree of the solution itself. It is also possible to stack multiple contiguous rows before attempting the line identification. This can be helpful when the lines are faint and a single pixel row does not have enough signal for a Gaussian fit.
 
 
 \begin{figure}[tbp]
 \centering
-\includegraphics[width=0.7\textwidth]{wavecal_accurate}
-\caption{Identification of sky lines. Top panel: The sky spectrum is extracted from a single pixel row, and using the approximate wavelength calibration the OH lines are identified and fit with a Gaussian profile. Bottom panel: the measured position of each OH line, together with their known wavelength, allow an accurate wavelength solution, shown in blue.}
+\includegraphics[width=0.7\textwidth]{number_lines}
+\caption{Number of sky lines that were identified and fit with a Gaussian, as a function of frame number. The different colors correspond to different definition of ``identified lines''. The black line correspond to the total number of sky lines that were detected in at least one pixel row; the other lines show increasingly stricter definitions.}
+\label{fig:number_lines}
+\end{figure}
+
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=\textwidth]{speclines.png}
+\caption{Identification of sky lines. At each pixel row and for each sky line a red cross mark the peak of the Gaussian fit. Lines shown in blue lack a precise wavelength measurement, and will be used only to constrain the rectification.}
 \label{fig:speclines}
 \end{figure}
 
@@ -555,19 +605,74 @@ It is possible for difficult cases (e.g., few or weak lines, or slits heavily ti
 % ---------------------------------------------------
 \subsection{\texttt{flame\_wavecal}}
 
-A 2D polynomial function is fit to the identified sky line to obtain the coordinate transformation $\lambda(x,y)$. The polynomial degrees of the function (both in x and y) can be changed for particularly tall or narrow slits.
+For each cutout, the complete set of line identifications is used to find the best-fit wavelength solution. This is a 2D polynomial function that describes the coordinate transformation $\lambda(x,y)$. The coefficients describing this transformation are saved in the \fuel\ structure.
+
+\medskip
+\noindent
+\textbf{Outputs.} In the slit directories, the file \code{summary\_wavecal.ps} gives an overview of the wavelength calibration for all cutouts. The first plot shows the residuals asa function of wavelength, which is useful for two reasons: 1) lines that are clearly off the wavelength solution can be easily identified and removed from the line list; 2) if the residuals show a systematic trend with wavelength, a higher polynomial degree may be needed for an accurate wavelength solution. The second plot shows the line widths as a function of frame number, to test that the spectral resolution is constant throughout the observations. The third plot (see Figure \ref{fig:residuals}) shows the wavelength residuals as a function of frame number. At each frame, the median and the central 68\% levels are shown in red, while the blue bars mark the median absolute deviation.
+
+For each slit and cutout, the \code{*wavecal.ps} files show a map of the line identifications, a plot of the measured line widths, and one of the wavelength residuals. In all these plots, the line identifications that have been discarded during the fit of the wavelength solution are marked in red. When using arcs, the \code{*wavecal.ps} files show the fit to the sky lines from which the wavelength shift is calculated.
+
+When using arcs, the summary files is not generated, but the \code{*wavecal.ps} file for the arcs should be checked instead.
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=0.7\textwidth]{residuals}
+\caption{Residuals of the wavelength calibration. For each frame, at each pixel row each sky line is fit with the Gaussian and its position is measured. Then its wavelength is calculated using the best-fit 2D wavelength solution. The difference between this value and the true wavelength of the sky line is then shown here as a gray point. For each frame the median and 68\% levels are shown in red. The MAD (median absolute deviation) is a better estimate of the level of wavelength precision that can be expected, and is shown in blue (in both positive and negative values; i.e. the distance between the two blue bar is twice the measured MAD).}
+\label{fig:residuals}
+\end{figure}
+
+
+\medskip
+\noindent
+\textbf{Troubleshooting.} If the residuals show strong trends with wavelength, it is possible that a higher order polynomial is needed for an appropriate description of the wavelength solution. The default orders are 3 along the $x$ axis and 2 along the $y$ axis, and can be changed using the corresponding settings.
+
+When using arcs, the default behavior is to extract the sky spectrum anyway, identify sky lines of known wavelength, and calculate the shift in wavelength with respect to that solution derived from the arcs (and additional figures are saved in the \code{*wavecal.ps} files. This shift is calculated for each cutout and applied to the wavelength solution, even in those cases where only one sky line is present in the observed spectrum (this situation is rarely seen in the near-infrared but common in the optical). It is possible to specify a minimum number of sky lines that should be identified before applying this shift. If not enough sky lines are identified, the shift is calculated by cross-correlating the observed sky spectrum with a model. This procedure, however, is not very robust when the sky emission is faint, especially at very blue wavelengths ($\lambda < 6000\AA$). It is also possible to switch off the wavelength shift by setting \code{shift\_arcs}$=0$ (the shift is still calculated but is not applied).
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_illumcorr}}
 
-The illumination correction is calculated from the sky lines and applied to each cutout. The user can choose to skip this step by setting the parameter illumination\_correction$=0$.
+The illumination correction is calculated from the sky lines, the arcs, or the illumination flat, and is applied to each cutout. The user can choose to skip this step by setting the parameter \code{illumination\_correction}$=0$.
+
+\medskip
+\noindent
+\textbf{Outputs.} For each cutout, the corresponding illumination-corrected FITS file (\code{*illcorr*.fits}) is created. From now on, this is the file that will be used in the data reduction. A figure is also saved in the \code{*illumcorr.ps} files, showing the measured flux across the slit in black, and the smooth model in red.
+
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_skysub}}
 
-Because the OH emission lines vary on short timescales, the A-B subtraction typically leaves strong residuals. In order to improve the sky subtraction, \flame\ adopts the method of Kelson 2003. \flame\ performs this operation on each frame for every slit, and saves a FITS file of the sky-subtracted data. A graphic window shows, during this step, the sky emission spectrum (collapsed onto one dimension) and the B-spline fit for every frame. The user has ample control on the parameters controlling the b-spline model and the rejection of outliers, which may be need to be tweaked when the science targets take up most of the slit.
+Because the OH emission lines vary on short timescales, the A-B subtraction typically leaves strong residuals. In order to improve the sky subtraction, \flame\ constructs and subtracts a model of the sky, following the method of Kelson 2003. \flame\ performs this operation on each frame for every slit, and saves a FITS file of the sky-subtracted data.
+
+This step improves substantially the quality of the data reduction, however it can be demanding from the computing point of view, particularly for very tall slits. If the user wants to skip this step to obtain a quick reduction, it is sufficient to set \code{skysub=0}. Also, if the target is extended and covers most of the slit, an accurate model of the sky cannot be constructed, and this step may well be skipped altogether.
+
+It is possible, by setting \code{skysub\_plot=1}, to have a pop-up window showing the sky emission spectrum (collapsed onto one dimension) and the B-spline fit for every frame. This can be a useful diagnostic to check the quality of the sky model. It is usually preferable to have the plot zoomed in on a region rich of sky lines; the region can be set via the keyword \code{skysub\_plot\_range}. By default this pop-up window is not activate because in some machines it can significantly slow down the data reduction.
+
+
+\medskip
+\noindent
+\textbf{Outputs.} IN each slit directory, the \code{*skymodel.fits} files contain a 2D model of the sky emission for each cutout. These models are subtracted from the observed frames and the results are stored in the \code{*skysub.fits} files.
+
+
+\medskip
+\noindent
+\textbf{Troubleshooting.} The most common problem with the sky subtraction is a wavy shape of the sky line residuals in the sky-subtracted frames. However, when this happens the problem does not lie in the sky subtraction itself, but in the inadequate wavelength solution. Users in this case should go back to the wavelength calibration step or even the line identification step and understand what went wrong.
+
+Another common problem is the over-subtraction due to bright emission (either line or continuum) from the target. In order to avoid subtracting the target itself, at each wavelength a generous outlier rejection is performed before fitting the sky model. Here is how the rejection works: within a given wavelength window, pixels are ranked by brightness; a fixed fraction of pixels with the most extreme values are rejected; then this procedure is repeated. For bright or extended targets this rejection should be more aggressive. This can be obtained by increasing the rejection fraction and/or the number of loops. Note that the total number of rejected pixels is uniquely determined (within rounding effects due to the relatively small number of pixels) by these two quantity. For example, the default values are 3 loops in which 10\% of pixels are rejected, therefore $(1-0.10)^3=0.729$ is the remaining fraction, corresponding to a total rejection fraction of 27\%. The window used for the rejection can also be tweaked to the typical wavelength over which the target and/or the sky spectrum vary.
+
+Finally, an important aspect of the
+
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=0.7\textwidth]{oversample_05.png}
+\includegraphics[width=0.7\textwidth]{oversample_1.png}
+\includegraphics[width=0.7\textwidth]{oversample_2.png}
+\caption{Aaa.}
+\label{fig:ovsersample}
+\end{figure}
 
 
 % ---------------------------------------------------
@@ -660,6 +765,7 @@ The reduction of LUCI data is described throughout Section \ref{sec:setup} and \
 
 
 
+\end{sloppypar}
 
 
 
