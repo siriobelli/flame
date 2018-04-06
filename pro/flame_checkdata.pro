@@ -52,19 +52,24 @@ PRO flame_checkdata_refstar, fuel
 	approx_seeing = median([fuel.diagnostics.seeing])		; FWHM, in arcsec
 	approx_seeing /= fuel.instrument.pixel_scale		; FWHM, in pixels
 
-	; make the y-axis
-	yaxis = dindgen( (size(ref_spec))[2] )
+	; make the y-axis in units of gamma
+	yaxis_cutout = dindgen( (size(ref_spec))[2] ) + sxpar(header, 'CRVAL2')
+
+	; select only the region around the reference star (which is by definition at gamma=0)
+	w_region = where(abs(yaxis_cutout) LT 7.0*approx_seeing, /NULL)
+	if n_elements(w_region) LT 4 then message, 'Could not detect the trace of the reference star'
 
 	; extract the spatial profile
-	ref_profile = median(ref_spec, dimension=1)
+	ref_profile_cutout = median(ref_spec, dimension=1)
 
-	; identify the peak (should be easy for the reference star)
-	est_peak = max(ref_profile, est_center)
+	; trim the profile to the region of interest
+	ref_profile = ref_profile_cutout[w_region]
+	yaxis = yaxis_cutout[w_region]
 
 	; fit a gaussian to the integrated profile
-	wfit = where( abs(yaxis-est_center) LT 1.5*approx_seeing and finite(ref_profile), /null )
-  fit_result = gaussfit(yaxis[wfit], ref_profile[wfit], ref_coeff, nterms=4, $
-    estimates=[ est_peak, est_center, 3.0, 0.0], $
+	est_peak = max(ref_profile)
+  fit_result = gaussfit(yaxis, ref_profile, ref_coeff, nterms=4, $
+    estimates=[ est_peak, 0.0, approx_seeing/2.36, 0.0], $
     chisq=chisq, sigma=coeff_err)
 
 	; calculate seeing in arcsec
@@ -79,8 +84,8 @@ PRO flame_checkdata_refstar, fuel
 		cgnumber_formatter(median_seeing, decimals=2) + ' arcsec)'
 
 	; overplot Gaussian fit
-	cgplot, dindgen(300)/299.0*yaxis[-1], $
-		ref_coeff[0] * exp( -0.5* ( (dindgen(300)/299.0*yaxis[-1]-ref_coeff[1])/ref_coeff[2] )^2 ) + ref_coeff[3], $
+	xaxis = yaxis[0] + dindgen(300)/299.0*(yaxis[-1]-yaxis[0])
+	cgplot, xaxis, ref_coeff[0] * exp( -0.5* ( (xaxis-ref_coeff[1])/ref_coeff[2] )^2 ) + ref_coeff[3], $
 		/overplot, color='red', thick=3
 
 
@@ -110,13 +115,13 @@ PRO flame_checkdata_refstar, fuel
     profile = median(cutout_bin, dimension=1)
 
 		; range to fit
-		wfit = where( abs(yaxis-est_center) LT 1.5*approx_seeing and finite(profile), /null )
+		wfit = where( abs(yaxis_cutout) LT 3.0*approx_seeing and finite(profile), /null )
 
 		; if there's nothing to fit, skip this bin
 		if n_elements(wfit) GT 4 then begin
 
 			; fit a Gaussian
-			fit_result = gaussfit(yaxis[wfit], profile[wfit], coeff, nterms=4, $
+			fit_result = gaussfit(yaxis_cutout[wfit], profile[wfit], coeff, nterms=4, $
 	    	estimates=ref_coeff, $
 	    	chisq=chisq, sigma=coeff_err)
 
@@ -168,11 +173,10 @@ PRO flame_checkdata_refstar, fuel
 	; ----------------------------------------------
 
 	; extract spectrum from +/- 2 sigma around the center
-	window_min = ( ref_coeff[1] - 2.0*ref_coeff[2] ) > 0
-	window_max = ref_coeff[1] + 2.0*ref_coeff[2] < N_pixel_y-1
+	w_extract = where( abs(yaxis_cutout-ref_coeff[1]) LT 2.0*ref_coeff[2], /NULL)
 
 	; extract boxcar spectrum
-	spectrum = total(ref_spec[ * , window_min:window_max ], 2, /nan)
+	spectrum = total(ref_spec[ * , min(w_extract):max(w_extract) ], 2, /nan)
 
 	; show star spectrum
 	cgplot, lambda_axis, smooth(spectrum, 17), charsize=1, $
