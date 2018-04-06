@@ -365,9 +365,9 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     shift\_arcs\_Nmin\_lines      & 1             & wavecal          & minimum number of sky lines needed for shifting the arcs solution \\
     illumination\_correction      & 1             & illumcorr        & apply illumination correction derived from sky lines \\
     skysub                        & 1             & skysub           & construct and subtract a model of the sky \\
-    skysub\_plot                  & 0             & skysub           & while fitting the sky, show pop-up windows with the b-spline fit \\
+    skysub\_plot                  & 0             & skysub           & while fitting the sky, show pop-up windows with the B-spline fit \\
     skysub\_plot\_range           & [0.4, 0.6]    & skysub           & fractional range of the x axis to plot during sky subtraction \\
-    skysub\_bspline\_oversample   & 1.0           & skysub           & breakpoints separation for the b-spline model, in units of pixels \\
+    skysub\_bspline\_oversample   & 1.0           & skysub           & breakpoints separation for the B-spline model, in units of pixels \\
     skysub\_reject\_fraction      & 0.10          & skysub           & fraction of pixels to reject at each loop \\
     skysub\_reject\_loops         & 3             & skysub           & number of loops for outlier rejection \\
     skysub\_reject\_window        & 2.0           & skysub           & window for outlier rejection, in units of breakpoint separation \\
@@ -516,7 +516,11 @@ Using the slit definition from the previous step, the slits are extracted from e
 
 \medskip
 \noindent
-\textbf{Outputs.} For each slit, all the cutouts are saved in the directory slitxx, where xx is the slit number.
+\textbf{Note:} From this step the outputs are saved in each slit directory, e.g. \code{intermediate/slit07} for slit number 7.
+
+\medskip
+\noindent
+\textbf{Outputs.} For each slit, a cutout is produced for each frame, and saved as a FITS file.
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_spatialcal}}
@@ -662,44 +666,95 @@ It is possible, by setting \code{skysub\_plot=1}, to have a pop-up window showin
 
 Another common problem is the over-subtraction due to bright emission (either line or continuum) from the target. In order to avoid subtracting the target itself, at each wavelength a generous outlier rejection is performed before fitting the sky model. Here is how the rejection works: within a given wavelength window, pixels are ranked by brightness; a fixed fraction of pixels with the most extreme values are rejected; then this procedure is repeated. For bright or extended targets this rejection should be more aggressive. This can be obtained by increasing the rejection fraction and/or the number of loops. Note that the total number of rejected pixels is uniquely determined (within rounding effects due to the relatively small number of pixels) by these two quantity. For example, the default values are 3 loops in which 10\% of pixels are rejected, therefore $(1-0.10)^3=0.729$ is the remaining fraction, corresponding to a total rejection fraction of 27\%. The window used for the rejection can also be tweaked to the typical wavelength over which the target and/or the sky spectrum vary.
 
-Finally, an important aspect of the
+One important parameter for modeling the sky is the positioning of the breakpoints of the B-spline function. By default, the distance between breakpoints is equal to the size, in wavelength units, of a pixel. However this may not be the optimal choice: when the slit is tall and the sky lines are slightly tilted, the sampling of the sky spectrum is much higher - easily by a factor of 10 or more - then the size of an individual pixel. \flame\ takes advantage of this to obtain a very accurate description of the sky spectrum; see Kelson (2003) for details. In these cases the default choice of breakpoints may be too coarse, with a consequent poor sky subtraction. Figure \ref{fig:bspline} shows an example of this, where the default choice (central panel) leads to a "striped" pattern at the position of the sky lines in the sky-subtracted frame. Users can change the sampling with the setting \code{skysub\_bspline\_oversample}, which defines the distance between successive breakpoints in units of spectral pixels. The default value is 1 and can be changed to any integer or inverse of integer (...1/3, 1/2, 1, 2, 3...).
 
 
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=0.5\textwidth]{oversample}
-\caption{Aaa.}
-\label{fig:ovsersample}
+\caption{Effect of changing the distance between B-spline breakpoints on the sky subtraction. From top to bottom, this distance is set to half, one, and two times the size of spectral pixels. Since the slit is relatively tall and the wavelength solution is slightly tilted, a large number of breakpoints is required for an optimal sky subtraction.}
+\label{fig:bspline}
 \end{figure}
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_rectify}}
 
-Using the 2D rectification coefficients calculated in \texttt{flame\_wavecal\_accurate}, this step performs both the wavelength calibration and the spatial rectification simultaneously, using only one interpolation. The interpolation method can be set to 'NaturalNeighbor', 'Linear', 'NearestNeighbor', or 'Quintic'.
+Using the 2D rectification coefficients calculated in \texttt{flame\_wavecal\_accurate}, this step performs both the wavelength calibration and the spatial rectification simultaneously, using only one interpolation. The interpolation is calculated using the IDL function \code{griddata}, and the interpolation method can be set via the settings to one of the following: 'NaturalNeighbor' (default), 'Linear', 'NearestNeighbor', or 'Quintic'. These methods are explained in detail in the IDL documentation.
+
+\medskip
+\noindent
+\textbf{Outputs.} Each cutout is rectified and saved as a \code{*rectified.fits} file. Additionally, the sky-subtracted frames and the frames with the 2D model of the sky are also rectified and saved as FITS files.
+
+\medskip
+\noindent
+\textbf{Troubleshooting.} When the slits are very tall, which happens often when dealing with longslit data, the default 'NaturalNeighbor' method can introduce artifacts in the rectified frame. In these cases the 'Linear' method tends to perform better. Setting the method to 'Linear' can also significantly speed up the data reduction.
+
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_combine}}
 
-This step consists in the stacking of all the A and B frames. Sigma-clipping is first performed to remove cosmic rays and bad pixels, the default value is 2-sigma but this can be changed. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved. Also, an ABcombined FITS file is produced by summing A-B to the shifted B-A images, so that one positive central trace, corresponding to the total observing time, can be extracted for the science analysis.
+This step consists in the stacking of all the A and B frames. Sigma-clipping is first performed to remove cosmic rays and bad pixels, the default value is 2-sigma but this can be changed. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved.
 
-If the dithering length, as calculated from the star traces, matches the distance between any two slits, then these are assumed to be matching slits and their A-B stacks are combined together. It is worth pointing out that this assumption breaks down if the star traces for the A and B positions actually belong to different stars.
+If the dithering length, as calculated from the star traces, matches the distance between any two slits, then these are assumed to be matching slits and their A-B stacks are combined together. This assumption breaks down if the star traces for the A and B positions actually belong to different stars.
 
 By default, no weights are applied to the frames, but the user can set frame\_weights to 'None', 'Flux', 'Seeing', or 'Peak'.
+
+\medskip
+\noindent
+\textbf{Note:} From this step the outputs are saved in the \code{output} directory.
+
+\medskip
+\noindent
+\textbf{Outputs.} When adopting an $A-B$ nodding, the file \code{slit\_pairing.ps} shows the positions of all slits in the A and in the B frames. From this plot it should be clear whether the nod is off-slit, on-slit, or paired slits (see Figure 2 of the paper).
+
+The FITS file output by this step represent the main product of the pipeline, and are organized into two directories: \code{spec2d/} and \code{spec2d\_skysub/}. The two directories contain the same number of files, with identical names, but differ from whether the model sky has been subtracted from individual cutouts or not. If one is not interested at all in the sky-subtracted results and wants to increase the speed of the data reduction, the settings \code{skysub} can be set to zero, and only the \code{spec2d/} directory will be created.
+
+Each of these directories contain a number of files. For multi-slit data, the files \code{mosaic\_SNR.fits} and \code{mosaic\_flux.fits} give an overview of the reduced data, which are combined back into a mask following the same order as the original frames. This is useful for example to count the number of detections, or to compare the spectra of different slits, etc; however these files should NOT be used for the scientific analysis.
+
+For each slit, the science-grade reduced spectra are saved as individual FITS files. \code{slitXX*\_A.fits} is the stack of all the A frames, and is the only type of file that is always produced independently of the type of observations and nodding strategy. When nodding, then \code{slitXX*\_B.fits}, the stack of all the B frames, is also saved. Additionally, the difference of these two stacked is saved as \code{slitXX*\_A-B.fits} and \code{slitXX*\_B-A.fits}. The latter is simply the opposite of the former, and is saved only in order to streamline the following step. For on-slit nodding, these frames contain the flux of the target split into a negative and a positive trace. Therefore the last step is to add the $A-B$ to the shifted $B-A$ in order to make the final spectrum. This is saved as \code{slitXX+slitXX.fits}, and shows the characteristic negative-positive-negative pattern of on-slit observations. Note that the flux is entirely contained in the positive trace; the two negative traces do not contain additional data as their sum is identical to the positive trace. If, instead, the slits are paired during the observations, so that the target falls in slitXX during the A frame and in slitYY in the B frame, then the final output will be \code{slitXX+slitYY.fits}, and will contain only one positive trace.
+
+Each of the science-grade spectra is a FITS file with six extensions, that can be read for example in IDL using \code{mrdfits}. This is the content of the extensions:
+\begin{enumerate}
+\item one
+\item two
+\item etc
+\end{enumerate}
+
+
+\begin{figure}[tbp]
+\centering
+\includegraphics[width=0.6\textwidth]{extensions}
+\caption{Each science-grade 2D spectrum contains six extensions, or HDUs. In this example, a small portion of the spectrum is shown for a LUCI observation obtained with on-slit nodding, as shown by the negative-positive-negative pattern in the first extension.}
+\label{fig:extensions}
+\end{figure}
+
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_checkdata}}
 
-This module performs a quality check on the reduced data set. If present, the reference star spectrum is analyzed and the effective seeing calculated. The file reference\_star.ps is written, showing the spatial profile, the width and position of the stellar track as a function of wavelength, and the xtracted 1D spectrum of the star. Then, a ps file is written for each slit. The first plot shows the stacked sky spectrum, from which the sky lines are identified and fit, and the wavelength residuals and spectral resolution R are shown. Stats on the wavelength solution and the velocity resolution are shown at the bottom. The remaining plots illustrate the performance of the wavelength calibration as a function of wavelength or frame. Looking at these figures it is easy to see if one of more of the frames do not have a good wavelength solution. In such cases the user can decide to run the reduction again excluding those frames, or trying to improve the wavelength solution by tweaking the settings.
+This module performs a quality check on the reduced data set. Its only purpose is to produce diagnostic plots, saved in the output directory, that can be used to judge the quality of the observations and of the data reduction.
+
+\medskip
+\noindent
+\textbf{Outputs.} If present, the reference star spectrum is analyzed and the effective seeing calculated. The file \code{reference\_star.ps} is written, showing the spatial profile, the width and position of the stellar track as a function of wavelength, and the extracted 1D spectrum of the star.
+
+For each slit, a \code{*.ps} file containing a number of plots is saved. The first plot shows the stacked sky spectrum, from which the sky lines are identified and fit, and the wavelength residuals and spectral resolution R are shown. Stats on the wavelength solution and the velocity resolution are shown at the bottom. The remaining plots are identical to those produced by the \texttt{flame\_wavecal} step, and illustrate the performance of the wavelength calibration.
+
+These diagnostics are based on the measurement of sky emission lines. When arcs are used instead, the files show the result of a comparison between the sky spectrum and a template, with the purpose of checking the accuracy of the arcs-based wavelength calibration.
 
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_extract}}
 
-Finally, this module identifies the brightest object in each slit and extracts the 1D spectrum. Output files are saved in the directory \code{extraction/}, which is created inside the output directory. These include, for each slit, a ps file showing the spatial profile with its Gaussian fit, the extracted spectrum, and the SNR for both the boxcar extraction and the optimal extraction. The 1D spectrum extracted from each slit is stored in a FITS file as a structure containing the fields \code{lambda}, \code{flux}, and \code{ivar}, corresponding to wavelength (NB: in angstrom), flux (in electron per second), and inverse variance. The error spectrum can be easily obtained as $\mathrm{err} = 1/\sqrt{\mathrm{ivar}}$.
+This is the last module, which identifies the brightest object in each slit and extracts the 1D spectrum.
+
+\medskip
+\noindent
+\textbf{Outputs.} Similarly to what done for the 2D spectra, the extracted spectra are saved into two directories: \code{spec1d/} and \code{spec1d\_skysub/}, respectively without and with model-based sky-subtraction (but the $A-B$ subtraction is always applied, if possible). These directories include, for each slit, a ps file showing the spatial profile with its Gaussian fit, the extracted spectrum, and the SNR for both the boxcar extraction and the optimal extraction; and a FITS file containing the extracted spectrum. This is stored as a structure containing the fields \code{lambda} (wavelength in units of angstrom), \code{flux} (in electron per second), \code{ivar} (inverse variance), \code{ivar\_emprical} (inverse variance calculated from the empirical error spectrum), and \code{sky} (sky spectrum extracted from the 2D model). The error spectrum can be easily obtained as $\mathrm{err} = 1/\sqrt{\mathrm{ivar}}$. Note that the FITS file is not produced if the automatic identification of the target in the 2D spectrum fails, which can happen if the emission is faint or concentrated in a few emission lines, or if the slit is very tall and the trace of the target is lost in the noise or in the large-scale detector systematics.
 
 There are a number of third-party programs that can be used to visualize and analyze the extracted 1D spectra. In particular, the FITS files output by \flame\ are compatible with the interactive programs SpecPro and SpecViz.
 
@@ -707,6 +762,11 @@ SpecPro\footnote{\url{http://specpro.caltech.edu/}} is written in IDL. It uses b
 
 SpecViz\footnote{\url{https://github.com/spacetelescope/specviz}} is written in Python. After installing SpecViz, copy the configuration file \code{flame/external/flame.yaml} to the \code{\textasciitilde/.specviz/} directory. This file contains a description of the data format used by \flame. Open SpecViz, click the \emph{Open} button, and in the dropdown menu \emph{Files of type} there should now be an entry called \emph{Flame data reduction pipeline}. Note that it is not necessary to select the file type every time you open a spectrum; SpecViz should be able to automatically recognize the file and correctly read in the \flame\ output.
 
+
+% ---------------------------------------------------
+\subsection{Combining different data sets}
+
+Brief description of how to use \code{flame\_util\_combine\_slits} to combine the 2D spectra from different nights or telescopes (e.g., LUCI1 and LUCI2).
 
 
 

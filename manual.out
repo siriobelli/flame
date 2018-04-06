@@ -31,9 +31,10 @@
 \BOOKMARK [2][-]{subsection.4.13}{flame\137combine}{section.4}% 31
 \BOOKMARK [2][-]{subsection.4.14}{flame\137checkdata}{section.4}% 32
 \BOOKMARK [2][-]{subsection.4.15}{flame\137extract}{section.4}% 33
-\BOOKMARK [1][-]{section.5}{Supported Instruments}{}% 34
-\BOOKMARK [2][-]{subsection.5.1}{LUCI at LBT}{section.5}% 35
-\BOOKMARK [2][-]{subsection.5.2}{LRIS at Keck}{section.5}% 36
-\BOOKMARK [2][-]{subsection.5.3}{MOSFIRE at Keck}{section.5}% 37
-\BOOKMARK [2][-]{subsection.5.4}{Diagnostics for unsupported instruments}{section.5}% 38
-\BOOKMARK [2][-]{subsection.5.5}{How to add support for a new instrument}{section.5}% 39
+\BOOKMARK [2][-]{subsection.4.16}{Combining different data sets}{section.4}% 34
+\BOOKMARK [1][-]{section.5}{Supported Instruments}{}% 35
+\BOOKMARK [2][-]{subsection.5.1}{LUCI at LBT}{section.5}% 36
+\BOOKMARK [2][-]{subsection.5.2}{LRIS at Keck}{section.5}% 37
+\BOOKMARK [2][-]{subsection.5.3}{MOSFIRE at Keck}{section.5}% 38
+\BOOKMARK [2][-]{subsection.5.4}{Diagnostics for unsupported instruments}{section.5}% 39
+\BOOKMARK [2][-]{subsection.5.5}{How to add support for a new instrument}{section.5}% 40

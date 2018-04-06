@@ -63,24 +63,27 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.8}\texttt  {flame\_findlines}}{14}{subsection.4.8}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Number of sky lines that were identified and fit with a Gaussian, as a function of frame number. The different colors correspond to different definition of ``identified lines''. The black line correspond to the total number of sky lines that were detected in at least one pixel row; the other lines show increasingly stricter definitions.\relax }}{15}{figure.caption.7}}
 \newlabel{fig:number_lines}{{4}{15}{Number of sky lines that were identified and fit with a Gaussian, as a function of frame number. The different colors correspond to different definition of ``identified lines''. The black line correspond to the total number of sky lines that were detected in at least one pixel row; the other lines show increasingly stricter definitions.\relax }{figure.caption.7}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}\texttt  {flame\_wavecal}}{15}{subsection.4.9}}
 \@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Identification of sky lines. At each pixel row and for each sky line a red cross mark the peak of the Gaussian fit. Lines shown in blue lack a precise wavelength measurement, and will be used only to constrain the rectification.\relax }}{16}{figure.caption.8}}
 \newlabel{fig:speclines}{{5}{16}{Identification of sky lines. At each pixel row and for each sky line a red cross mark the peak of the Gaussian fit. Lines shown in blue lack a precise wavelength measurement, and will be used only to constrain the rectification.\relax }{figure.caption.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.9}\texttt  {flame\_wavecal}}{16}{subsection.4.9}}
 \@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Residuals of the wavelength calibration. For each frame, at each pixel row each sky line is fit with the Gaussian and its position is measured. Then its wavelength is calculated using the best-fit 2D wavelength solution. The difference between this value and the true wavelength of the sky line is then shown here as a gray point. For each frame the median and 68\% levels are shown in red. The MAD (median absolute deviation) is a better estimate of the level of wavelength precision that can be expected, and is shown in blue (in both positive and negative values; i.e. the distance between the two blue bar is twice the measured MAD).\relax }}{17}{figure.caption.9}}
 \newlabel{fig:residuals}{{6}{17}{Residuals of the wavelength calibration. For each frame, at each pixel row each sky line is fit with the Gaussian and its position is measured. Then its wavelength is calculated using the best-fit 2D wavelength solution. The difference between this value and the true wavelength of the sky line is then shown here as a gray point. For each frame the median and 68\% levels are shown in red. The MAD (median absolute deviation) is a better estimate of the level of wavelength precision that can be expected, and is shown in blue (in both positive and negative values; i.e. the distance between the two blue bar is twice the measured MAD).\relax }{figure.caption.9}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.10}\texttt  {flame\_illumcorr}}{17}{subsection.4.10}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.11}\texttt  {flame\_skysub}}{17}{subsection.4.11}}
-\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Aaa.\relax }}{18}{figure.caption.10}}
-\newlabel{fig:ovsersample}{{7}{18}{Aaa.\relax }{figure.caption.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Effect of changing the distance between B-spline breakpoints on the sky subtraction. From top to bottom, this distance is set to half, one, and two times the size of spectral pixels. Since the slit is relatively tall and the wavelength solution is slightly tilted, a large number of breakpoints is required for an optimal sky subtraction.\relax }}{19}{figure.caption.10}}
+\newlabel{fig:bspline}{{7}{19}{Effect of changing the distance between B-spline breakpoints on the sky subtraction. From top to bottom, this distance is set to half, one, and two times the size of spectral pixels. Since the slit is relatively tall and the wavelength solution is slightly tilted, a large number of breakpoints is required for an optimal sky subtraction.\relax }{figure.caption.10}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.12}\texttt  {flame\_rectify}}{19}{subsection.4.12}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.13}\texttt  {flame\_combine}}{19}{subsection.4.13}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.14}\texttt  {flame\_checkdata}}{19}{subsection.4.14}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.15}\texttt  {flame\_extract}}{19}{subsection.4.15}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Supported Instruments}{20}{section.5}}
-\newlabel{sec:instruments}{{5}{20}{Supported Instruments}{section.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}LUCI at LBT}{21}{subsection.5.1}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}LRIS at Keck}{21}{subsection.5.2}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}MOSFIRE at Keck}{21}{subsection.5.3}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{21}{subsection.5.4}}
-\newlabel{sec:minimal}{{5.4}{21}{Diagnostics for unsupported instruments}{subsection.5.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{21}{subsection.5.5}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.14}\texttt  {flame\_checkdata}}{20}{subsection.4.14}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Each science-grade 2D spectrum contains six extensions, or HDUs. In this example, a small portion of the spectrum is shown for a LUCI observation obtained with on-slit nodding, as shown by the negative-positive-negative pattern in the first extension.\relax }}{21}{figure.caption.11}}
+\newlabel{fig:extensions}{{8}{21}{Each science-grade 2D spectrum contains six extensions, or HDUs. In this example, a small portion of the spectrum is shown for a LUCI observation obtained with on-slit nodding, as shown by the negative-positive-negative pattern in the first extension.\relax }{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.15}\texttt  {flame\_extract}}{21}{subsection.4.15}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.16}Combining different data sets}{22}{subsection.4.16}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Supported Instruments}{22}{section.5}}
+\newlabel{sec:instruments}{{5}{22}{Supported Instruments}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}LUCI at LBT}{23}{subsection.5.1}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}LRIS at Keck}{23}{subsection.5.2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}MOSFIRE at Keck}{23}{subsection.5.3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{23}{subsection.5.4}}
+\newlabel{sec:minimal}{{5.4}{23}{Diagnostics for unsupported instruments}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{23}{subsection.5.5}}
