@@ -699,7 +699,7 @@ PRO flame_findlines_diagnostics, fuel, slit
   endfor
 
   ; write out detailed list of line detections
-  forprint, uniq_lambda, uniq_detections, uniq_framecount[s], $
+  forprint, uniq_lambda, uniq_detections, uniq_framecount, $
     textout=file_dirname(slit.cutouts[0].filename, /mark_directory) + 'summary_line_identification.txt', $
     comment = '# wavelength    number of detections    frames in which it is detected'
 
