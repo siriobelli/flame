@@ -475,6 +475,18 @@ FUNCTION flame_initialize_lris, input
   if fuel.util.arc.n_frames gt 0 then flame_initialize_lris_arcs, fuel
 
 
+  ; ---------------------   SKY LINE LIST    -----------------------------------
+
+  ; use the R3000 list
+  linelist = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
+
+  ; make a local copy of the line list
+  file_copy, linelist, fuel.util.intermediate_dir, /overwrite
+
+  ; save the file name in the settings
+  fuel.settings.linelist_filename = fuel.util.intermediate_dir + file_basename(linelist)
+
+
   ; -----------------------------------------------------------------
   ;        convert the LRIS frames into the "normal" format
   ; -----------------------------------------------------------------

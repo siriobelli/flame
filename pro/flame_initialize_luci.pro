@@ -535,11 +535,17 @@ FUNCTION flame_initialize_luci, input
 
   ; ---------------------   SETTINGS   --------------------------------------
 
-  ; if high resolution (ARGOS) observations, the use the R6000 list
+  ; if high resolution (ARGOS) observations, then use the R6000 list otherwise the R3000
   if median([slits.approx_r]) GT 4500.0 then $
-    fuel.settings.linelist_filename = fuel.util.flame_data_dir + 'sky_line_list_R6000.dat' $
+    linelist = fuel.util.flame_data_dir + 'sky_line_list_R6000.dat' $
   else $
-    fuel.settings.linelist_filename = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
+    linelist = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
+
+  ; make a local copy of the line list
+  file_copy, linelist, fuel.util.intermediate_dir, /overwrite
+
+  ; save the file name in the settings
+  fuel.settings.linelist_filename = fuel.util.intermediate_dir + file_basename(linelist)
 
   ; no need to run L.A.Cosmic on individual frames
   fuel.settings.clean_individual_frames = 0
