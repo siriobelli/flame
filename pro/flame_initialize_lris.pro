@@ -473,7 +473,7 @@ FUNCTION flame_initialize_lris, input
   ; ---------------------   SKY LINE LIST    -----------------------------------
 
   ; use the R3000 list
-  linelist = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
+  linelist = fuel.util.flame_data_dir + 'linelist_sky_R3000.dat'
 
   ; make a local copy of the line list
   file_copy, linelist, fuel.util.intermediate_dir, /overwrite

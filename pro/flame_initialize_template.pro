@@ -450,7 +450,7 @@ FUNCTION flame_initialize_template, input
   ; here the default settings are chosen; the user can change any of these values
 
   ; choose the correct linelist
-  linelist = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
+  linelist = fuel.util.flame_data_dir + 'linelist_sky_R3000.dat'
 
   ; make a local copy of the line list
   file_copy, linelist, fuel.util.intermediate_dir, /overwrite

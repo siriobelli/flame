@@ -533,9 +533,9 @@ FUNCTION flame_initialize_luci, input
 
   ; if high resolution (ARGOS) observations, then use the R6000 list otherwise the R3000
   if median([slits.approx_r]) GT 4500.0 then $
-    linelist = fuel.util.flame_data_dir + 'sky_line_list_R6000.dat' $
+    linelist = fuel.util.flame_data_dir + 'linelist_sky_R6000.dat' $
   else $
-    linelist = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
+    linelist = fuel.util.flame_data_dir + 'linelist_sky_R3000.dat'
 
   ; make a local copy of the line list
   file_copy, linelist, fuel.util.intermediate_dir, /overwrite
