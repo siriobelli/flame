@@ -541,7 +541,7 @@ FUNCTION flame_initialize_luci, input
   file_copy, linelist, fuel.util.intermediate_dir, /overwrite
 
   ; save the file name in the settings
-  fuel.settings.linelist_filename = fuel.util.intermediate_dir + file_basename(linelist)
+  fuel.settings.linelist_sky_filename = fuel.util.intermediate_dir + file_basename(linelist)
 
   ; no need to run L.A.Cosmic on individual frames
   fuel.settings.clean_individual_frames = 0

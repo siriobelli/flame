@@ -314,7 +314,7 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	;-------------------------------------
 
 	; load line list
-	readcol, fuel.settings.linelist_filename, line_list, line_trust, format='D,I', /silent
+	readcol, fuel.settings.linelist_sky_filename, line_list, line_trust, format='D,I', /silent
 
 	; keep only the ones that can be used for the wavelength solution
 	line_list = line_list[where(line_trust eq 1, /null)]

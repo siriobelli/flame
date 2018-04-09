@@ -307,7 +307,7 @@ PRO flame_wavecal_2D_calibration_witharcs, fuel=fuel, slit=slit, cutout=cutout, 
 	; --------------------------------------------------
 
   ; load line list
-	readcol, fuel.settings.linelist_filename, line_list, line_trust, format='D,I', /silent
+	readcol, fuel.settings.linelist_sky_filename, line_list, line_trust, format='D,I', /silent
 
 	; use only the lines in the right range and with a wavelength that we can trust
 	line_list = line_list[where( line_list GT lambda1d[0] and line_list LT lambda1d[-1] and line_trust gt 0, /null)]

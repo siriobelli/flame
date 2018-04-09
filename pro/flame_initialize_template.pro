@@ -236,7 +236,7 @@ PRO flame_initialize_template_arcs, fuel
 
 	; sort them by wavelength
 	all_lines = all_lines[sort(all_lines)]
-  
+
   ; set the name of local linelist file
   fuel.settings.linelist_arcs_filename = fuel.util.intermediate_dir + 'linelist_arcs.dat'
 
@@ -450,7 +450,13 @@ FUNCTION flame_initialize_template, input
   ; here the default settings are chosen; the user can change any of these values
 
   ; choose the correct linelist
-  fuel.settings.linelist_filename = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
+  linelist = fuel.util.flame_data_dir + 'sky_line_list_R3000.dat'
+
+  ; make a local copy of the line list
+  file_copy, linelist, fuel.util.intermediate_dir, /overwrite
+
+  ; save the file name in the settings
+  fuel.settings.linelist_sky_filename = fuel.util.intermediate_dir + file_basename(linelist)
 
   ; is it needed to run L.A.Cosmic on individual frames?
   fuel.settings.clean_individual_frames = 0
