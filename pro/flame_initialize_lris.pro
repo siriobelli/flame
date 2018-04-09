@@ -391,12 +391,15 @@ PRO flame_initialize_lris_arcs, fuel
 	; sort them by wavelength
 	all_lines = all_lines[sort(all_lines)]
 
+  ; set the name of local linelist file
+  fuel.settings.linelist_arcs_filename = fuel.util.intermediate_dir + 'linelist_arcs.dat'
+
 	; write out the linelist
   forprint, all_lines, replicate(1, n_elements(all_lines)), $
-	 	textout=fuel.util.intermediate_dir + 'linelist_arcs.txt', comment='#  arc_lines  trust'
+	 	textout=fuel.settings.linelist_arcs_filename, comment='#  arc_lines  trust'
 
   print, ''
-  print, 'Arc line list written to ', fuel.util.intermediate_dir + 'linelist_arcs.txt'
+  print, 'Arc line list written to ', fuel.settings.linelist_arcs_filename
 
 
 END

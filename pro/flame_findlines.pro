@@ -946,7 +946,7 @@ PRO flame_findlines, fuel
   		; identify and measure the speclines
   		flame_findlines_find_speclines, fuel=fuel, filename=arc_filename, slit=this_slit, $
       rough_lambda=*this_slit.rough_arclambda, rough_flux=*this_slit.rough_arcflux, $
-      linelist_filename=fuel.util.intermediate_dir + 'linelist_arcs.txt', $
+      linelist_filename=fuel.settings.linelist_arcs_filename, $
   			speclines=speclines, wavelength_solution=wavelength_solution
 
   		; save the speclines in the slit structure

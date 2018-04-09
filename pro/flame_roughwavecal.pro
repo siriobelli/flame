@@ -644,7 +644,7 @@ FUNCTION flame_roughwavecal_oneslit_witharcs, fuel=fuel, this_slit=this_slit, ro
 	; ------------------------------------------
 
 	; load the linelist
-  readcol, fuel.util.intermediate_dir + 'linelist_arcs.txt', all_lines
+  readcol, fuel.settings.linelist_arcs_filename, all_lines
 
 	; select a reasonable range
   wide_range = [ this_slit.range_lambda0[0] - this_slit.range_delta_lambda[1] * 0.2*N_spectral_pix, this_slit.range_lambda0[1] + this_slit.range_delta_lambda[1] * 1.2*N_spectral_pix]
