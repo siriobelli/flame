@@ -343,8 +343,7 @@ PRO flame_initialize_lris_arcs, fuel
   if count eq 0 then begin  ; old files
 
     lamp_name = ['MERCURY', 'NEON', 'ARGON', 'CADMIUM', 'ZINC']
-    lamp_file = ['arc_Hg_air.txt', 'arc_Ne_air.txt', 'arc_Ar_air.txt', 'arc_Cd_air.txt', $
-      'arc_Zn_air.txt' ]
+    lamp_file = 'linelist_arc_' + ['Hg', 'Ne', 'Ar', 'Cd', 'Zn'] + '.dat'
 
     ; read lamp status from header
     lamp_status = sxpar(arc_hdr, 'LAMPS', count=count)
@@ -361,8 +360,7 @@ PRO flame_initialize_lris_arcs, fuel
   endif else begin  ; new files
 
     lamp_name = ['MERCURY', 'NEON', 'ARGON', 'CADMIUM', 'ZINC', 'KRYPTON', 'XENON', 'FEARGON']
-    lamp_file = ['arc_Hg_air.txt', 'arc_Ne_air.txt', 'arc_Ar_air.txt', 'arc_Cd_air.txt', $
-      'arc_Zn_air.txt', 'arc_Kr_air.txt', 'arc_Xe_air.txt', 'arc_FeNe_air.txt' ]
+    lamp_file = 'linelist_arc_' + ['Hg', 'Ne', 'Ar', 'Cd', 'Zn', 'Kr', 'Xe', 'FeNe' ] + '.dat'
 
     ; read lamp status from header
     lamp_status_string = strarr(n_elements(lamp_name))
@@ -383,21 +381,15 @@ PRO flame_initialize_lris_arcs, fuel
   if w_on eq !NULL then message, 'arc frame was taken with no arc lamp on!'
 
   ; load line lists for the lamps that were used
-  all_lines_air = []
+  all_lines = []
   for i=0, n_elements(w_on)-1 do begin
     print, 'Loading line list ' + fuel.util.flame_data_dir + lamp_file[w_on[i]]
-    readcol, fuel.util.flame_data_dir + lamp_file[w_on[i]], arc_linelist
-    all_lines_air = [all_lines_air, arc_linelist]
+    readcol, fuel.util.flame_data_dir + lamp_file[w_on[i]], arc_linelist, format='D'
+    all_lines = [all_lines, arc_linelist]
   endfor
 
 	; sort them by wavelength
-	all_lines_air = all_lines_air[sort(all_lines_air)]
-
-	; convert to vacuum
-	airtovac, all_lines_air, all_lines_vac
-
-	; convert to micron
-	all_lines = all_lines_vac*1d-4
+	all_lines = all_lines[sort(all_lines)]
 
 	; write out the linelist
   forprint, all_lines, replicate(1, n_elements(all_lines)), $

@@ -221,7 +221,7 @@ PRO flame_initialize_luci_arcs, fuel
   arc_hdr = headfits(fuel.util.arc.raw_files[0])
 
   lamp_name = ['NEON', 'ARGON', 'XENON']
-  lamp_file = ['arc_Ne_air.txt', 'arc_Ar_air.txt', 'arc_Xe_air.txt']
+  lamp_file = 'linelist_arc_' + ['Ne', 'Ar', 'Xe'] + '.dat'
 
   ; read lamp status from header
   status_Ne = strlowcase(strtrim(sxpar(arc_hdr, 'STATLMP1'), 2))
@@ -244,21 +244,15 @@ PRO flame_initialize_luci_arcs, fuel
   if w_on eq !NULL then message, 'arc frame was taken with no arc lamp on!'
 
   ; load line lists for the lamps that were used
-  all_lines_air = []
+  all_lines = []
   for i=0, n_elements(w_on)-1 do begin
     print, 'Loading line list ' + fuel.util.flame_data_dir + lamp_file[w_on[i]]
     readcol, fuel.util.flame_data_dir + lamp_file[w_on[i]], arc_linelist
-    all_lines_air = [all_lines_air, arc_linelist]
+    all_lines = [all_lines, arc_linelist]
   endfor
 
 	; sort them by wavelength
-	all_lines_air = all_lines_air[sort(all_lines_air)]
-
-	; convert to vacuum
-	airtovac, all_lines_air, all_lines_vac
-
-	; convert to micron
-	all_lines = all_lines_vac*1d-4
+	all_lines = all_lines[sort(all_lines)]
 
 	; write out the linelist
   forprint, all_lines, replicate(1, n_elements(all_lines)), $

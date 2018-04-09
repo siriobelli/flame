@@ -224,24 +224,18 @@ PRO flame_initialize_template_arcs, fuel
   ; 2 - produce the appropriate line list and save it in the intermediate directory
 
   ; filenames with the line lists
-  lamp_file = ['arc_Ne_air', 'arc_Ar_air']
+  lamp_file = 'linelist_arc_' + ['Ne', 'Ar', 'Xe'] + '.dat'
 
   ; load line lists for the lamps that were used
-  all_lines_air = []
+  all_lines = []
   for i=0, n_elements(w_on)-1 do begin
     print, 'Loading line list ' + fuel.util.flame_data_dir + lamp_file[w_on[i]]
     readcol, fuel.util.flame_data_dir + lamp_file[w_on[i]], arc_linelist
-    all_lines_air = [all_lines_air, arc_linelist]
+    all_lines = [all_lines, arc_linelist]
   endfor
 
 	; sort them by wavelength
-	all_lines_air = all_lines_air[sort(all_lines_air)]
-
-	; convert to vacuum
-	airtovac, all_lines_air, all_lines_vac
-
-	; convert to micron
-	all_lines = all_lines_vac*1d-4
+	all_lines = all_lines[sort(all_lines)]
 
 	; write out the linelist
   forprint, all_lines, replicate(1, n_elements(all_lines)), $
