@@ -337,8 +337,9 @@ After the initialization, the user has complete control over the \texttt{fuel.se
              & (for LUCI)      &           & \\
     \hline
     \smallskip
-    sky\_emission\_filename       & -             & roughwavecal     & None \\
-    linelist\_filename            & -             & (many)           & None \\
+    sky\_emission\_filename       & -             & roughwavecal     & file with model spectrum of sky emission \\
+    linelist\_sky\_filename       & -             & (many)           & file with list of sky emission lines \\
+    linelist\_arcs\_filename      & -             & (many)           & file with list of arcs emission lines \\
     star\_x\_range 			          & [1000, 1200]  & diagnostics   	 & range of pixel x-coordinate to consider for the reference star trace \\
     star\_y\_window               & $\simeq$4 arcsec & diagnostics   & range of pixel y-coordinate to consider for the reference star trace \\
     clean\_individual\_frames     & 0             & calibrations     & identify and mask cosmic rays in each frame \\
@@ -412,9 +413,18 @@ The driver file contains fourteen steps or modules. Every module is an IDL routi
 flame_modulename, fuel
 \end{lstlisting}
 
-Every module edits the fuel structure and/or outputs files in the intermediate directory. Only the last two modules, which create the final results, save the output files in the output directory.
+Every module edits the fuel structure and/or outputs files in the intermediate directory. Only the last three modules, which create the final results, save the output files in the output directory. Furthermore, at the end of each module the \fuel\ structure is saved as an IDL save file in the intermediate directory, so that the execution can be interrupted and restarted, even in a new IDL session, as long as the \fuel\ structure is loaded with, e.g.:
+\begin{lstlisting}
+restore, 'intermediate/fuel.sav'
+\end{lstlisting}
 
-In this section for each module we briefly describe its goal, the output produced, and how to solve potential problems encountered while running \flame.
+
+In this section for each module we briefly describe its goal, the output produced, and how to solve potential issues.
+
+\medskip
+\noindent
+\textbf{Note:} All wavelengths used in \flame\ are measured in vacuum and in units of micron, except for the 1D extracted spectra which are in units of angstrom to preserve compatibility with third-party software.
+
 
 
 
@@ -554,6 +564,8 @@ In \flame, the wavelength calibration is split into three steps. The first step 
 
 If the sky spectrum includes a strong contribution from continuum emission, as is often the case for the thermal emission in the K band, it may be necessary to fit and subtract a low-order polynomial to the observed spectrum before comparing it to the model. This is controlled by the parameter \code{settings.roughwavecal\_smooth\_window}.
 
+If arcs were provided, then the rough wavelength calibration will be performed using a model of the arcs spectrum instead of the sky spectrum. One important difference is that this arcs spectrum is not stored in a file, but is generated on the fly from the arcs line list. If this model spectrum does not look similar to the observed arcs, the user can adjust the arcs line list, as discussed in Section \ref{sec:wavecal}, and run again the rough wavelength calibration.
+
 
 \begin{figure*}[tbp]
 \begin{minipage}{\textwidth}
@@ -608,6 +620,7 @@ In cases where the lines are very weak or infrequent (for example in some spectr
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_wavecal}}
+\label{sec:wavecal}
 
 For each cutout, the complete set of line identifications is used to find the best-fit wavelength solution. This is a 2D polynomial function that describes the coordinate transformation $\lambda(x,y)$. The coefficients describing this transformation are saved in the \fuel\ structure.
 
@@ -630,6 +643,8 @@ When using arcs, the summary files is not generated, but the \code{*wavecal.ps} 
 \medskip
 \noindent
 \textbf{Troubleshooting.} If the residuals show strong trends with wavelength, it is possible that a higher order polynomial is needed for an appropriate description of the wavelength solution. The default orders are 3 along the $x$ axis and 2 along the $y$ axis, and can be changed using the corresponding settings.
+
+It is possible that some of the emission lines are systematically off due to inaccuracies in their wavelengths saved in the line list. This can happen for various reasons including blended lines, especially when the spectral resolution does not match exactly that of the line list. In these cases it is best to remove by hand these lines from the line list. The file with the line list is saved in the intermediate directory, and its name is stored in \code{settings.linelist\_sky\_filename} (or \code{settings.linelist\_arcs\_filename} when using arcs). The recommended procedure is the following: make a copy of the file, edit it by removing the problematic lines, then edit the file name in \code{settings.linelist\_sky\_filename}, and run again the last two steps, i.e. from \code{flame\_findlines}.
 
 When using arcs, the default behavior is to extract the sky spectrum anyway, identify sky lines of known wavelength, and calculate the shift in wavelength with respect to that solution derived from the arcs (and additional figures are saved in the \code{*wavecal.ps} files. This shift is calculated for each cutout and applied to the wavelength solution, even in those cases where only one sky line is present in the observed spectrum (this situation is rarely seen in the near-infrared but common in the optical). It is possible to specify a minimum number of sky lines that should be identified before applying this shift. If not enough sky lines are identified, the shift is calculated by cross-correlating the observed sky spectrum with a model. This procedure, however, is not very robust when the sky emission is faint, especially at very blue wavelengths ($\lambda < 6000\AA$). It is also possible to switch off the wavelength shift by setting \code{shift\_arcs}$=0$ (the shift is still calculated but is not applied).
 
