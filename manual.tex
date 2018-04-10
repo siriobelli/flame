@@ -353,6 +353,7 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     trace\_slit\_xmargin          & 20            & slitid           & horizontal margin (in pixels) to consider around each emission line \\
     trace\_slit\_ymargin          & 12            & slitid           & vertical margin (in pixels) to consider beyond the expected slit edge \\
     trace\_slit\_polydegree       & 2             & slitid           & degree of the polynomial used to describe the slit edge \\
+    trim\_slit                    & [0, 0]        & cutouts          & limits, in x pixel coordinates, used to trim the cutouts \\
     roughwavecal\_R               & [500, 1000, 3000] & roughwavecal & spectral resolution to be used for the rough wavelength calibration \\
     roughwavecal\_smooth\_window  & 20            & roughwavecal     & window, in pixels, used to calculate and subtract the sky continuum \\
     roughwavecal\_split           & 0             & roughwavecal     & in the last step of rough\_wavecal, split the wavelength range in two \\
@@ -362,6 +363,7 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     findlines\_linefit\_window    & 6.0           & findlines        & window used for Gaussian fitting, in units of expected line width \\
     wavesolution\_order\_x        & 3             & wavecal          & polynomial degree for the wavelength solution, along x \\
     wavesolution\_order\_y        & 2             & wavecal          & polynomial degree for the wavelength solution, along y \\
+    wavecal\_sigmaclip            & 3.0           & wavecal          & rejection threshold when fitting the 2D wavelength solution \\
     shift\_arcs                   & 1             & wavecal          & apply wavelength shift calculated from sky lines to the arcs solution \\
     shift\_arcs\_Nmin\_lines      & 1             & wavecal          & minimum number of sky lines needed for shifting the arcs solution \\
     illumination\_correction      & 1             & illumcorr        & apply illumination correction derived from sky lines \\
@@ -376,6 +378,8 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     frame\_weights                & 'None'        & combine          & weights to use for the final frmae stacking \\
     combine\_sigma\_clip          & 2.0           & combine          & sigma-clipping to use when combining frames \\
     combine\_min\_framefrac       & 0.49          & combine          & minimum fraction of frames that must contribute to a pixel \\
+    extract\_optimal              & 1             & extract          & use optimal extraction instead of boxcar extraction \\
+    extract\_gaussian\_profile    & 1             & extract          & use Gaussian fit to determine weights for optimal extraction \\
     stop\_on\_error               & 1             & (all)            & halt execution when an error occurs \\
     \hline
   \end{tabular}
@@ -522,7 +526,7 @@ In very difficult cases, an alternative approach is to use the longslit option t
 % ---------------------------------------------------
 \subsection{\texttt{flame\_cutouts}}
 
-Using the slit definition from the previous step, the slits are extracted from each corrected frame and saved as FITS files.
+Using the slit definition from the previous step, the slits are extracted from each corrected frame and saved as FITS files. Sometimes it may be useful to reduce only a subset of the observed spectrum, for example to speed up the reduction or to avoid a spectral region for which the wavelength calibration is challenging. In these cases it is possible to specify the range in x pixel coordinates to be considered via the \code{trim\_slit} option (e.g., \code{trim\_slit=[0,1023]} would reduce only the left half of the LUCI detector).
 
 \medskip
 \noindent
@@ -642,7 +646,7 @@ When using arcs, the summary files is not generated, but the \code{*wavecal.ps} 
 
 \medskip
 \noindent
-\textbf{Troubleshooting.} If the residuals show strong trends with wavelength, it is possible that a higher order polynomial is needed for an appropriate description of the wavelength solution. The default orders are 3 along the $x$ axis and 2 along the $y$ axis, and can be changed using the corresponding settings.
+\textbf{Troubleshooting.} If the residuals show strong trends with wavelength, it is possible that a higher order polynomial is needed for an appropriate description of the wavelength solution. The default orders are 3 along the $x$ axis and 2 along the $y$ axis, and can be changed using the corresponding settings. It is also possible to change the criterion for outlier rejection, which can have a strong impact on the quality of the resulting wavelength solution. By default, line measurements that are more than 3-sigma away from the 2D wavelength solution are rejected, but this can be changed via the \code{wavecal\_sigmaclip} setting.
 
 It is possible that some of the emission lines are systematically off due to inaccuracies in their wavelengths saved in the line list. This can happen for various reasons including blended lines, especially when the spectral resolution does not match exactly that of the line list. In these cases it is best to remove by hand these lines from the line list. The file with the line list is saved in the intermediate directory, and its name is stored in \code{settings.linelist\_sky\_filename} (or \code{settings.linelist\_arcs\_filename} when using arcs). The recommended procedure is the following: make a copy of the file, edit it by removing the problematic lines, then edit the file name in \code{settings.linelist\_sky\_filename}, and run again the last two steps, i.e. from \code{flame\_findlines}.
 
@@ -765,7 +769,7 @@ These diagnostics are based on the measurement of sky emission lines. When arcs 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_extract}}
 
-This is the last module, which identifies the brightest object in each slit and extracts the 1D spectrum.
+This is the last module, which identifies the brightest object in each slit and extracts the 1D spectrum. Optimal extraction is used, but setting \code{extract\_optimal=0} forces boxcar extraction. When using optimal extraction, the weights are determined by fitting a Gaussian function to the observed profile (i.e., the 2D spectrum collapsed along the wavelength direction). However, for bright targets it may be better to derive the weights directly from the observed profile; this can be achieved setting \code{extract\_gaussian\_profile=0}.
 
 \medskip
 \noindent

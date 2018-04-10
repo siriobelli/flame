@@ -24,12 +24,12 @@
 \contentsline {subsection}{\numberline {4.6}\texttt {flame\_spatialcal}}{13}{subsection.4.6}
 \contentsline {subsection}{\numberline {4.7}\texttt {flame\_roughwavecal}}{13}{subsection.4.7}
 \contentsline {subsection}{\numberline {4.8}\texttt {flame\_findlines}}{14}{subsection.4.8}
-\contentsline {subsection}{\numberline {4.9}\texttt {flame\_wavecal}}{15}{subsection.4.9}
+\contentsline {subsection}{\numberline {4.9}\texttt {flame\_wavecal}}{17}{subsection.4.9}
 \contentsline {subsection}{\numberline {4.10}\texttt {flame\_illumcorr}}{18}{subsection.4.10}
 \contentsline {subsection}{\numberline {4.11}\texttt {flame\_skysub}}{18}{subsection.4.11}
-\contentsline {subsection}{\numberline {4.12}\texttt {flame\_rectify}}{19}{subsection.4.12}
+\contentsline {subsection}{\numberline {4.12}\texttt {flame\_rectify}}{20}{subsection.4.12}
 \contentsline {subsection}{\numberline {4.13}\texttt {flame\_combine}}{20}{subsection.4.13}
-\contentsline {subsection}{\numberline {4.14}\texttt {flame\_checkdata}}{21}{subsection.4.14}
+\contentsline {subsection}{\numberline {4.14}\texttt {flame\_checkdata}}{22}{subsection.4.14}
 \contentsline {subsection}{\numberline {4.15}\texttt {flame\_extract}}{22}{subsection.4.15}
 \contentsline {subsection}{\numberline {4.16}Combining different data sets}{23}{subsection.4.16}
 \contentsline {section}{\numberline {5}Supported Instruments}{23}{section.5}
