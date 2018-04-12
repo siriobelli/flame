@@ -581,20 +581,54 @@ END
 
 PRO flame_slitid_longslit, fuel=fuel
 
-  ; frame to use to find the edges
-  frame_filename = (fuel.util.science.corr_files)[0]
-
-  ; read in the frame
-  im=readfits(frame_filename, hdr)
-
   ; read the old slits structure - containing the info from the header
   old_slits_struc = fuel.slits[0]
 
   ; calculate slit heigh
   slit_height = old_slits_struc.approx_top - old_slits_struc.approx_bottom
 
+  ; if needed, trace a bright target to rectify the longslit
+  if fuel.settings.trace_longslit NE 0 then begin
+
+    ; frame to use to find the edges
+    frame_filename = fuel.util.slitflat.master_file
+
+    ; read in the frame
+    im=readfits(frame_filename, hdr)
+
+    ; use the same function for the slit edges
+    trace_y = flame_slitid_trace_continuum(im, fuel.settings.trace_longslit, /top)
+
+    ; take the individual measurements to use in the fit
+    x_to_fit = where(finite(trace_y), /null )
+    y_to_fit = trace_y[ where(finite(trace_y), /null)]
+
+    ; fit a polynomial to the trace
+    poly_coeff = robust_poly_fit( x_to_fit, y_to_fit, fuel.settings.trace_slit_polydegree )
+
+    ; calculate the position of the trace at the central x coordinate
+    mid_x_position = 0.5*(size(im))[1]
+    trace_y_coord = poly(mid_x_position, poly_coeff)
+
+    ; calculate the vertical distance between the trace and the bottom of the slit
+    delta_y = trace_y_coord - old_slits_struc.approx_bottom
+
+    ; bring down the polynomial to describe the bottom edge of the slit
+    bottom_poly = poly_coeff
+    bottom_poly[0] -= delta_y
+
+  endif else begin
+
+    ; if there is no tracing, then we don't really need a polynomial
+    bottom_poly = old_slits_struc.approx_bottom
+
+    ; and there is no trace to write in the region file
+    trace_y = !values.d_nan
+
+  endelse
+
   ; expand the slit structure with new fields and update them
-  this_slit = flame_slitid_update_slit( fuel, old_slits_struc, !values.d_nan, !values.d_nan, !values.d_nan, slit_height, old_slits_struc.approx_bottom)
+  this_slit = flame_slitid_update_slit( fuel, old_slits_struc, !values.d_nan, !values.d_nan, trace_y, slit_height, bottom_poly)
 
   ; save the slit structures in fuel
   new_fuel = { input:fuel.input, settings:fuel.settings, util:fuel.util, instrument:fuel.instrument, diagnostics:fuel.diagnostics, slits:this_slit }
