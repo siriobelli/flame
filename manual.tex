@@ -353,6 +353,7 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     trace\_slit\_xmargin          & 20            & slitid           & horizontal margin (in pixels) to consider around each emission line \\
     trace\_slit\_ymargin          & 12            & slitid           & vertical margin (in pixels) to consider beyond the expected slit edge \\
     trace\_slit\_polydegree       & 2             & slitid           & degree of the polynomial used to describe the slit edge \\
+    trace\_longslit               & 0             & slitid           & approximate vertical position of a bright trace, for the rectification \\
     trim\_slit                    & [0, 0]        & cutouts          & limits, in x pixel coordinates, used to trim the cutouts \\
     roughwavecal\_R               & [500, 1000, 3000] & roughwavecal & spectral resolution to be used for the rough wavelength calibration \\
     roughwavecal\_smooth\_window  & 20            & roughwavecal     & window, in pixels, used to calculate and subtract the sky continuum \\
@@ -511,6 +512,8 @@ The module \texttt{flame\_slitid} is responsible for detecting the slits from th
 Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure. The order of the polynomial can be specified via the settings.
 
 In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges. It is possible to use the continuum emission instead, by specifying \code{settings.trace\_slit\_with\_emlines}$ = 0$. Using lamp flats or arc frames as slit flat field is also an option.
+
+When reducing a long slit, there are no slit edges that can be tracked, therefore the spectra are not spatially rectified. However, if a bright trace is present in the spectrum (either from the science target itself or from another object on the slit, possibly close to the science target), it can be used to calculate the spatial rectification. In this case the approximate vertical coordinate of the trace (corresponding to x-positions in the center of the detector) must be specified, e.g. \code{settings.trace\_longslit=854}.
 
 \medskip
 \noindent
