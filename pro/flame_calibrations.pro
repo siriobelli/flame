@@ -435,9 +435,12 @@ FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
       badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_dark))
       print, 'Fraction of bad pixels: ' + cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
+      ; remove bad pixels from the master dark for plotting purposes
+      master_dark[w_badpixels] = !values.d_nan
+
       ; plot distribution
       cgPS_open, fuel.util.intermediate_dir + 'master_dark_histogram.ps', /nomatch
-      cghistoplot, master_dark, /freq, binsize=max([0.1*dark_sigma, 1.0]), $
+      cghistoplot, master_dark, /freq, binsize=max([dark_sigma/5.0, 1.0]), $
         xra=dark_bias+[-10.0, 10.0]*dark_sigma, /fillpoly, $
         xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
         title = strtrim(n_elements(w_badpixels),2) + ' bad pixels (' + $
@@ -481,10 +484,13 @@ FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
       badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_pixelflat))
       print, 'Fraction of bad pixels: ' + cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
+      ; remove bad pixels from the flat field for plotting purposes
+      master_pixelflat[w_badpixels] = !values.d_nan
+
       ; plot distribution
       cgPS_open, fuel.util.intermediate_dir + 'master_pixelflat_histogram.ps', /nomatch
-      cghistoplot, master_pixelflat, /freq, binsize=max([flat_sigma, 0.005]), $
-        xra=flat_bias+[-10.0, 10.0]*flat_sigma, /fillpoly, $
+      cghistoplot, master_pixelflat, /freq, binsize=max([flat_sigma/5.0, 0.005]), $
+        xra=flat_bias+[-10.0, 10.0]*flat_sigma, /fillpoly, /nan, $
         xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
         title = strtrim(n_elements(w_badpixels),2) + ' bad pixels (' + $
         cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' % of the total)'
