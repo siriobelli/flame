@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  12 APR 2018 17:31
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  13 APR 2018 11:50
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -721,72 +721,74 @@ File: slits.png Graphic file (type png)
 Package pdftex.def Info: slits.png used on input line 501.
 (pdftex.def)             Requested size: 241.49895pt x 241.49474pt.
  [11] [12 <./slits.png>] [13]
-<wavecal1.pdf, id=390, 498.86375pt x 422.57875pt>
+<wavecal1.pdf, id=389, 498.86375pt x 422.57875pt>
 File: wavecal1.pdf Graphic file (type pdf)
  <use wavecal1.pdf>
-Package pdftex.def Info: wavecal1.pdf used on input line 580.
+Package pdftex.def Info: wavecal1.pdf used on input line 584.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
 
-<wavecal2.pdf, id=391, 498.86375pt x 422.57875pt>
+<wavecal2.pdf, id=390, 498.86375pt x 422.57875pt>
 File: wavecal2.pdf Graphic file (type pdf)
  <use wavecal2.pdf>
-Package pdftex.def Info: wavecal2.pdf used on input line 582.
+Package pdftex.def Info: wavecal2.pdf used on input line 586.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
 
-<wavecal3.pdf, id=392, 498.86375pt x 422.57875pt>
+<wavecal3.pdf, id=391, 498.86375pt x 422.57875pt>
 File: wavecal3.pdf Graphic file (type pdf)
  <use wavecal3.pdf>
-Package pdftex.def Info: wavecal3.pdf used on input line 584.
+Package pdftex.def Info: wavecal3.pdf used on input line 588.
 (pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
- [14 <./wavecal1.pdf> <./wavecal2.pdf> <./wavecal3.pdf>] [15]
+ [14]
+[15 <./wavecal1.pdf> <./wavecal2.pdf> <./wavecal3.pdf>]
 <number_lines.pdf, id=427, 471.7625pt x 370.38374pt>
 File: number_lines.pdf Graphic file (type pdf)
  <use number_lines.pdf>
-Package pdftex.def Info: number_lines.pdf used on input line 614.
+Package pdftex.def Info: number_lines.pdf used on input line 618.
 (pdftex.def)             Requested size: 241.49895pt x 189.6053pt.
 
 <speclines.png, id=428, 1068.99374pt x 204.765pt>
 File: speclines.png Graphic file (type png)
  <use speclines.png>
-Package pdftex.def Info: speclines.png used on input line 622.
+Package pdftex.def Info: speclines.png used on input line 626.
 (pdftex.def)             Requested size: 345.0pt x 66.0854pt.
  [16 <./number_lines.pdf> <./speclines.png>]
 <residuals.pdf, id=440, 492.84125pt x 375.4025pt>
 File: residuals.pdf Graphic file (type pdf)
  <use residuals.pdf>
-Package pdftex.def Info: residuals.pdf used on input line 644.
+Package pdftex.def Info: residuals.pdf used on input line 648.
 (pdftex.def)             Requested size: 241.49895pt x 183.95456pt.
- [17 <./residuals.pdf>]
 
-LaTeX Warning: Command \r invalid in math mode on input line 656.
 
-[18] <oversample.pdf, id=458, 755.82375pt x 712.6625pt>
+LaTeX Warning: Command \r invalid in math mode on input line 660.
+
+[17] [18 <./residuals.pdf>] [19]
+<oversample.pdf, id=463, 755.82375pt x 712.6625pt>
 File: oversample.pdf Graphic file (type pdf)
  <use oversample.pdf>
-Package pdftex.def Info: oversample.pdf used on input line 696.
+Package pdftex.def Info: oversample.pdf used on input line 700.
 (pdftex.def)             Requested size: 172.5pt x 162.6475pt.
 
-[19] [20 <./oversample.pdf>] <extensions.pdf, id=494, 590.205pt x 604.2575pt>
+[20 <./oversample.pdf>] <extensions.pdf, id=494, 590.205pt x 604.2575pt>
 File: extensions.pdf Graphic file (type pdf)
 
 <use extensions.pdf>
-Package pdftex.def Info: extensions.pdf used on input line 750.
+Package pdftex.def Info: extensions.pdf used on input line 754.
 (pdftex.def)             Requested size: 207.0021pt x 211.92664pt.
- [21] [22 <./extensions.pdf>]
-(/usr/share/texlive/texmf-dist/tex/latex/tools/.tex File ignored) [23] [24]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 855.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 855.
+ [21] [22 <./extensions.pdf>] [23]
+(/usr/share/texlive/texmf-dist/tex/latex/tools/.tex File ignored) [24]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 859.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 859.
 
 (./manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 855.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 855.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 859.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 859.
 Package rerunfilecheck Info: File `manual.out' has not changed.
 (rerunfilecheck)             Checksum: B8A08DE7A2B75D63CA0CE321148ECDC7;2728.
 
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 855.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 859.
  ) 
 Here is how much of TeX's memory you used:
  16694 strings out of 494946
@@ -817,7 +819,7 @@ xmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lm
 tt12.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt8.pfb></usr/share/texmf/fo
 nts/type1/public/lm/lmtt9.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/co
 urier/ucrr8a.pfb>
-Output written on manual.pdf (25 pages, 2487260 bytes).
+Output written on manual.pdf (25 pages, 2488157 bytes).
 PDF statistics:
  731 PDF objects out of 1000 (max. 8388607)
  577 compressed objects within 6 object streams

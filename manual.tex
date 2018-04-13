@@ -348,7 +348,7 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     badpix\_sigma                 & 7.0           & calibrations     & sigma clipping to identify bad pixels in the master dark frame \\
     badpix\_flatcorrection        & 0.20          & calibrations     & values beyond this deviation in the master pixel flat are bad pixels \\
     flatfield\_data               & 1             & calibrations     & divide the science data by the master pixel flat field (if provided) \\
-    darksub\_data                 & 1             & calibrations     & subtract the master dark (if provided) by the science data \\
+    darksub\_data                 & 1             & calibrations     & subtract the master dark (if provided) from the science data \\
     trace\_slit\_with\_emlines    & 1             & slitid           & use arcs or sky lines to trace slit edges \\
     trace\_slit\_xmargin          & 20            & slitid           & horizontal margin (in pixels) to consider around each emission line \\
     trace\_slit\_ymargin          & 12            & slitid           & vertical margin (in pixels) to consider beyond the expected slit edge \\
@@ -513,7 +513,11 @@ Once the approximate pixel position of each slit has been calculated, a second, 
 
 In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges. It is possible to use the continuum emission instead, by specifying \code{settings.trace\_slit\_with\_emlines}$ = 0$. Using lamp flats or arc frames as slit flat field is also an option.
 
-When reducing a long slit, there are no slit edges that can be tracked, therefore the spectra are not spatially rectified. However, if a bright trace is present in the spectrum (either from the science target itself or from another object on the slit, possibly close to the science target), it can be used to calculate the spatial rectification. In this case the approximate vertical coordinate of the trace (corresponding to x-positions in the center of the detector) must be specified, e.g. \code{settings.trace\_longslit=854}.
+\medskip
+\noindent
+\textbf{Notes on long slit data.} When reducing a long slit, there are no slit edges that can be tracked, therefore the spectra are not spatially rectified. However, if a bright trace is present in the spectrum (either from the science target itself or from another object on the slit, possibly close to the science target), it can be used to calculate the spatial rectification. In this case, the approximate vertical coordinate of the trace (corresponding to x-positions in the center of the detector) must be specified, e.g. \code{settings.trace\_longslit=854}.
+
+The trace needs to be clearly visible in the slit flat field, which is often not the case when using the default options. Usually, the best result is obtained when using the quickstack image as slit flat field. Here is how to achieve this: run the first two steps of \flame\ in order to produce a quickstack image; change the name of the quickstack file into, for example, \code{slitflat.fits}; make an ASCII file (e.g., \code{slitflat.txt}) with only one line, which is the name of the FITS file; specify the slit flat in the driver (e.g., \code{input.slitflat\_filelist = 'slitflat.txt'}); specify also the \code{settings.trace\_longslit} (keep in mind that the pixel coordinate of the trace must be measured in the slit flat field itself); finally run \flame\ from the beginning.
 
 \medskip
 \noindent
