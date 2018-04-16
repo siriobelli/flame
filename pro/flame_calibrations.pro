@@ -423,24 +423,87 @@ FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
       print, ''
       print, 'using master dark frame to identify bad pixels'
 
+
+      ; first we need to construct the median-filtered version of the master dark
+      ; ----------------------
+
+      ; kernel size for finding outliers
+      krad = 10
+
+      ; dimensions of frame
+      Nx = (size(master_dark))[1]
+      Ny = (size(master_dark))[2]
+
+      ; divide the frame into chunks for computational reasons
+      ; maximum size of chunks (including overlapping region)
+      max_chunk_size = 1500
+
+      ; how many chunks do we need along x and along y
+      N_chunks_x = ceil( float(Nx) / float(max_chunk_size-2*krad) )
+      N_chunks_y = ceil( float(Ny) / float(max_chunk_size-2*krad) )
+
+      ; x and y sizes of chunks
+      chunk_size_x = Nx / N_chunks_x
+      chunk_size_y = Nx / N_chunks_y
+
+      ; empty array that will contain the local median values
+      median_im = master_dark*0.0
+
+      ; loop through all the chunks
+      for ix=0, N_chunks_x-1 do $
+        for iy=0, N_chunks_y-1 do begin
+
+          print, 'working on chunk ' + strtrim(2*ix + iy + 1, 2) + ' of ' + strtrim(N_chunks_x*N_chunks_y, 2)
+
+          ; calculate limits of this chunk
+          x1 = ix*chunk_size_x
+          x2 = (x1+chunk_size_x-1) < (Nx-1)
+          y1 = iy*chunk_size_y
+          y2 = (y1+chunk_size_y-1) < (Nx-1)
+
+          ; to avoid edge issues, expand the chunk
+          x1_ext = (x1-krad) > 0
+          x2_ext = (x2+krad) < (Nx-1)
+          y1_ext = (y1-krad) > 0
+          y2_ext = (y2+krad) < (Ny-1)
+
+          ; extract chunk
+          chunk = master_dark[x1_ext:x2_ext, y1_ext:y2_ext]
+
+          ; for each pixel in the image, calculate the median of its neighbors
+          chunk_median = estimator_filter(chunk, 2*krad+1, /median)
+          median_im[x1:x2, y1:y2] = chunk_median[x1-x1_ext:x2-x2_ext-1, y1-y1_ext:y2-y2_ext-1]
+
+        endfor
+
+      ; subtract the filtered version and get the pixel map
+      pixel_map = master_dark - median_im
+
+      ; write pixel map
+      writefits, fuel.util.intermediate_dir + 'master_dark_filtered.fits', pixel_map
+
+
+      ; then we identify the bad pixels
+      ; ----------------------
+
       ; calculate typical value and dispersion for pixel values in a robust way
-      mmm, master_dark, dark_bias, dark_sigma
+      mmm, pixel_map, dark_bias, dark_sigma
 
       ; cut everything outside the central +/- sig_clip sigmas
       low_cut = dark_bias - sig_clip * dark_sigma
       high_cut = dark_bias + sig_clip * dark_sigma
-      w_badpixels = where(master_dark LT low_cut or master_dark GT high_cut, /null)
+      w_badpixels = where(pixel_map LT low_cut or pixel_map GT high_cut, /null)
 
       ; calculate the fraction of bad pixels
-      badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(master_dark))
+      badpix_fraction = float(n_elements(w_badpixels))/float(n_elements(pixel_map))
       print, 'Fraction of bad pixels: ' + cgnumber_formatter(badpix_fraction*100.0, decimals=4) + ' %'
 
       ; remove bad pixels from the master dark for plotting purposes
-      master_dark[w_badpixels] = !values.d_nan
+      pixel_map[w_badpixels] = !values.d_nan
 
       ; plot distribution
       cgPS_open, fuel.util.intermediate_dir + 'master_dark_histogram.ps', /nomatch
-      cghistoplot, master_dark, /freq, binsize=max([dark_sigma/5.0, 1.0]), $
+      cghistoplot, pixel_map, /freq, binsize=max([dark_sigma/5.0, 1.0]), $
         xra=dark_bias+[-10.0, 10.0]*dark_sigma, /fillpoly, $
         xtit='pixel value', ytit='frequency', charsize=1.0, xthick=4, ythick=4, $
         title = strtrim(n_elements(w_badpixels),2) + ' bad pixels (' + $
@@ -451,7 +514,7 @@ FUNCTION flame_calibrations_badpixel, fuel, master_dark, master_pixelflat
       cgPS_close
 
       ; create bad pixel mask
-      badpix = byte(master_dark*0.0)
+      badpix = byte(pixel_map*0.0)
 
       ; add bad pixels found in the master dark
       badpix[w_badpixels] = 1

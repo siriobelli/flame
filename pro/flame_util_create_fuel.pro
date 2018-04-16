@@ -170,7 +170,7 @@ FUNCTION flame_util_create_fuel, input
     clean_individual_frames: 0, $
     badpix_useflat: 1, $
     badpix_usedark: 1, $
-    badpix_sigma: 5.0, $
+    badpix_sigma: 7.0, $
     badpix_flatcorrection : 0.20, $
     flatfield_data: 1, $
     darksub_data: 1, $
