@@ -27,14 +27,14 @@ PRO flame_spatialcal_one, fuel=fuel, slit=slit, cutout=cutout, $
 	; make the matrix of coefficients
 	gamma_coeff = dblarr(N_y, N_x)
 
-	; by definition, dgamma/dy = 1
-	gamma_coeff[1,0] = 1.0
+	; in most cases dgamma/dy = 1, but sometimes we want to resample spatially
+	gamma_coeff[1,0] = fuel.settings.spatial_resampling
 
 	; use the definition of the bottom edge of the slit to build the gamma matrix
 	gamma_coeff[0,*] = -slit.bottom_poly
 
 	; but the zero point is such that gamma at xref is the vertical distance to the star trace
-	gamma_coeff[0,0] += slit.yrange_cutout[0] - this_diagnostics.position + poly(xref, slit.bottom_poly)
+	gamma_coeff[0,0] += gamma_coeff[1,0]*(slit.yrange_cutout[0]-this_diagnostics.position) + poly(xref, slit.bottom_poly)
 
 
 	; save and output -------------------------------------------------------

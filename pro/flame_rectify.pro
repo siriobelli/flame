@@ -35,11 +35,11 @@ PRO flame_rectify_one, fuel, filename, lambda_coeff=lambda_coeff, gamma_coeff=ga
 	gamma_max = floor( max(gamma_2d, /nan)+0.5 )
 	Ny = gamma_max - gamma_min
 
-	; calculate the *absolute* y coordinate (i.e. in the raw frame) corresponding to gamma=gamma_min at x=0
 	; if gamma is not linear in y then throw an error
-	if gamma_coeff[1,0] eq 1.0 and (size(gamma_coeff))[1] eq 2 then $
-		abs_y_gamma_min = gamma_min - gamma_coeff[0,0] + slit.yrange_cutout[0] $
-		else message, 'Non-linear vertical rectification not supported'
+	if (size(gamma_coeff))[1] ne 2 then message, 'Non-linear vertical rectification not supported'
+
+	; calculate the *absolute* y coordinate (i.e. in the raw frame) corresponding to gamma=gamma_min at x=0
+	abs_y_gamma_min = (gamma_min - gamma_coeff[0,0])/gamma_coeff[1,0] + slit.yrange_cutout[0]
 
 	; normalize the lambda values (otherwise triangulate does not work well; maybe because the scale of x and y is too different)
 	lambdax_2d = (lambda_2d-lambda_0) / delta_lambda
