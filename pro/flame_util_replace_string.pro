@@ -13,8 +13,8 @@ FUNCTION flame_util_replace_string, input, pattern, replacement
 
 	; check that the pattern exist at least once
 	if pattern_start eq -1 then begin
-		;print, 'flame_util_replace_string: did not find the pattern in the input string'
-		return, input 
+		print, 'flame_util_replace_string: did not find the pattern in the input string'
+		return, input
 	endif
 
 	; identify the part before the pattern

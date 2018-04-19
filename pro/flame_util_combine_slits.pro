@@ -1,36 +1,70 @@
-
-
-
-
-;*******************************************************************************
-;*******************************************************************************
-;*******************************************************************************
-
 ;
-; TO BE TESTED
+; flame_util_combine_slits, filenames, output_filename=output_filename, difference=difference, $
+;    observed_frame=observed_frame, rectified_frame=rectified_frame, nan=nan, $
+;    useweights=useweights, usenoise=usenoise, usesigma=usesigma, $
+;    alignment_box=alignment_box
 ;
-FUNCTION flame_util_combine_slits_align, lambda_axis, cube, cube_sigma, alignment_box
+; This function can be used to combine - without any resampling - two or more 2D spectra, which must be in
+; the flame "output" format: FITS files with six extensions each (DATA, NOISE, SIGMA, SKY, EXPTIME, WEIGHT).
+; It is used by Flame to combine the A and B frames of the same slit into an A-B;
+; to further combine the A-B with the shifted B-A for the same slit (on-slit nodding);
+; to combine a slit with another slit (paired-slit nodding).
+; It can also be used outside of Flame to combine different observations
+; of the same slit taken in different nights, etc.
+;
+; filenames (input) - a string array with the names of the input FITS files
+; output_filename (input, optional) - a string with the name for the output FITS file
+; /difference (input, optional) - if set, then the second spectrum is subtracted from the first one
+;   (works only if exactly two spectra are input)
+; /observed_frame (input, optional) - if set, the spatial alignment is done on the observed frame,
+;    i.e. using the YCUTOUT keyword from the FITS header
+; /rectified_frame (input, optional) - if set, the spatial alignment is done on the rectified frame,
+;    i.e. using the gamma coordinate (from the CRVAL2 keyword in the FITS header)
+; /nan (input, optional) - if set, NaNs are ignored when stacking the spectra
+; /useweights (input, optional) - if set, the weight map is used when stacking the spectra
+; /usenoise (input, optional) - if set, the (theoretical) noise map is used for the weights
+; /usesigma (input, optional) - if set, the sigma map is used for the weights
+; /alignment_box (input, optional) - the array [x0, y0, x1, y1] (in pixels) defining
+;    the region to be used for the vertical alignment (cross-correlation) before combining
+;    the spectra. This can be useful when only an emission line is detected. The box
+;    should be large enough to contain the emission feature in all frames. Note that
+;    if the alignment box is provided, then the /observed_frame and /rectified_frame
+;    keywords cannot be set.
+;
+
+
+;*******************************************************************************
+;*******************************************************************************
+;*******************************************************************************
+
+FUNCTION flame_util_combine_slits_align, lambda_axis=lambda_axis, $
+    cube_data=cube_data, cube_sigma=cube_sigma, alignment_box=alignment_box, output_filename=output_filename
 
     ; open plot file
-    cgPS_open, 'flame_combine_observations.ps', /nomatch
+    cgPS_open, output_filename, /nomatch
+
+    ; get the dimensions of the cube
+    Nx = (size(cube_data))[1]
+    Ny = (size(cube_data))[2]
+    N  = (size(cube_data))[3]
 
     ; determine edges of alignment box
     x0 = alignment_box[0] > 0
-    x1 = alignment_box[2] < Nx-1
+    x1 = alignment_box[2] < (Nx-1)
     y0 = alignment_box[1] > 0
-    y1 = alignment_box[3] < Ny-1
+    y1 = alignment_box[3] < (Ny-1)
 
     ; extended range for boxcar spectrum
     delta_x = alignment_box[2] - alignment_box[0]
-    x0_ext = alignment_box[0] - 2*delta_x > 0
-    x1_ext = alignment_box[2] + 2*delta_x < Nx-1
+    x0_ext = (alignment_box[0] - 2*delta_x) > 0
+    x1_ext = (alignment_box[2] + 2*delta_x) < (Nx-1)
 
     ; make a long cyclic array of colors
-    colors = 'red' + strtrim(indgen(8)+1,2)
-    colors = [colors, colors, colors]
+    colors = ['red6', 'blu6', 'grn6', 'red2', 'blu2', 'grn6']
+    colors = ['black', colors, colors, colors]
 
     ; make the SNR array
-    cube_snr = cube / cube_sigma
+    cube_snr = cube_data / cube_sigma
 
     ; show the boxcar extraction of the SNR around the alignment box
     s = stddev( median( total( cube_snr[x0_ext:x1_ext, y0:y1, 0], 2), 3), /nan )
@@ -47,7 +81,7 @@ FUNCTION flame_util_combine_slits_align, lambda_axis, cube, cube_sigma, alignmen
 
     ; extract spatial profile of the galaxy
     profile = dblarr(y1-y0+1, N)
-    for i=0, N-1 do profile[*,i] = total(cube[x0:x1,y0:y1,i], 1, /nan)
+    for i=0, N-1 do profile[*,i] = total(cube_data[x0:x1,y0:y1,i], 1, /nan)
 
     ; show galaxy spatial profile
     cgplot, y0 + indgen(y1-y0+1), profile[*,0], title='spatial profile before alignment', $
@@ -74,17 +108,15 @@ FUNCTION flame_util_combine_slits_align, lambda_axis, cube, cube_sigma, alignmen
       shift[i] = lag[ind]
     endfor
     print, 'Results of the cross-correlation between each frame and the first one:'
-    forprint, filenames, ' shift: ' + strtrim(shift,2) + ' pixels'
+    forprint, ' shift: ' + strtrim(shift,2) + ' pixels'
 
     ; apply the vertical shift to all frames
-    for i=0, N-1 do cube[*,*,i] = shift( cube[*,*,i], 0, -shift[i])
-    for i=0, N-1 do cube_sigma[*,*,i] = shift( cube_sigma[*,*,i], 0, -shift[i])
-    if keyword_set(sky_filenames) then $
-      for i=0, N-1 do cube_sky[*,*,i] = shift( cube_sky[*,*,i], 0, -shift[i])
+    new_cube_data = cube_data
+    for i=0, N-1 do new_cube_data[*,*,i] = shift( cube_data[*,*,i], 0, -shift[i])
 
     ; re-extract the spatial profile
     newprofile = dblarr(y1-y0+1, N)
-    for i=0, N-1 do newprofile[*,i] = total(cube[x0:x1,y0:y1,i], 1, /nan)
+    for i=0, N-1 do newprofile[*,i] = total(new_cube_data[x0:x1,y0:y1,i], 1, /nan)
 
     ; show galaxy spatial profile
     cgplot, y0 + indgen(y1-y0+1), newprofile[*,0], title='spatial profile after alignment', $
@@ -94,12 +126,11 @@ FUNCTION flame_util_combine_slits_align, lambda_axis, cube, cube_sigma, alignmen
     ; close plot file
     cgPS_close
 
+    ; return the pixel shifts for each frame
+    return, shift
 
 
 END
-
-
-
 
 
 
@@ -113,38 +144,7 @@ END
 PRO flame_util_combine_slits, filenames, output_filename=output_filename, difference=difference, $
     observed_frame=observed_frame, rectified_frame=rectified_frame, nan=nan, $
     useweights=useweights, usenoise=usenoise, usesigma=usesigma, $
-    alignment_box=alignment_box, $
-    sky_filenames=sky_filenames
-;
-; This function can be used to combine - without any resampling - two or more 2D spectra, which must be in
-; the flame "output" format: FITS files with six extensions each (DATA, NOISE, SIGMA, SKY, EXPTIME, WEIGHT).
-; It is used in many situations: to combine the A and B frames of the same slit into an A-B;
-; to further combine the A-B with the shifted B-A for the same slit (on-slit nodding);
-; to combine a slit with another slit (paired-slit nodding); to combine different observations
-; of the same slit taken in different nights, etc.
-;
-; filenames (input) - a string array with the filenames to combine
-; output_filename (input, optional) - a string with the name for the output FITS file
-; /difference (input, optional) - if set, then the second spectrum is subtracted from the first one
-;   (works only if exactly two spectra are input)
-; /observed_frame (input, optional) - if set, the spatial alignment is done on the observed frame,
-;    i.e. using the YCUTOUT keyword from the FITS header
-; /rectified_frame (input, optional) - if set, the spatial alignment is done on the rectified frame,
-;    i.e. using the gamma coordinate (from the CRVAL2 keyword in the FITS header)
-; /useweights (input, optional) - if set, the weight map is used when stacking the spectra
-; /usenoise (input, optional) - if set, the (theoretical) noise map is used for the weights
-; /usesigma (input, optional) - if set, the sigma map is used for the weights
-; /nan (input, optional) - if set, NaNs are ignored when stacking the spectra
-;
-; TO BE CONTINUED
-;
-
-;
-; combine the flame output from different observations of the same object
-; if specified, alignment_box sets the region [x0, y0, x1, y1] (in pixels)
-; to be used for the vertical alignment before combining the spectra
-;
-;
+    alignment_box=alignment_box
 
 
   ; *************************** test input ***************************
@@ -159,6 +159,16 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
   ; check the difference case
   if keyword_set(difference) and N ne 2 then $
     message, '/difference option can only be used when combining two files'
+
+  ; check the coordinate system
+  if keyword_set(observed_frame) + keyword_set(rectified_frame) + keyword_set(alignment_box) NE 1 then $
+    message, 'One and only one among /observed_frame, /rectified_frame, or alignment_box must be specified'
+
+  ; check that the alignment box has the right format
+  if n_elements(alignment_box) NE 0 then begin
+    if n_elements(alignment_box) NE 4 then $
+      message, 'alignment box must be of the form [x0, y0, x1, y1]'
+  endif
 
 
   ; *************************** load coordinates from headers ***************************
@@ -230,6 +240,8 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
 
   ; *************************** set up the common spatial grid ***************************
 
+  ;; NB: this assumes that all frames are vertically misplaced by integer number of pixels!!!
+
   ; spatial alignment in the observed frame, i.e. on the detector
   if keyword_set(observed_frame) then begin
 
@@ -268,12 +280,20 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
 
   endif
 
-  ;; NB: this assumes that all frames are vertically misplaced by integer number of pixels!!!
+  ; spatial alignment using alignment box - start by simply aligning the detectors
+  if keyword_set(alignment_box) then begin
+
+    ; number of pixels in the output spatial grid is simply the number of pixels in the first
+    Ny = max(naxis2)
+
+    ; for each frame, simply take all the pixels
+    y0 = intarr(N)
+    y1 = y0 + naxis2 - 1
+
+  endif
 
   ; make sure that the type of alignment has been specified
-  if n_elements(y0) eq 0 then message, 'Either /observed_frame of /rectified_frame must be set'
-
-  ;; if keyword_set(alignment_box) then flame_util_combine_slits_align, lambda_axis, cube, cube_sigma, alignment_box
+  if n_elements(y0) eq 0 then message, 'Either /observed_frame of /rectified_frame or alignment_box must be set'
 
 
   ; *************************** load spectra into cube ***************************
@@ -310,6 +330,30 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
     cube_weight[  x0[i_file]:x1[i_file] , y0[i_file]:y1[i_file] , i_file ] = im_weight
 
   endfor
+
+
+  ; *************************** align spectra with cross-correlation ***************************
+
+  if keyword_set(alignment_box) then begin
+
+    ; name of ps file
+    ps_filename = flame_util_replace_string(output_filename, '.fits', '.ps')
+
+    ; determine pixel shifts for each frame
+    shift = flame_util_combine_slits_align(lambda_axis=lambda_axis, $
+      cube_data=cube_data, cube_sigma=cube_sigma, alignment_box=alignment_box, output_filename=ps_filename)
+
+    ; apply pixel shift to each frame
+    for i=0, N-1 do begin
+      cube_data[*,*,i]    = shift( cube_data[*,*,i], 0, -shift[i])
+      cube_error[*,*,i]   = shift( cube_error[*,*,i], 0, -shift[i])
+      cube_sigma[*,*,i]   = shift( cube_sigma[*,*,i], 0, -shift[i])
+      cube_sky[*,*,i]     = shift( cube_sky[*,*,i], 0, -shift[i])
+      cube_exptime[*,*,i] = shift( cube_exptime[*,*,i], 0, -shift[i])
+      cube_weight[*,*,i]  = shift( cube_weight[*,*,i], 0, -shift[i])
+    endfor
+
+  endif
 
 
   ; *************************** combine spectra ***************************
