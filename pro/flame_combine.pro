@@ -364,7 +364,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 
 	if w_B NE !NULL and w_X ne !NULL then begin
 
-		flame_util_combine_slits, output_dir + filename_prefix + ['_B.fits', '_X.fits'], output_filename=output_dir + filename_prefix + '_B-X.fits', $
+		flame_util_combine_spectra, output_dir + filename_prefix + ['_B.fits', '_X.fits'], output_filename=output_dir + filename_prefix + '_B-X.fits', $
 			/difference, /observed_frame
 		fuel.slits[i_slit].output_file = filename_prefix + '_B-X.fits'
 
@@ -373,7 +373,7 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 
 	if w_A NE !NULL and w_X ne !NULL then begin
 
-		flame_util_combine_slits, output_dir + filename_prefix + ['_A.fits', '_X.fits'], output_filename=output_dir + filename_prefix + '_A-X.fits', $
+		flame_util_combine_spectra, output_dir + filename_prefix + ['_A.fits', '_X.fits'], output_filename=output_dir + filename_prefix + '_A-X.fits', $
 			/difference, /observed_frame
 		fuel.slits[i_slit].output_file = filename_prefix + '_A-X.fits'
 
@@ -382,12 +382,12 @@ PRO flame_combine_oneslit, i_slit=i_slit, fuel=fuel, skysub=skysub
 
 	if w_A NE !NULL and w_B ne !NULL then begin
 
-		flame_util_combine_slits, output_dir + filename_prefix + ['_A.fits', '_B.fits'], output_filename=output_dir + filename_prefix + '_A-B.fits', $
+		flame_util_combine_spectra, output_dir + filename_prefix + ['_A.fits', '_B.fits'], output_filename=output_dir + filename_prefix + '_A-B.fits', $
 			/difference, /observed_frame
 		fuel.slits[i_slit].output_file = filename_prefix + '_A-B.fits'
 
 		; also make B-A for later use
-		flame_util_combine_slits, output_dir + filename_prefix + ['_B.fits', '_A.fits'], output_filename=output_dir + filename_prefix + '_B-A.fits', $
+		flame_util_combine_spectra, output_dir + filename_prefix + ['_B.fits', '_A.fits'], output_filename=output_dir + filename_prefix + '_B-A.fits', $
 			/difference, /observed_frame
 
 	endif
@@ -426,7 +426,7 @@ PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, di
 		filenames = [filename_prefix_i + suffix[0], filename_prefix_j + suffix[1]]
 		outname =  'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
 			string(fuel.slits[j_slit].number, format='(I02)') + '.fits'
-		flame_util_combine_slits, filenames, output_filename = output_dir + outname, /nan, /usenoise, /rectified_frame
+		flame_util_combine_spectra, filenames, output_filename = output_dir + outname, /nan, /usenoise, /rectified_frame
 
 		; update the file name of the final *combined* output
 		fuel.slits[i_slit].output_combined_file = outname

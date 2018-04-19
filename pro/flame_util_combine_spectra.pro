@@ -1,5 +1,5 @@
 ;
-; flame_util_combine_slits, filenames, output_filename=output_filename, difference=difference, $
+; flame_util_combine_spectra, filenames, output_filename=output_filename, difference=difference, $
 ;    observed_frame=observed_frame, rectified_frame=rectified_frame, nan=nan, $
 ;    useweights=useweights, usenoise=usenoise, usesigma=usesigma, $
 ;    alignment_box=alignment_box
@@ -37,7 +37,7 @@
 ;*******************************************************************************
 ;*******************************************************************************
 
-FUNCTION flame_util_combine_slits_align, lambda_axis=lambda_axis, $
+FUNCTION flame_util_combine_spectra_align, lambda_axis=lambda_axis, $
     cube_data=cube_data, cube_sigma=cube_sigma, alignment_box=alignment_box, output_filename=output_filename
 
     ; open plot file
@@ -141,7 +141,7 @@ END
 
 
 
-PRO flame_util_combine_slits, filenames, output_filename=output_filename, difference=difference, $
+PRO flame_util_combine_spectra, filenames, output_filename=output_filename, difference=difference, $
     observed_frame=observed_frame, rectified_frame=rectified_frame, nan=nan, $
     useweights=useweights, usenoise=usenoise, usesigma=usesigma, $
     alignment_box=alignment_box
@@ -340,7 +340,7 @@ PRO flame_util_combine_slits, filenames, output_filename=output_filename, differ
     ps_filename = flame_util_replace_string(output_filename, '.fits', '.ps')
 
     ; determine pixel shifts for each frame
-    shift = flame_util_combine_slits_align(lambda_axis=lambda_axis, $
+    shift = flame_util_combine_spectra_align(lambda_axis=lambda_axis, $
       cube_data=cube_data, cube_sigma=cube_sigma, alignment_box=alignment_box, output_filename=ps_filename)
 
     ; apply pixel shift to each frame
