@@ -342,6 +342,11 @@ FUNCTION flame_initialize_mosfire, input
   ; do not split the spectrum into two when doing the rough wavecal
   fuel.settings.roughwavecal_split = 0
 
+  ; wavelenght solution parameters
+  fuel.settings.wavesolution_order_x = 3
+  fuel.settings.wavesolution_order_y = 3
+  fuel.settings.wavecal_sigmaclip = 3.0
+
   ; usually need a higher resolution for the bspline model of the sky
   fuel.settings.skysub_bspline_oversample = 4.0
 
