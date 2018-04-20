@@ -302,6 +302,11 @@ PRO flame_extract, fuel
 
 	endfor
 
+	; save fuel structure to output directory
+	filename = fuel.util.output_dir + 'fuel.sav'
+	save, fuel, filename=filename
+	print, 'fuel structure saved to ' + filename
+
 
   flame_util_module_end, fuel
 
@@ -309,6 +314,7 @@ PRO flame_extract, fuel
   print, '-------------------------------------'
 	print, '-------------------------------------'
 	print, '-------------------------------------'
+
 
 	; print total execution time
 	print, ' '

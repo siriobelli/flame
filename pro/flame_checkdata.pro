@@ -518,6 +518,11 @@ PRO flame_checkdata, fuel
 		print, 'slit ' + string(fuel.slits[i_slit].number, format='(I02)') + ' - ', $
 			fuel.slits[i_slit].name, string(9B) + string(9B) + ([' reduced', ' not reduced'])[fuel.slits[i_slit].skip]
 
+	; save fuel structure to output directory
+	filename = fuel.util.output_dir + 'fuel.sav'
+  save, fuel, filename=filename
+  print, 'fuel structure saved to ' + filename
+
 
   flame_util_module_end, fuel
 

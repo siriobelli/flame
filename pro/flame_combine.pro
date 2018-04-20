@@ -747,6 +747,11 @@ PRO flame_combine, fuel
 	if fuel.settings.skysub then $
 		flame_combine_mosaic, fuel, /skysub
 
+	; save fuel structure to output directory
+	filename = fuel.util.output_dir + 'fuel.sav'
+  save, fuel, filename=filename
+  print, 'fuel structure saved to ' + filename
+
 
 	flame_util_module_end, fuel
 
