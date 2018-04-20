@@ -51,6 +51,7 @@ FUNCTION flame_slitid_trace_continuum, image_in, approx_edge, top=top, bottom=bo
   ; read in the x-size of the image
   sz = size(image)
   N_pixel_x = sz[1]
+  N_pixel_y = sz[2]
 
   ; how big, in the y direction, is the cutout?
   cutout_size = 14      ; even number please
@@ -70,7 +71,7 @@ FUNCTION flame_slitid_trace_continuum, image_in, approx_edge, top=top, bottom=bo
 
     ; extract the bin
     end_pixel = min([starting_pixel + binsize - 1, N_pixel_x-1])
-    cutout_bin = image[starting_pixel : end_pixel, previous_ycoord - cutout_size/2: previous_ycoord + cutout_size/2]
+    cutout_bin = image[starting_pixel : end_pixel, (previous_ycoord-cutout_size/2) > 0 : (previous_ycoord+cutout_size/2) < (N_pixel_y-1)]
 
     ; spatial profile
     profile = median(cutout_bin, dimension=1)
@@ -83,6 +84,10 @@ FUNCTION flame_slitid_trace_continuum, image_in, approx_edge, top=top, bottom=bo
 
     ; add the amount of pixels left out by the cutout
     peak_location += previous_ycoord - cutout_size/2
+
+    ; check that we are not outside the image
+    if peak_location LT 0 then peak_location = 0
+    if peak_location GT N_pixel_y-1 then peak_location = N_pixel_y-1
 
     ; save x and y coordinate of the detection
     x_edge = [ x_edge, 0.5*(starting_pixel + end_pixel) ]
@@ -104,7 +109,7 @@ FUNCTION flame_slitid_trace_continuum, image_in, approx_edge, top=top, bottom=bo
 
     ; extract the bin
     end_pixel = min([starting_pixel + binsize - 1, N_pixel_x-1])
-    cutout_bin = image[starting_pixel : end_pixel, previous_ycoord - cutout_size/2: previous_ycoord + cutout_size/2]
+    cutout_bin = image[starting_pixel : end_pixel, (previous_ycoord-cutout_size/2) > 0 : (previous_ycoord+cutout_size/2) < (N_pixel_y-1)]
 
     ; spatial profile
     profile = median(cutout_bin, dimension=1)
@@ -117,6 +122,10 @@ FUNCTION flame_slitid_trace_continuum, image_in, approx_edge, top=top, bottom=bo
 
     ; add the amount of pixels left out by the cutout
     peak_location += previous_ycoord - cutout_size/2
+
+    ; check that we are not outside the image
+    if peak_location LT 0 then peak_location = 0
+    if peak_location GT N_pixel_y-1 then peak_location = N_pixel_y-1
 
     ; save x and y coordinate of the detection
     x_edge = [ x_edge, 0.5*(starting_pixel + end_pixel) ]
@@ -158,7 +167,8 @@ PRO flame_slitid_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top
   ymargin = fuel.settings.trace_slit_ymargin
 
   ; extract a cutout of the slit
-  cutout = image[ * , min(approx_edges) - ymargin : max(approx_edges) + ymargin ]
+  lower_edge = (min(approx_edges)-ymargin) > 0
+  cutout = image[ * , lower_edge : (max(approx_edges)+ymargin) < (size(image))[2] ]
   Nx = (size(cutout))[1]
   Ny = (size(cutout))[2]
 
@@ -328,10 +338,10 @@ PRO flame_slitid_trace_emlines, fuel, image, approx_edges, slitid_top=slitid_top
   ; ---------------------------------------------------
 
   slitid_top = dblarr(Nx) + !values.d_nan
-  slitid_top[slit_top_x] =  min(approx_edges) - ymargin + slit_top_y  ; add back the y coordinate of the edge of the cutout
+  slitid_top[slit_top_x] = lower_edge + slit_top_y  ; add back the y coordinate of the edge of the cutout
 
   slitid_bottom = dblarr(Nx) + !values.d_nan
-  slitid_bottom[slit_bottom_x] =  min(approx_edges) - ymargin + slit_bottom_y
+  slitid_bottom[slit_bottom_x] = lower_edge + slit_bottom_y
 
 
 END
