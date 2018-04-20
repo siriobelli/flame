@@ -122,8 +122,11 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 				sky_cube[i_frame, *, bot_ref:top_ref] = sky[*, bot_i:top_i]
 			endif
 
+  	; find the exposure time: try EXPTIME first, then TRUITIME
+	  exptime = fxpar(header, 'EXPTIME', missing=-1.0)
+	  if exptime EQ -1.0 then exptime = fxpar(header, 'TRUITIME', missing=-1.0)
+
 		; make map of exposure time
-		exptime = sxpar(header, 'EXPTIME')
 		map_exptime = im*0.0 + exptime ; account for NaNs
 		exptime_cube[i_frame, *, bot_ref:top_ref] = map_exptime[*, bot_i:top_i]
 
