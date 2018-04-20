@@ -1,11 +1,11 @@
 ;
-; Driver file for reducing data from Keck/LRIS using the
+; Driver file for reducing data from Keck/MOSFIRE using the
 ; Flame pipeline (https://github.com/siriobelli/flame)
 ;
 ; Copy this file in a new directory, edit the input and settings,
 ; and then run it in IDL. You can do this either by copying each line
 ; of code on an interactive IDL session, or by running in IDL:
-; .run flame_driver_lris
+; .run flame_driver_mosfire
 ;
 
   ;****************************************************
@@ -24,11 +24,11 @@
   input.science_filelist = 'science.txt'
 
   ; do you want to apply A-B sky subtraction?
-  input.AB_subtraction = 0
+  input.AB_subtraction = 1
 
   ; array with y-pixel positions for the traces of the reference star. 0 if there is no reference star
-  input.star_y_A = 1281
-  input.star_y_B = 0
+  input.star_y_A = 930
+  input.star_y_B = 913
 
   ; if 0, then reduce all slits. If n, then reduce slit number n (starting from 1).
   input.reduce_only_oneslit = 0
@@ -39,9 +39,6 @@
   ; and specify the y-range in pixel that you want to reduce
   input.longslit_edge = [0, 0]
 
-  ; manual slit positions
-  input.slit_position_file = 'slit_edges.reg'
-
 
   ;****************************************************
   ;****************************************************
@@ -51,7 +48,7 @@
 
 
   ; initialize and create the fuel structure
-  fuel = flame_initialize_lris(input)
+  fuel = flame_initialize_mosfire(input)
 
   ; here you can customize the settings
   ; for example, to change the range in x-coordinates

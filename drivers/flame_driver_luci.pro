@@ -1,13 +1,21 @@
-
-  ; suppress harmless messages (e.g., module compilation)
-  !quiet = 1
-
+;
+; Driver file for reducing data from LBT/LUCI using the
+; Flame pipeline (https://github.com/siriobelli/flame)
+;
+; Copy this file in a new directory, edit the input and settings,
+; and then run it in IDL. You can do this either by copying each line
+; of code on an interactive IDL session, or by running in IDL:
+; .run flame_driver_luci
+;
 
   ;****************************************************
   ;****************************************************
   ;                       INPUT
   ;****************************************************
   ;****************************************************
+
+  ; suppress harmless messages (e.g., module compilation)
+  !quiet = 1
 
   ; create the input structure
   input = flame_create_input()
@@ -41,6 +49,15 @@
 
   ; initialize and create the fuel structure
   fuel = flame_initialize_luci(input)
+
+  ; here you can customize the settings
+  ; for example, to change the range in x-coordinates
+  ; used to extract the star traces:
+  ; fuel.settings.star_x_range = [100, 500]
+  ;
+  ; see the Flame manual for details
+  ; you can also get a complete list of settings with:
+  ; help, fuel.settings
 
 
   ;****************************************************
