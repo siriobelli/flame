@@ -250,8 +250,8 @@ FUNCTION flame_initialize_mosfire_slits, science_frame, instrument, input
     range_delta_lambda = pixel_scale*[0.7,1.3]
 
     ; indices of the first and last bars for this slit (first bar is at the top)
-    index_first_bar = min(hdu_bars[w_thistarget].slit_number)
-    index_last_bar = max(hdu_bars[w_thistarget].slit_number)
+    index_first_bar = min(fix(hdu_bars[w_thistarget].slit_number))
+    index_last_bar = max(fix(hdu_bars[w_thistarget].slit_number))
 
     ; simple geometric model of the CSU, estimated from real data
     space_top = 15.5      ; empty space at the top of the detector, in pixels
