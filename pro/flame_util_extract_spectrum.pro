@@ -2,7 +2,7 @@
 PRO flame_util_extract_spectrum, filename, yrange=yrange, output_filename=output_filename
 ;
 ; Boxcar extraction of a 1D spectrum from a 2D spectrum output by Flame (i.e.,
-; FITS file with six extensions: flux, sigma, error, sky, exptime, weight)
+; FITS file with six extensions: flux, noise, sigma, sky, exptime, weight)
 ; The vertical pixel range to be considered for the extraction must be specified with
 ; the yrange keyword (starting from zero; extrema are included in the extraction)
 ; The output is a FITS file with a structure containing the fields lambda, flux,
