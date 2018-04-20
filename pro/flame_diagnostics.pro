@@ -337,8 +337,9 @@ FUNCTION flame_diagnostics_blind, fuel
 
   ; check if dither blind positions were specified
   if fuel.util.dither_blind_positions NE !NULL then $
-    ; fill the dither position field (in pixels, not arcsec)
-    diagnostics.position = fuel.util.dither_blind_positions / pixel_scale $
+    ; fill the dither position field
+    ; NB: in pixels, not arcsec
+    diagnostics.position = fuel.util.dither_blind_positions $
   else $
     diagnostics.position = 0
 
