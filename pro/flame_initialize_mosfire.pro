@@ -333,6 +333,9 @@ FUNCTION flame_initialize_mosfire, input
   ; do not split the spectrum into two when doing the rough wavecal
   fuel.settings.roughwavecal_split = 0
 
+  ; usually need a higher resolution for the bspline model of the sky
+  fuel.settings.skysub_bspline_oversample = 4.0
+
   ; Use the R3000 line list
   linelist = fuel.util.flame_data_dir + 'linelist_sky_R3000.dat'
 
