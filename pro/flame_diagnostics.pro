@@ -488,6 +488,9 @@ PRO flame_diagnostics, fuel
     flame_diagnostics_plot, diagnostics
   cgPS_close
 
+  ; copy file to the output directory
+  file_copy, fuel.util.intermediate_dir + 'diagnostics.ps', fuel.util.output_dir + 'diagnostics.ps', /overwrite
+
 
   ; 3 - write text file with diagnostics
   ;----------------------------------------
@@ -498,6 +501,9 @@ PRO flame_diagnostics, fuel
     + cgnumber_formatter(diagnostics.airmass, decimals=3), $
     textout=fuel.util.intermediate_dir + 'diagnostics.txt', $
     comment = '# frame number   offset    seeing    flux    normalized flux    position    airmass'
+
+  ; copy file to the output directory
+  file_copy, fuel.util.intermediate_dir + 'diagnostics.txt', fuel.util.output_dir + 'diagnostics.txt', /overwrite
 
 
   ; 4 - add diagnostics to the fuel structure
