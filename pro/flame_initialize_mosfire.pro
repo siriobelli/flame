@@ -330,6 +330,15 @@ FUNCTION flame_initialize_mosfire, input
 
   ; ---------------------   SETTINGS   --------------------------------------
 
+  ; no need to run L.A.Cosmic on individual frames
+  fuel.settings.clean_individual_frames = 0
+
+  ; use the OH sky emission lines to trace the slit edges
+  fuel.settings.trace_slit_with_emlines = 1
+
+  ; apply illumination correction using the OH lines
+  fuel.settings.illumination_correction = 1
+
   ; do not split the spectrum into two when doing the rough wavecal
   fuel.settings.roughwavecal_split = 0
 
