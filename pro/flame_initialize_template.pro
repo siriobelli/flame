@@ -446,8 +446,7 @@ FUNCTION flame_initialize_template, input
   endelse
 
 
-  ; ------------------------   SETTINGS   --------------------------------------
-  ; here the default settings are chosen; the user can change any of these values
+  ; ------------------------   LINE LIST   -------------------------------------
 
   ; choose the correct linelist
   linelist = fuel.util.flame_data_dir + 'linelist_sky_R3000.dat'
@@ -457,6 +456,16 @@ FUNCTION flame_initialize_template, input
 
   ; save the file name in the settings
   fuel.settings.linelist_sky_filename = fuel.util.intermediate_dir + file_basename(linelist)
+
+  ; if needed, take care of the arcs line list
+  if fuel.util.arc.n_frames gt 0 then flame_initialize_template_arcs, fuel
+
+
+  ; ------------------------   SETTINGS   --------------------------------------
+  ; here the default settings are chosen; the user can change any of these values
+
+  ; these are only examples of the settings that can be changed
+  ; see the manual for a full list
 
   ; is it needed to run L.A.Cosmic on individual frames?
   fuel.settings.clean_individual_frames = 0
@@ -473,11 +482,6 @@ FUNCTION flame_initialize_template, input
   ; set the degree of the polynomials for the 2D wavelength solution
   fuel.settings.wavesolution_order_x = 3
   fuel.settings.wavesolution_order_y = 2
-
-
-  ; ---------------------------------   ARCS    --------------------------------
-
-  if fuel.util.arc.n_frames gt 0 then flame_initialize_template_arcs, fuel
 
 
   ; ----------------------------------------------------------------------------
