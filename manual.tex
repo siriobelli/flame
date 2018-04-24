@@ -284,7 +284,7 @@ The easiest way to generate this file is to open the slit flat field (or a scien
 
 \subsubsection{Dithering positions}
 \label{sec:manual_dithering}
-It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the nodding and dithering offset for each frame, and this pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, in arcseconds, corresponding to that frame (for example 5, -5, 5, -5, etc). Then the file name needs to be input in the \inp\ structure:
+It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the nodding and dithering offset for each frame, and this pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, \textbf{in pixels} (note that earlier versions of \flame\ required the input in arcseconds instead), corresponding to that frame; for example 25, -25, 25, -25, etc. Then the file name needs to be input in the \inp\ structure:
 \begin{lstlisting}
 input.dither_file = 'dither.txt'
 \end{lstlisting}
@@ -355,6 +355,7 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     trace\_slit\_polydegree       & 2             & slitid           & degree of the polynomial used to describe the slit edge \\
     trace\_longslit               & 0             & slitid           & approximate vertical position of a bright trace, for the rectification \\
     trim\_slit                    & [0, 0]        & cutouts          & limits, in x pixel coordinates, used to trim the cutouts \\
+    spatial\_resampling           & 1.0           & spatialcal       & resampling factor for the spatial direction \\
     roughwavecal\_R               & [500, 1000, 3000] & roughwavecal & spectral resolution to be used for the rough wavelength calibration \\
     roughwavecal\_smooth\_window  & 20            & roughwavecal     & window, in pixels, used to calculate and subtract the sky continuum \\
     roughwavecal\_split           & 0             & roughwavecal     & in the last step of rough\_wavecal, split the wavelength range in two \\
@@ -468,6 +469,7 @@ The diagnostic plots can be used to judge the trend of transmission (including t
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_quickstack}}
+\label{sec:quickstack}
 
 The second step produces a FITS file which is the difference of a stack of the $A$ frames and a stack of the $B$ frames (as defined in the previous module). This step is also useful while observing, since the simple $A-B$ subtraction often yields a decent sky removal which allows the detection of faint continuum traces or emission lines.
 
@@ -482,6 +484,7 @@ This step and the previous ones can be run on virtually any data set without any
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_calibrations}}
+\label{sec:calibrations}
 
 This module applies a number of calibrations to the raw science frames. First, the bad pixel mask is generated from the input dark and/or flat frames. If neither dark nor flat field frames were supplied, then the default bad pixel mask, stored in flame/data/LUCI, is used. The flat field correction and dark subtraction are then performed.
 
@@ -532,6 +535,7 @@ In very difficult cases, an alternative approach is to use the longslit option t
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_cutouts}}
+\label{sec:cutouts}
 
 Using the slit definition from the previous step, the slits are extracted from each corrected frame and saved as FITS files. Sometimes it may be useful to reduce only a subset of the observed spectrum, for example to speed up the reduction or to avoid a spectral region for which the wavelength calibration is challenging. In these cases it is possible to specify the range in x pixel coordinates to be considered via the \code{trim\_slit} option (e.g., \code{trim\_slit=[0,1023]} would reduce only the left half of the LUCI detector).
 
@@ -543,10 +547,12 @@ Using the slit definition from the previous step, the slits are extracted from e
 \noindent
 \textbf{Outputs.} For each slit, a cutout is produced for each frame, and saved as a FITS file.
 
+
 % ---------------------------------------------------
 \subsection{\texttt{flame\_spatialcal}}
+\label{sec:spatialcal}
 
-The spatial rectification is calculated starting from the slit edges, and is corrected for nodding and dithering using the results of the diagnostics. The coefficients of the coordinate transformation $\gamma(x,y)$ are stored for each cutout in the fuel.slits structure.
+The spatial rectification is calculated starting from the slit edges, and is corrected for nodding and dithering using the results of the diagnostics. The coefficients of the coordinate transformation $\gamma(x,y)$ are stored for each cutout in the fuel.slits structure. By default, the spatial side of the rectified pixels is identical to that of the raw, observed pixels: $\Delta \gamma = \Delta y$. However there are rare cases when a user may want to change this: for example when using the N3.75 camera with LUCI the two detectors end up having slightly different spatial scales. In this case it is best to change the spatial scale for the data from one or both eyes so that the output spectra can be easily combined without having to further interpolate the data. This can be done by changing the value of \code{spatial\_resampling}.
 
 \medskip
 \noindent
@@ -555,6 +561,7 @@ No outputs are created during this step.
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_roughwavecal}}
+\label{sec:roughwavecal}
 
 The wavelength calibration is arguably the most important and difficult step in the data reduction. An accurate calibration is not only useful for the scientific interpretation of the data, but is also necessary for a correct sky subtraction.
 
@@ -594,6 +601,7 @@ If arcs were provided, then the rough wavelength calibration will be performed u
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_findlines}}
+\label{sec:findlines}
 
 
 The previous procedure gives only a rough wavelength calibration that is valid for the pixel rows at the center of the slits. Since the wavelength solution typically varies with spatial coordinate within the slit (particularly for tilted slits), the calibration needs to be calculated for each individual pixel row, which is done in this step.
@@ -637,7 +645,7 @@ For each cutout, the complete set of line identifications is used to find the be
 
 \medskip
 \noindent
-\textbf{Outputs.} In the slit directories, the file \code{summary\_wavecal.ps} gives an overview of the wavelength calibration for all cutouts. The first plot shows the residuals asa function of wavelength, which is useful for two reasons: 1) lines that are clearly off the wavelength solution can be easily identified and removed from the line list; 2) if the residuals show a systematic trend with wavelength, a higher polynomial degree may be needed for an accurate wavelength solution. The second plot shows the line widths as a function of frame number, to test that the spectral resolution is constant throughout the observations. The third plot (see Figure \ref{fig:residuals}) shows the wavelength residuals as a function of frame number. At each frame, the median and the central 68\% levels are shown in red, while the blue bars mark the median absolute deviation.
+\textbf{Outputs.} In the slit directories, the files \code{summary\_wavecal.ps} and  \code{summary\_wavecal.txt} give an overview of the wavelength calibration for all cutouts. The text file and the first plot in the ps file show the residuals as a function of wavelength. This is useful for two reasons: 1) lines that are clearly off the wavelength solution can be easily identified and removed from the line list; 2) if the residuals show a systematic trend with wavelength, a higher polynomial degree may be needed for an accurate wavelength solution. The second plot shows the line widths as a function of frame number, to test that the spectral resolution is constant throughout the observations. The third plot (see Figure \ref{fig:residuals}) shows the wavelength residuals as a function of frame number. At each frame, the median and the central 68\% levels are shown in red, while the blue bars mark the median absolute deviation.
 
 For each slit and cutout, the \code{*wavecal.ps} files show a map of the line identifications, a plot of the measured line widths, and one of the wavelength residuals. In all these plots, the line identifications that have been discarded during the fit of the wavelength solution are marked in red. When using arcs, the \code{*wavecal.ps} files show the fit to the sky lines from which the wavelength shift is calculated.
 
@@ -662,6 +670,7 @@ When using arcs, the default behavior is to extract the sky spectrum anyway, ide
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_illumcorr}}
+\label{sec:illumcorr}
 
 The illumination correction is calculated from the sky lines, the arcs, or the illumination flat, and is applied to each cutout. The user can choose to skip this step by setting the parameter \code{illumination\_correction}$=0$.
 
@@ -673,6 +682,7 @@ The illumination correction is calculated from the sky lines, the arcs, or the i
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_skysub}}
+\label{sec:skysub}
 
 Because the OH emission lines vary on short timescales, the A-B subtraction typically leaves strong residuals. In order to improve the sky subtraction, \flame\ constructs and subtracts a model of the sky, following the method of Kelson 2003. \flame\ performs this operation on each frame for every slit, and saves a FITS file of the sky-subtracted data.
 
@@ -705,6 +715,7 @@ One important parameter for modeling the sky is the positioning of the breakpoin
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_rectify}}
+\label{sec:rectify}
 
 Using the 2D rectification coefficients calculated in \texttt{flame\_wavecal\_accurate}, this step performs both the wavelength calibration and the spatial rectification simultaneously, using only one interpolation. The interpolation is calculated using the IDL function \code{griddata}, and the interpolation method can be set via the settings to one of the following: 'NaturalNeighbor' (default), 'Linear', 'NearestNeighbor', or 'Quintic'. These methods are explained in detail in the IDL documentation.
 
@@ -720,6 +731,7 @@ Using the 2D rectification coefficients calculated in \texttt{flame\_wavecal\_ac
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_combine}}
+\label{sec:combine}
 
 This step consists in the stacking of all the A and B frames. Sigma-clipping is first performed to remove cosmic rays and bad pixels, the default value is 2-sigma but this can be changed. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also saved.
 
@@ -760,6 +772,7 @@ Each of the science-grade spectra is a FITS file with six extensions, that can b
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_checkdata}}
+\label{sec:checkdata}
 
 This module performs a quality check on the reduced data set. Its only purpose is to produce diagnostic plots, saved in the output directory, that can be used to judge the quality of the observations and of the data reduction.
 
@@ -775,6 +788,7 @@ These diagnostics are based on the measurement of sky emission lines. When arcs 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_extract}}
+\label{sec:extract}
 
 This is the last module, which identifies the brightest object in each slit and extracts the 1D spectrum. Optimal extraction is used, but setting \code{extract\_optimal=0} forces boxcar extraction. When using optimal extraction, the weights are determined by fitting a Gaussian function to the observed profile (i.e., the 2D spectrum collapsed along the wavelength direction). However, for bright targets it may be better to derive the weights directly from the observed profile; this can be achieved setting \code{extract\_gaussian\_profile=0}.
 
@@ -792,8 +806,24 @@ SpecViz\footnote{\url{https://github.com/spacetelescope/specviz}} is written in 
 % ---------------------------------------------------
 \subsection{Combining different data sets}
 
-Brief description of how to use \code{flame\_util\_combine\_slits} to combine the 2D spectra from different nights or telescopes (e.g., LUCI1 and LUCI2).
+Commonly, observations of the same target are split over many nights or even runs. In these cases it is best to reduce individual chunks independently and then combine the resulting 2D spectra. This can be done using a provided IDL procedure \code{flame\_util\_combine\_spectra}. The IDL file has a detailed description of its usage and of the options available. For example, to combine three fully reduced 2D spectra of the same target obtained over three different nights, one would run
+\begin{lstlisting}
+  flame_util_combine_spectra, ['slit07_night1.fits', $
+    'slit07_night2.fits', 'slit07_night3.fits'], $
+    /rectified_frame, /NaN, /usesigma
+\end{lstlisting}
+The output 2D spectrum has the same format as those output by \flame.
 
+Different options exist for the weights to be used when combining the data (in the example above, the sigma image is used in order to optimize the SNR) and for the type of spatial alignment. In most cases the alignment should be done on the rectified frame, assuming that the same reference star was used for all observations. However sometimes this is not possible, for example when no reference star was observed. If a spectral features such as an emission line is detected in each individual spectrum, this can be used to align the frames, by providing the pixel coordinates for an 'alignment box' in which the spectral feature is located.
+
+The utility \code{flame\_util\_combine\_spectra} can also be used to combine parallel observations of the same target obtained with LUCI1 and LUCI2. Note that for some configurations the two instruments have a slightly different spatial scale. Spatial resampling is needed before the data from the two eyes can be properly combined. This resampling should be done during the data reduction, as explained in Section \ref{sec:spatialcal}.
+
+Finally, a simple boxcar extraction can be performed manually on a 2D spectrum like this:
+\begin{lstlisting}
+  flame_util_extract_spectrum, 'slit07.fits', $
+    yrange=[52,58]
+\end{lstlisting}
+where \code{yrange} is an integer array specifying the first and last pixel rows (in detector coordinates) to be considered for the extraction. The 1D spectrum is then saved as a FITS file in the same format as for the files output by \code{flame\_extract}.
 
 
 
@@ -817,12 +847,12 @@ All the \flame\ modules described in Section \ref{sec:data_reduction} are writte
 The list of files in the \texttt{flame/drivers/} directory shows what instruments are supported. Currently, this directory contains the following files:
 \begin{itemize}
   \item[] \texttt{flame\_driver\_luci.pro}: driver for reducing data from the LUCI1 and LUCI2 instruments at the Large Binocular Telescope.
+  \item[] \texttt{flame\_driver\_mosfire.pro}: driver for reducing data from the MOSFIRE near-infrared instrument at the Keck telescope.
   \item[] \texttt{flame\_driver\_lris.pro}: driver for reducing data from the blue and red channel of LRIS at the Keck telescope.
-  \item[] \texttt{flame\_driver\_complete.pro}: generic driver that contains all the possible options for the \input\ structure and for the settings in the \fuel\ structure; it can be used as a reference by copying the relevant lines and pasting them on the actual driver.
   \item[] \texttt{flame\_driver\_minimal.pro}: minimalistic driver that can be used to run the first two modules (diagnostics and quick stack) on any data set, including instruments that are not supported.
 \end{itemize}
 
-We describe each supported instrument, and give indications on how to implement support for new instruments, in the remainder of this section.
+In the remainder of this section, we quickly describe each supported instrument and give indications on how to implement support for new instruments.
 
 
 \subsection{LUCI at LBT}
@@ -830,29 +860,120 @@ We describe each supported instrument, and give indications on how to implement 
 The reduction of LUCI data is described throughout Section \ref{sec:setup} and \ref{sec:data_reduction}, and no further discussion for this instrument is needed.
 
 
-\subsection{LRIS at Keck}
-
-
 \subsection{MOSFIRE at Keck}
 
-\emph{Work in progress.}
+MOSFIRE is a multi-slit near-infrared spectrograph, and its data are in many aspects similar to LUCI data, partly because both instruments use exactly the same type of detector. The data from MOSFIRE are usually simpler to reduce because the slit tilt is fixed, and has been chosen to optimize the spectral sampling of the sky lines. The angle of the dispersive element is also fixed, so that for a given band (Y, J, H or K), the observed wavelength range depends exclusively on the spatial placement of the slit.
 
+The header of MOSFIRE data contains very detailed information on the slitmask configuration, and usually the slit identification presents no issues. Given the excellent spatial sampling of the sky spectrum, a higher value of the bspline oversampling is generally needed (although this is automatically set to a high value during the initialization).
+
+Note that MOSFIRE has an official data reduction pipeline\footnote{\url{http://keck-datareductionpipelines.github.io/MosfireDRP/}} which is excellent, although less flexible than \flame.
+
+
+\subsection{LRIS at Keck}
+
+LRIS is an optical multi-object spectrograph at Keck equipped with a blue and a red arm. The initialization module included with the Flame distribution will change the settings according to which arm has been used.
+
+Data reduction for the red arm is not very different from what described above for near-infrared data: the data are dominated by sky lines, that can be used to derive the wavelength calibration. Usually A-B nodding is not performed, because the model sky subtraction is sufficient given that the sky emission is not as strong as in the near-infrared.
+
+Data taken with the blue arm look significantly different given the almost complete absence of sky emission lines, and the presence of a very faint sky continuum. This means that the sky subtraction is not very problematic, and nodding is almost never necessary. However, the lack of sky lines introduces an additional difficulty: the wavelength calibration cannot be obtained directly from the data, and has to be derived using dedicated observations of lamp arcs. These calibrations should be taken as close as possible to the science data in terms of time and elevation, to avoid spectral and spatial shifts (see Section \ref{sec:wavecal} for details).
+
+Given the weaker sky emission, individual frames taken in the optical have generally longer exposure times compared to near-infrared observations. This means that cosmic rays can be very numerous (especially in the red arm), and there may not be sufficient frames for an effective sigma-clipping. In these cases it is recommended to apply L.A.Cosmic to individual frames to mask out bad pixels and cosmic rays.
 
 
 \subsection{Diagnostics for unsupported instruments}
 \label{sec:minimal}
 
+The diagnostics plots produced by \flame\ are particularly useful for monitoring the conditions (seeing, transmission, and drift) while observing. In order to make these products available to the wider community of users, \flame\ contains an initialization module that can be used with almost any type of spectroscopic data. This "minimal" module has basic assumptions on the data format: each frame must be a FITS file with a single HDU, and the wavelength runs along the horizontal direction. The only parameter required is the spatial pixel scale of the instrument. The associated driver file \texttt{flame\_driver\_minimal.pro} performs only the first two steps of the data reduction, producing the diagnostics plots and the quick stack. In order to proceed further, a fully functional initialization module is needed.
 
 \subsection{How to add support for a new instrument}
+
+In order to use \flame\ with an instrumnt beyond those officially supported, it is necessary to write an initialization module. This can be built easily starting with the provided template \texttt{flame\_initialize\_template.pro}. The initialization module takes the \inp\ structure and as its only argument, and outputs a complete \fuel\ structure. The first step is always to create a default \fuel\ structure using the provided utility function. Then the initialization module must perform the following operations.
+
+\subsubsection{Information on the instrument}
+
+The appropriate \code{fuel.instrument} structure, containing a set of parameters such as the spectral resolution, spatial pixel scale, etc, must be created. The required parameters are listed in Table \ref{tab:instrument}. Nearly all instruments have one or more parameters that can be changed; in these cases it is important that the \code{instrument} structure contains the values that are correct for the specific data set. Typically these parameters can be derived from the FITS header of the first science frame. Note that the instrument structure can include any number of extra parameters that are not listed in the Table, such as the instrument name, the filters, the configuration of the dispersing element, etc. This is encouraged for two reasons: first, it makes it easier to write a clean initialization module, where the instrument structure is passed to different function to calculate additional quantities (see following points); secondly, it constitutes important archival information that can be easily read from the \fuel\ structure, which is always saved together with the main output of the pipeline.
+
+
+ % ******************************************************************************
+ \begin{table}
+ \caption{Required fields of the \code{fuel.instrument} structure \label{tab:instrument}}
+ \medskip
+ \footnotesize
+ \makebox[\textwidth][c]{
+   \begin{tabular}{ll}
+     \hline
+     \smallskip
+     Field    & Description \\
+     \hline
+     \smallskip
+pixel\_scale                & spatial pixel scale, in arcsec per pixel \\
+resolution\_slit1arcsec     & approximate spectral resolution R for a slit width of 1 arcsec \\
+gain                        & detector gain, in units of electrons per ADU \\
+readnoise                   & detector readnoise, in units of electrons \\
+linearity\_correction       & array with the polynomial coefficients describing the linearity correction \\
+default\_badpixel           & string with the name of the FITS file with the default bad pixel mask (can be 'none') \\
+default\_dark               & string with the name of the FITS file with the default dark (can be 'none') \\
+CHECK THESE! \\
+trim\_edges                 & (optional) integer indicating how many pixels must be discarded from each side of the detector \\
+ \hline
+ \end{tabular}
+ }
+ \end{table}
+ % ******************************************************************************
+
+
+
+\subsubsection{Information on the slits}
+
+The \code{fuel.slits} structure, containing information on each of the slits such as the target IDs, the approximate spatial location of the slit, and the approximate wavelength range, must be created. For longslit data, this is only one structure; for multi-slit data, \code{fuel.slits} is actually an array of structures with identical fields. The required fields are listed in Table \ref{tab:slits}.
+
+
+  % ******************************************************************************
+  \begin{table}
+  \caption{Required fields of each \code{fuel.slits} structure \label{tab:slits}}
+  \medskip
+  \footnotesize
+  \makebox[\textwidth][c]{
+    \begin{tabular}{lll}
+      \hline
+      \smallskip
+      Field  & Example    & Description \\
+      \hline
+      \smallskip
+ number                & 1              & unique integer number identifying the slit \\
+ name                  & 'galaxy-4385'  & string with target name (does not have to be unique) \\
+ skip                  & 0              & should always be zero; it can be later changed to one to skip this slit \\
+ PA                    & 0.0            & position angle (in deg, can be NaN) \\
+ approx\_bottom        & 680            & approximate $y$ pixel coordinate for the bottom of the slit (e.g., )  \\
+ approx\_top           & 740            & approximate $y$ pixel coordinate for the top of the slit  \\
+ approx\_target        & 710            & approximate $y$ pixel coordinate for the target in this slit \\
+ width\_arcsec         & 0.75           & slit width in arcsec (can be NaN)  \\
+ approx\_R             & 2500           & approximate spectral resolution R of this slit \\
+ range\_lambda0        & [1.15, 1.25]     & allowed range for the wavelength of the first pixel (in micron) \\
+ range\_delta\_lambda  & [0.0001, 0.0003] & allowed range for the wavelength scale (in micron per pixel) \\
+  \hline
+  \end{tabular}
+  }
+  \end{table}
+  % ******************************************************************************
+
+
+\subsubsection{Set up the line lists}
+
+The initialization module must also select the appropriate line list (for sky and/or arcs) and make local copies in the \code{intermediate} directory. The \code{data/} directory in the \flame\ distribution contains three sky line lists for low, medium, and high spectral resolutions (respectively $R\sim$1000, 3000, and 6000), covering from the optical to the $K$ band.
+
+
+\subsubsection{Edit the settings}
+
+Finally, the default values of \code{fuel.settings} can be edited, in order to optimize the data reduction for the specific instrument. Typically, only a minority of the settings (listed in Table \ref{tab:settings}) are changed during the initialization. Examples include the type of wavelength calibration (using sky lines or arcs), the order of the wavelength solution, the spectral resolutions used during the rough calibrations, etc. Note that the user can then modify each of the settings, including those already changed by the initialization module.
+
+
 
 
 
 
 
 \end{sloppypar}
-
-
-
 
 
 

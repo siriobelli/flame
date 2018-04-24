@@ -22,7 +22,7 @@
 \contentsline {subsection}{\numberline {4.4}\texttt {flame\_slitid}}{11}{subsection.4.4}
 \contentsline {subsection}{\numberline {4.5}\texttt {flame\_cutouts}}{13}{subsection.4.5}
 \contentsline {subsection}{\numberline {4.6}\texttt {flame\_spatialcal}}{13}{subsection.4.6}
-\contentsline {subsection}{\numberline {4.7}\texttt {flame\_roughwavecal}}{13}{subsection.4.7}
+\contentsline {subsection}{\numberline {4.7}\texttt {flame\_roughwavecal}}{14}{subsection.4.7}
 \contentsline {subsection}{\numberline {4.8}\texttt {flame\_findlines}}{15}{subsection.4.8}
 \contentsline {subsection}{\numberline {4.9}\texttt {flame\_wavecal}}{17}{subsection.4.9}
 \contentsline {subsection}{\numberline {4.10}\texttt {flame\_illumcorr}}{18}{subsection.4.10}
@@ -32,9 +32,13 @@
 \contentsline {subsection}{\numberline {4.14}\texttt {flame\_checkdata}}{22}{subsection.4.14}
 \contentsline {subsection}{\numberline {4.15}\texttt {flame\_extract}}{22}{subsection.4.15}
 \contentsline {subsection}{\numberline {4.16}Combining different data sets}{23}{subsection.4.16}
-\contentsline {section}{\numberline {5}Supported Instruments}{23}{section.5}
-\contentsline {subsection}{\numberline {5.1}LUCI at LBT}{24}{subsection.5.1}
-\contentsline {subsection}{\numberline {5.2}LRIS at Keck}{24}{subsection.5.2}
-\contentsline {subsection}{\numberline {5.3}MOSFIRE at Keck}{24}{subsection.5.3}
-\contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{24}{subsection.5.4}
-\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{24}{subsection.5.5}
+\contentsline {section}{\numberline {5}Supported Instruments}{24}{section.5}
+\contentsline {subsection}{\numberline {5.1}LUCI at LBT}{25}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}MOSFIRE at Keck}{25}{subsection.5.2}
+\contentsline {subsection}{\numberline {5.3}LRIS at Keck}{25}{subsection.5.3}
+\contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{26}{subsection.5.4}
+\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{26}{subsection.5.5}
+\contentsline {subsubsection}{\numberline {5.5.1}Information on the instrument}{26}{subsubsection.5.5.1}
+\contentsline {subsubsection}{\numberline {5.5.2}Information on the slits}{27}{subsubsection.5.5.2}
+\contentsline {subsubsection}{\numberline {5.5.3}Set up the line lists}{27}{subsubsection.5.5.3}
+\contentsline {subsubsection}{\numberline {5.5.4}Edit the settings}{27}{subsubsection.5.5.4}
