@@ -1,8 +1,11 @@
-PRO flame_util_check_wavecal, slit=slit, diagnostics=diagnostics
+PRO flame_util_check_wavecal, slit=slit, diagnostics=diagnostics, ascii_filename=ascii_filename
 ;
 ; Utility to plot information about the speclines and the quality of the wavelength
 ; solution for all cutouts relative to one slit. Used both in flame_wavecal and in
 ; flame_checkdata. Does not plot anything if arcs were used.
+;
+; If ascii_filename is specified, then a list of the lines used and the wavelength
+; residuals is written to a text file
 ;
 
 	; read in and stack together all the relevant info for each single speclines, for all frames
@@ -87,22 +90,38 @@ PRO flame_util_check_wavecal, slit=slit, diagnostics=diagnostics
 	cgplot, line_lambda, line_resid, psym=16, symsize=0.4, charsize=1, color='blk4', $
 		yra=resid_range, /ysty, ytit='residuals (angstrom)', xtit='wavelength (micron)'
 
-	; overplot median for each emission line
+	; identify different lines
   uniq_lambda = line_lambda[UNIQ(line_lambda, SORT(line_lambda))]
+	uniq_res_median = fltarr(n_elements(uniq_lambda))
+	uniq_res_mad = fltarr(n_elements(uniq_lambda))
+	uniq_detections = lonarr(n_elements(uniq_lambda))
+
+	; overplot median for each emission line
 	for i_line=0, n_elements(uniq_lambda)-1 do begin
 
 		; select speclines that belong to this frame
 		line_resid_0 = line_resid[ where(line_lambda eq uniq_lambda[i_line], /null) ]
+		uniq_detections[i_line] = n_elements(line_resid_0)
 
 		; find percentiles to plot
 		resid_sorted = line_resid_0[sort(line_resid_0)]
 		top68 = resid_sorted[0.84*n_elements(resid_sorted)]
 		bottom_68 = resid_sorted[0.16*n_elements(resid_sorted)]
+		uniq_res_median[i_line] = median(line_resid_0) ; i.e., 50th percentile
+
+		; find median absolute deviation
+		; NOTE: these are the deviations from the median of the residuals, not from zero!
+		uniq_res_mad[i_line] = median(abs( line_resid_0-uniq_res_median[i_line] ))
+
+		; overplot MAD
+		cgplot, [ uniq_lambda[i_line] ], [ uniq_res_median[i_line] ], $
+			/overplot, psym=3, color='blue', $
+			/err_clip, err_yhigh=uniq_res_mad[i_line], err_ylow=uniq_res_mad[i_line]
 
 		; overplot median and 68 percentile
-		cgplot, [ uniq_lambda[i_line] ], [ median(line_resid_0) ], $
-		/overplot, psym=16, color='red', $
-		/err_clip, err_yhigh=top68-median(line_resid_0), err_ylow=median(line_resid_0)-bottom_68
+		cgplot, [ uniq_lambda[i_line] ], [ uniq_res_median[i_line] ], $
+			/overplot, psym=16, color='red', $
+			/err_clip, err_yhigh=top68-uniq_res_median[i_line], err_ylow=uniq_res_median[i_line]-bottom_68
 
 	endfor
 
@@ -134,6 +153,14 @@ PRO flame_util_check_wavecal, slit=slit, diagnostics=diagnostics
 		width_sorted = line_width_0[sort(line_width_0)]
 		top68 = width_sorted[0.84*n_elements(width_sorted)]
 		bottom_68 = width_sorted[0.16*n_elements(width_sorted)]
+
+		; median absolute deviation
+		mad = median( abs(line_width_0-median(line_width_0)) )
+
+		; overplot MAD
+		cgplot, [ i_frame ], [ median(line_width_0) ], $
+		/overplot, psym=3, color='blue', $
+		/err_clip, err_yhigh=mad, err_ylow=mad
 
 		; overplot median and 68 percentile
 		cgplot, [ i_frame ], [ median(line_width_0) ], $
@@ -188,6 +215,13 @@ PRO flame_util_check_wavecal, slit=slit, diagnostics=diagnostics
 	cgplot, [-1, Nfr], [0, 0], /overplot, thick=3, linestyle=2
 
 
+	; write text file with line list
+	;----------------------------------------------------------------------------------
+
+	if n_elements(ascii_filename) EQ 1 then $
+		forprint, uniq_lambda, uniq_detections, uniq_res_median, uniq_res_mad, format='F12,I12,F12.4,F12.4', $
+     	textout=ascii_filename, $
+     	comment = '# wavelength    number of detections    median residual (angstrom)    scatter (MAD, angstrom)'
 
 
 END
