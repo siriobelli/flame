@@ -448,8 +448,20 @@ FUNCTION flame_initialize_template, input
 
   ; ------------------------   LINE LIST   -------------------------------------
 
-  ; choose the correct linelist
+  ; choose the correct sky line list - maybe it's always the same one
   linelist = fuel.util.flame_data_dir + 'linelist_sky_R3000.dat'
+
+  ; or maybe you need to calculate the typical spectral resolution of the data
+  spectral_res = median([slits.approx_r])
+
+  ; and then pick the most appropriate line list
+  if spectral_res LT 2000.0 then $
+    linelist = fuel.util.flame_data_dir + 'linelist_sky_R1000.dat'
+  if spectral_res GE 2000.0 and spectral_res LT 4500.0 then $
+    linelist = fuel.util.flame_data_dir + 'linelist_sky_R3000.dat'
+  if spectral_res GE 4500.0 then $
+    linelist = fuel.util.flame_data_dir + 'linelist_sky_R6000.dat'
+
 
   ; make a local copy of the line list
   file_copy, linelist, fuel.util.intermediate_dir, /overwrite
