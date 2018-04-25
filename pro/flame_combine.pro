@@ -429,7 +429,7 @@ PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, di
 		filenames = [filename_prefix_i + suffix[0], filename_prefix_j + suffix[1]]
 		outname =  'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
 			string(fuel.slits[j_slit].number, format='(I02)') + '.fits'
-		flame_util_combine_spectra, filenames, output_filename = output_dir + outname, /nan, /usenoise, /rectified_frame
+		flame_util_combine_spectra, filenames, output_filename = output_dir + outname, /nan, /useweights, /rectified_frame
 
 		; update the file name of the final *combined* output
 		fuel.slits[i_slit].output_combined_file = outname
