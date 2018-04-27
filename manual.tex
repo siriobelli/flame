@@ -96,7 +96,7 @@
 
 Although created specifically for the LUCI instrument at the Large Binocular Telescope, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. For simplicity, the present document describes in detail the reduction of LUCI data. Section \ref{sec:instruments} explains how to use \flame\ with other supported instruments, and how it is possible to implement support for new instruments. There is also a minimal version of \flame\ (see Section \ref{sec:minimal}) that can be used to run simple diagnostics on data from virtually any instrument, and that can be particularly useful while observing.
 
-If you made use of \flame\ in your work, please cite Belli, Contursi \& Davies (2017). For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}.
+If you made use of \flame\ in your work, please cite Belli, Contursi \& Davies (2017). For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}, or post a message on the GitHub page.
 
 
 % ***********************************************************************************************
@@ -377,7 +377,7 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     skysub\_reject\_loops         & 3             & skysub           & number of loops for outlier rejection \\
     skysub\_reject\_window        & 2.0           & skysub           & window for outlier rejection, in units of breakpoint separation \\
     interpolation\_method         & 'NaturalNeighbor'  & rectify     & method used to resample frames during rectification \\
-    frame\_weights                & 'None'        & combine          & weights to use for the final frmae stacking \\
+    frame\_weights                & 'None'        & combine          & weights to use for the final frame stacking \\
     combine\_sigma\_clip          & 2.0           & combine          & sigma-clipping to use when combining frames \\
     combine\_min\_framefrac       & 0.49          & combine          & minimum fraction of frames that must contribute to a pixel \\
     extract\_optimal              & 1             & extract          & use optimal extraction instead of boxcar extraction \\
@@ -496,7 +496,14 @@ The user can also choose to clean individual frames of cosmic rays using L.A.Cos
 
 \medskip
 \noindent
-\textbf{Outputs.} After all the calibrations have been applied, the corrected science frames are saved in the intermediate/frames/ directory. Each FITS file contains a second extension with the error spectrum, which is calculated as the combination of read-out noise and Poisson noise. The \code{master\_slitflat.fits} file is saved in the intermediate directory. Additional files may be saved, depending to the options used. These include the master flats and darks, the median pixel flat (which is a simple median stack, not normalized, and is used to obtain the master file), the bad pixel mask, and ps files showing the distribution of pixel values in the master flats and/or darks and the threshold used to identify the bad pixels. If present, the master pixel flat and bad pixel mask should be checked to make sure they look reasonable.
+\textbf{Outputs.} After all the calibrations have been applied, the corrected science frames are saved in the intermediate/frames/ directory. Each FITS file contains a second extension with the error spectrum, which is calculated as the combination of read-out noise and Poisson noise. The \code{master\_slitflat.fits} file is saved in the intermediate directory. Additional files may be saved, depending on the options used. These include the master flats and darks, the median pixel flat (which is a simple median stack, not normalized, and is used to obtain the master file), the bad pixel mask, and ps files showing the distribution of pixel values in the master flats and/or darks and the threshold used to identify the bad pixels. If present, the master pixel flat and bad pixel mask should be checked to make sure they look reasonable.
+
+
+\medskip
+\noindent
+\textbf{Note.} The flat field frames are never dark-subtracted. For a proper dark-subtraction, an additional set of dark frames matching the exposure time of the flat field (which is generally different from the exposure time of the science frames) is needed. In order to have a simple and user-friendly pipeline, \flame\ does not perform this extra step; however users can easily dark-subtract each flat field frame before feeding them to \flame. This is generally not needed because most modern detectors have a low dark current, and as long as the counts in the flat fields are high, this correction is negligible.
+
+In order to allow users to pre-process the calibration frames, the counts in the flat field are normalized and the uncertainty on the observed flux is not calculated nor propagated to the reduced data. Users need to make sure that the counts in the flat field frames are high enough so that the Poisson error in the master flat is negligible compared to the uncertainty in the data.
 
 
 \begin{figure}[htbp]
@@ -753,11 +760,14 @@ Each of these directories contain a number of files. For multi-slit data, the fi
 
 For each slit, the science-grade reduced spectra are saved as individual FITS files. \code{slitXX*\_A.fits} is the stack of all the A frames, and is the only type of file that is always produced independently of the type of observations and nodding strategy. When nodding, then \code{slitXX*\_B.fits}, the stack of all the B frames, is also saved. Additionally, the difference of these two stacked is saved as \code{slitXX*\_A-B.fits} and \code{slitXX*\_B-A.fits}. The latter is simply the opposite of the former, and is saved only in order to streamline the following step. For on-slit nodding, these frames contain the flux of the target split into a negative and a positive trace. Therefore the last step is to add the $A-B$ to the shifted $B-A$ in order to make the final spectrum. This is saved as \code{slitXX+slitXX.fits}, and shows the characteristic negative-positive-negative pattern of on-slit observations. Note that the flux is entirely contained in the positive trace; the two negative traces do not contain additional data as their sum is identical to the positive trace. If, instead, the slits are paired during the observations, so that the target falls in slitXX during the A frame and in slitYY in the B frame, then the final output will be \code{slitXX+slitYY.fits}, and will contain only one positive trace.
 
-Each of the science-grade spectra is a FITS file with six extensions, that can be read for example in IDL using \code{mrdfits}. This is the content of the extensions:
+Each of the science-grade spectra is a FITS file with six extensions, that can be read for example in IDL using \code{mrdfits}, and can be visualized calling ds9 with the option \code{-multiframe}. This is the content of the extensions:
 \begin{enumerate}
-\item one
-\item two
-\item etc
+\item flux (in electrons per second)
+\item theoretical error (in electrons per second)
+\item empirical error (in electrons per second)
+\item model of sky flux (in electrons per second)
+\item map of exposure time (in seconds)
+\item weight map (with the default settings this corresponds to the number of frames that were combined, at each pixel position)
 \end{enumerate}
 
 
@@ -913,7 +923,7 @@ readnoise                   & detector readnoise, in units of electrons \\
 linearity\_correction       & array with the polynomial coefficients describing the linearity correction \\
 default\_badpixel           & string with the name of the FITS file with the default bad pixel mask (can be 'none') \\
 default\_dark               & string with the name of the FITS file with the default dark (can be 'none') \\
-CHECK THESE! \\
+%%% CHECK THESE! \\
 trim\_edges                 & (optional) integer indicating how many pixels must be discarded from each side of the detector \\
  \hline
  \end{tabular}
