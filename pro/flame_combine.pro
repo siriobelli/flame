@@ -420,7 +420,7 @@ PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, di
 		 	'-' + fuel.slits[j_slit].name
 
 		; make sure that the stacked A-B has positive signal
-		if dithering_length GT 0 then $
+		if dithering_length LT 0 then $
 			suffix = ['_A-B.fits', '_B-A.fits'] $
 		else $
 			suffix = ['_B-A.fits', '_A-B.fits']
