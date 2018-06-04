@@ -551,6 +551,9 @@ FUNCTION flame_initialize_luci, input
   ; no need to run L.A.Cosmic on individual frames
   fuel.settings.clean_individual_frames = 0
 
+  ; usually AB nodding is used, which means that the dark is automatically subtracted
+  fuel.settings.darksub_data = 0
+
   ; use the OH sky emission lines to trace the slit edges
   fuel.settings.trace_slit_with_emlines = 1
 
