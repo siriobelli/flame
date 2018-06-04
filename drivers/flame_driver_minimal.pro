@@ -11,7 +11,7 @@ pixel_scale = 0.18
 ; Copy this file in a new directory,
 ; and then run it in IDL. You can do this either by copying each line
 ; of code on an interactive IDL session, or by running in IDL:
-; .run flame_driver_luci
+; .run flame_driver_minimal
 ;
 
   ; suppress harmless messages (e.g., module compilation)
