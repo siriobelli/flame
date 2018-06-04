@@ -92,11 +92,11 @@
 \section{Introduction}
 \label{sec:introduction}
 
-\flame\ is a pipeline for reducing near-infrared and optical multi-object spectroscopic data, written in IDL. The pipeline design and the algorithms used are described in Belli, Contursi \& Davies (2017, arXiv:1710.05924), which users should read before reading the present manual.
+\flame\ is a pipeline for reducing near-infrared and optical multi-object spectroscopic data, written in IDL. The pipeline design and the algorithms used are described in Belli, Contursi \& Davies (2018, arXiv:1710.05924); users should read that paper before reading the present manual.
 
-Although created specifically for the LUCI instrument at the Large Binocular Telescope, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. For simplicity, the present document describes in detail the reduction of LUCI data. Section \ref{sec:instruments} explains how to use \flame\ with other supported instruments, and how it is possible to implement support for new instruments. There is also a minimal version of \flame\ (see Section \ref{sec:minimal}) that can be used to run simple diagnostics on data from virtually any instrument, and that can be particularly useful while observing.
+Although created specifically for the LUCI instrument at the Large Binocular Telescope, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. For simplicity, the present document describes in detail the reduction of LUCI data. Section \ref{sec:instruments} explains how to use \flame\ with other supported instruments, and how it is possible to implement support for new instruments. There is also a minimal version of \flame\ (see Section \ref{sec:minimal}) that can be used to run simple diagnostics on data from virtually any instrument, which is particularly useful while observing.
 
-If you made use of \flame\ in your work, please cite Belli, Contursi \& Davies (2017). For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}, or post a message on the GitHub page.
+If you made use of \flame\ in your work, please cite Belli, Contursi \& Davies (2018). For comments, bug reports, or suggestions please contact \texttt{sirio@mpe.mpg.de}, or post a message on the GitHub page.
 
 
 % ***********************************************************************************************
@@ -130,7 +130,7 @@ Other third-party routines used by \flame\ are included in the distribution, in 
 
 \subsection{Download}
 
-Download \flame\ from \url{http://siriobelli.github.io/flame/}. The parent directory \filename{flame/} contains the IDL code, documentations, and data needed to run the pipeline. You can either save this in the directory where you keep your IDL code, or save it somewhere else and then add the \filename{flame/} directory to the IDL path. No other step is necessary.
+Download \flame\ from \url{http://siriobelli.github.io/flame/}. The parent directory \filename{flame/} contains the IDL code, documentation, and data needed to run the pipeline. You can either save this in the directory where you keep your IDL code, or save it somewhere else and then add the \filename{flame/} directory to the IDL path. No other step is necessary.
 
 
 
@@ -152,9 +152,9 @@ Download \flame\ from \url{http://siriobelli.github.io/flame/}. The parent direc
 
 Create a new, empty directory that will be used for the reduction of a data set. Then:
 \begin{itemize}
-\item Copy to this directory the appropriate driver file (for LUCI observations this would be \filename{flame\_driver\_luci.pro}) from the \filename{flame/drivers/} directory. If you want to see all the advanced options, use the ``complete'' driver file instead (\filename{flame\_driver\_complete.pro}).
+\item Copy to this directory the appropriate driver file (for LUCI observations this would be \filename{flame\_driver\_luci.pro}) from the \filename{flame/drivers/} directory.
 \item Create a text file (e.g., \filename{science.txt}) with, in each line, the full name, including the absolute path, of a raw science frame (either FITS files or gzipped FITS files).
-\item \emph{(optional)} Create additional text files with the names of the calibration frames (e.g., \filename{darks.txt}, \filename{flats.txt}, etc.)
+\item \emph{(optional)} Create additional text files containing the names of the calibration frames (e.g., \filename{darks.txt}, \filename{flats.txt}, etc.)
 \end{itemize}
 
 The data reduction is controlled entirely via the driver file. Open the local copy with a text editor and have a look at the code. First the input parameters are set, the pipeline is then initialized, and finally the actual data reduction is run.
@@ -163,7 +163,7 @@ The first step in the driver file creates the \inp\ structure:
 \begin{lstlisting}
  input = flame_create_input()
 \end{lstlisting}
-and the following steps populate the fields in the input structure. The data reduction is set up by modifying few lines of code in the driver file.
+and the following steps populate the fields in the input structure. The data reduction is set up by modifying a few lines of code in the driver file.
 
 \subsubsection{Science frames}
 We start by specifying the name of the file containing the science frames; for example:
@@ -184,14 +184,14 @@ It is always recommended to place a slit on a relatively bright star (hereafter 
 input.star_y_A = 520
 input.star_y_B = 560
 \end{lstlisting}
-These coordinates do not need to be exact. If the trace of the reference star is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the nodding pattern must be specified manually (see Section \ref{sec:manual_dithering}). If no AB nodding is performed, the B star position should be set to zero.
+These coordinates do not need to be exact. If the trace of the reference star is very faint in a single frame, a simple A-B subtraction is generally sufficient for a visual detection. When no reference star is available, the nodding pattern, if present, must be specified manually (see Section \ref{sec:manual_dithering}). If no AB nodding is performed, the B star position should be set to zero.
 
 \subsubsection{Slits to be reduced}
 While the default behavior is to reduce all the slits in the mask, it is sometimes preferable to reduce only one slit, for example to obtain a fast reduction for one representative object while observing. This can be achieved by specifying:
 \begin{lstlisting}
 input.reduce_only_oneslit = 2
 \end{lstlisting}
-where in this case we would get the reduction of only the second slit. The default value is zero which means that all the slits will be reduced.
+where in this case we would get the reduction of only the second slit. The default value is zero which means that all slits will be reduced.
 
 \subsubsection{Longslit observations}
 Finally, to reduce longslit observations, it is sufficient to set the longslit flag:
@@ -202,7 +202,7 @@ Since the longslit typically spans the whole detector in the vertical range, the
 \begin{lstlisting}
 input.longslit_edge = [1050, 1350]
 \end{lstlisting}
-If \code{longslit\_edge} is set to [0,0], the default is to reduce the full frame excluding 10\% of pixels at the bottom and 10\% at the top. For example, for a frame that is 2048 pixels tall, this would correspond to the [205, 1843] range. The spatial distortion is not rectified for longslit data, because it cannot be traced using the slit edges.
+If \code{longslit\_edge} is set to [0,0], the default is to reduce the full frame excluding 10\% of pixels at the bottom and 10\% at the top. For example, for a frame that is 2048 pixels tall, this would correspond to the [205, 1843] range.
 
 
 \subsection{Optional input}
@@ -212,8 +212,6 @@ The \inp\ structure contains additional fields that can be used to specify optio
 help, input
 \end{lstlisting}
 in the interactive IDL session.
-
-The extended driver file \filename{flame\_driver\_complete.pro} includes all the possible types of input and settings: the relevant lines can be copied and pasted in the local copy of the driver.
 
 % ******************************************************************************
 \begin{table}
@@ -244,7 +242,7 @@ arc\_filelist   		  & 'none' 				& name of ASCII file containing the list of lam
 arc\_pixelshift  		  & 0      				& vertical pixel shift required to align the arc with the science frames	\\
 slit\_position\_file  & 'none'        & name of ASCII file containing the approximate y-coordinates of the slit edges \\
 dither\_file       		& 'none' 				& name of ASCII file containing the list of dither positions \\
-max\_slitwidth\_arcsec & 0          & threshold value of the slit width to identify the alignment boxes \\
+max\_slitwidth\_arcsec & 0          & threshold value of the slit width used to identify the alignment boxes \\
 intermediate\_dir		 & 'intermediate/'		& directory that will contain the intermediate products \\
 output\_dir				   & 'output/'			& directory that will contain the final output \\
 \hline
@@ -281,13 +279,20 @@ input.slit_position_file = 'slit_edges.reg'
 The easiest way to generate this file is to open the slit flat field (or a science frame) with ds9, make a simple circular region at each slit edge (both top and bottom edges for each slit must be specified), and save the regions in a file with format 'XY' and coordinate system 'Image'.
 
 
-
 \subsubsection{Dithering positions}
 \label{sec:manual_dithering}
 It is advisable to always have a reference star on the multi-slit mask. When this is not possible, \flame\ cannot measure the nodding and dithering offset for each frame, and this pattern needs to be saved in an ASCII file. The file must contain a number of lines equal to the number of science frames. Each line will have the value of the vertical offset, \textbf{in pixels} (note that earlier versions of \flame\ required the input in arcseconds instead), corresponding to that frame; for example 25, -25, 25, -25, etc. Then the file name needs to be input in the \inp\ structure:
 \begin{lstlisting}
 input.dither_file = 'dither.txt'
 \end{lstlisting}
+
+
+\subsubsection{Alignment Box Identification}
+Each slitmask has typically a few wide slits which are used for alignment. \flame\ ranks the slits by their width, and discards all those with the largest width, assuming those are the alignment boxes. However, it is possible that the alignment boxes have different width, in this case the user needs to specify a threshold so that the alignment boxes can be identified and discarded. For example, if all science slits in a mask are narrower than $2"$, one can specify:
+\begin{lstlisting}
+input.max_slitwidth_arcsec = 2.0
+\end{lstlisting}
+
 
 \subsubsection{Directories}
 Finally, it is possible to specify the directories for intermediate and final outputs:
@@ -301,7 +306,7 @@ If these directories do not exist, they will be created by \flame. Note that the
 
 \subsection{Initialization}
 
-The data reduction in \flame\ consists of a series of steps, which are represented by individual routines. The information is carried from one routine to the next via the use of only one structure, named \fuel, which contains all the input parameters set by the user, together with all the internal variables.
+The data reduction in \flame\ consists of a series of steps, which are represented by individual routines. The information is carried from one routine to the next via a structure, named \fuel, which contains all the input parameters set by the user, together with all the internal variables.
 
 Once the \inp\ fields have been specified, the \fuel\ structure must be created:
 \begin{lstlisting}
@@ -337,9 +342,9 @@ After the initialization, the user has complete control over the \texttt{fuel.se
              & (for LUCI)      &           & \\
     \hline
     \smallskip
-    sky\_emission\_filename       & -             & roughwavecal     & file with model spectrum of sky emission \\
-    linelist\_sky\_filename       & -             & (many)           & file with list of sky emission lines \\
-    linelist\_arcs\_filename      & -             & (many)           & file with list of arcs emission lines \\
+    sky\_emission\_filename       &               & (many)           & file with model spectrum of sky emission \\
+    linelist\_sky\_filename       &               & (many)           & file with list of sky emission lines \\
+    linelist\_arcs\_filename      &               & (many)           & file with list of arcs emission lines \\
     star\_x\_range 			          & [1000, 1200]  & diagnostics   	 & range of pixel x-coordinate to consider for the reference star trace \\
     star\_y\_window               & $\simeq$4 arcsec & diagnostics   & range of pixel y-coordinate to consider for the reference star trace \\
     clean\_individual\_frames     & 0             & calibrations     & identify and mask cosmic rays in each frame \\
@@ -348,12 +353,12 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     badpix\_sigma                 & 7.0           & calibrations     & sigma clipping to identify bad pixels in the master dark frame \\
     badpix\_flatcorrection        & 0.20          & calibrations     & values beyond this deviation in the master pixel flat are bad pixels \\
     flatfield\_data               & 1             & calibrations     & divide the science data by the master pixel flat field (if provided) \\
-    darksub\_data                 & 1             & calibrations     & subtract the master dark (if provided) from the science data \\
-    trace\_slit\_with\_emlines    & 1             & slitid           & use arcs or sky lines to trace slit edges \\
+    darksub\_data                 & 0             & calibrations     & subtract the master dark (if provided) from the science data \\
+    trace\_slit\_with\_emlines    & 1             & slitid           & use emission lines (e.g., from sky or arcs) to trace slit edges \\
     trace\_slit\_xmargin          & 20            & slitid           & horizontal margin (in pixels) to consider around each emission line \\
     trace\_slit\_ymargin          & 12            & slitid           & vertical margin (in pixels) to consider beyond the expected slit edge \\
     trace\_slit\_polydegree       & 2             & slitid           & degree of the polynomial used to describe the slit edge \\
-    trace\_longslit               & 0             & slitid           & approximate vertical position of a bright trace, for the rectification \\
+    trace\_longslit               & 0             & slitid           & approximate vertical position of a bright trace (used for the rectification) \\
     trim\_slit                    & [0, 0]        & cutouts          & limits, in x pixel coordinates, used to trim the cutouts \\
     spatial\_resampling           & 1.0           & spatialcal       & resampling factor for the spatial direction \\
     roughwavecal\_R               & [500, 1000, 3000] & roughwavecal & spectral resolution to be used for the rough wavelength calibration \\
@@ -361,14 +366,14 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     roughwavecal\_split           & 0             & roughwavecal     & in the last step of rough\_wavecal, split the wavelength range in two \\
     findlines\_stack\_rows        & 0             & findlines        & number of pixel rows to stack when identifying arcs or sky lines \\
     findlines\_poly\_degree       & 5             & findlines        & polynomial degree for the row-by-row wavelength solution \\
-    findlines\_Nmin\_lines        & 6             & findlines        & minimum number of lines needed to consider a pixel row \\
+    findlines\_Nmin\_lines        & 6             & findlines        & number of lines below which a pixel row is discarded \\
     findlines\_linefit\_window    & 6.0           & findlines        & window used for Gaussian fitting, in units of expected line width \\
     wavesolution\_order\_x        & 3             & wavecal          & polynomial degree for the wavelength solution, along x \\
     wavesolution\_order\_y        & 2             & wavecal          & polynomial degree for the wavelength solution, along y \\
     wavecal\_sigmaclip            & 3.0           & wavecal          & rejection threshold when fitting the 2D wavelength solution \\
     shift\_arcs                   & 1             & wavecal          & apply wavelength shift calculated from sky lines to the arcs solution \\
     shift\_arcs\_Nmin\_lines      & 1             & wavecal          & minimum number of sky lines needed for shifting the arcs solution \\
-    illumination\_correction      & 1             & illumcorr        & apply illumination correction derived from sky lines \\
+    illumination\_correction      & 1             & illumcorr        & apply illumination correction to science frames \\
     skysub                        & 1             & skysub           & construct and subtract a model of the sky \\
     skysub\_plot                  & 0             & skysub           & while fitting the sky, show pop-up windows with the B-spline fit \\
     skysub\_plot\_range           & [0.4, 0.6]    & skysub           & fractional range of the x axis to plot during sky subtraction \\
@@ -414,18 +419,17 @@ Once the first part of the driver file has been edited, the data reduction can b
 in the IDL command line (assuming the driver file is located in the current directory). The \code{.run} command executes a file as an IDL \emph{main program}, which means that the driver file must have an END statement but does not need a PRO statement at the beginning, as opposed to regular routines\footnote{Technically, the driver file can also be executed as a \emph{batch file}, by running \code{idl flame\_driver\_luci.pro} at the UNIX command line, although this will produce an error message when the END statement is encountered. This method is discouraged because if one of the modules produces an error, the execution will not stop but will continue with the remaining modules, making it difficult for the user to understand the source of the problem.}.
 \end{enumerate}
 
-The driver file contains fourteen steps or modules. Every module is an IDL routine whose name starts with \code{flame\_} and which is saved in a .pro file with the same name in the directory \filename{flame/pro/}. All modules accept (and require) only one argument, which is the \fuel\ structure, so that the IDL code for each module looks the same:
+The driver file contains fifteen steps or modules. Every module is an IDL routine whose name starts with \code{flame\_} and which is saved in a .pro file with the same name in the directory \filename{flame/pro/}. All modules accept (and require) only one argument, which is the \fuel\ structure, so that the IDL code for each module looks the same:
 \begin{lstlisting}
 flame_modulename, fuel
 \end{lstlisting}
 
-Every module edits the fuel structure and/or outputs files in the intermediate directory. Only the last three modules, which create the final results, save the output files in the output directory. Furthermore, at the end of each module the \fuel\ structure is saved as an IDL save file in the intermediate directory, so that the execution can be interrupted and restarted, even in a new IDL session, as long as the \fuel\ structure is loaded with, e.g.:
+Every module edits the fuel structure and/or outputs files in the intermediate directory. Only the last three modules, which create the final results, save the output files in the output directory. Furthermore, at the end of each module the \fuel\ structure is saved as an IDL save file in the intermediate directory, so that the execution can be interrupted and restarted, even in a new IDL session, as long as the \fuel\ structure is loaded with
 \begin{lstlisting}
 restore, 'intermediate/fuel.sav'
 \end{lstlisting}
 
-
-In this section for each module we briefly describe its goal, the output produced, and how to solve potential issues.
+In this section we describe the goal, output products, and potential issues for each step in the data reduction. For each module we also discuss the available settings; however it is preferable to set all the options before starting the data reduction, i.e., immediately after the initialization.
 
 \medskip
 \noindent

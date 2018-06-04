@@ -1,44 +1,45 @@
-\contentsline {section}{\numberline {1}Introduction}{2}{section.1}
-\contentsline {section}{\numberline {2}Installation}{2}{section.2}
-\contentsline {subsection}{\numberline {2.1}Requirements}{2}{subsection.2.1}
-\contentsline {subsection}{\numberline {2.2}Download}{2}{subsection.2.2}
-\contentsline {section}{\numberline {3}Setting Up the Data Reduction}{3}{section.3}
-\contentsline {subsection}{\numberline {3.1}Basic input}{3}{subsection.3.1}
-\contentsline {subsubsection}{\numberline {3.1.1}Science frames}{3}{subsubsection.3.1.1}
-\contentsline {subsubsection}{\numberline {3.1.2}Nodding}{3}{subsubsection.3.1.2}
-\contentsline {subsubsection}{\numberline {3.1.3}Reference star}{3}{subsubsection.3.1.3}
-\contentsline {subsubsection}{\numberline {3.1.4}Slits to be reduced}{4}{subsubsection.3.1.4}
-\contentsline {subsubsection}{\numberline {3.1.5}Longslit observations}{4}{subsubsection.3.1.5}
-\contentsline {subsection}{\numberline {3.2}Optional input}{4}{subsection.3.2}
+\contentsline {section}{\numberline {1}Introduction}{3}{section.1}
+\contentsline {section}{\numberline {2}Installation}{3}{section.2}
+\contentsline {subsection}{\numberline {2.1}Requirements}{3}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Download}{3}{subsection.2.2}
+\contentsline {section}{\numberline {3}Setting Up the Data Reduction}{4}{section.3}
+\contentsline {subsection}{\numberline {3.1}Basic input}{4}{subsection.3.1}
+\contentsline {subsubsection}{\numberline {3.1.1}Science frames}{4}{subsubsection.3.1.1}
+\contentsline {subsubsection}{\numberline {3.1.2}Nodding}{4}{subsubsection.3.1.2}
+\contentsline {subsubsection}{\numberline {3.1.3}Reference star}{4}{subsubsection.3.1.3}
+\contentsline {subsubsection}{\numberline {3.1.4}Slits to be reduced}{5}{subsubsection.3.1.4}
+\contentsline {subsubsection}{\numberline {3.1.5}Longslit observations}{5}{subsubsection.3.1.5}
+\contentsline {subsection}{\numberline {3.2}Optional input}{5}{subsection.3.2}
 \contentsline {subsubsection}{\numberline {3.2.1}Calibration frames}{5}{subsubsection.3.2.1}
-\contentsline {subsubsection}{\numberline {3.2.2}Slit edge positions}{5}{subsubsection.3.2.2}
-\contentsline {subsubsection}{\numberline {3.2.3}Dithering positions}{6}{subsubsection.3.2.3}
-\contentsline {subsubsection}{\numberline {3.2.4}Directories}{6}{subsubsection.3.2.4}
-\contentsline {subsection}{\numberline {3.3}Initialization}{6}{subsection.3.3}
-\contentsline {section}{\numberline {4}Running the Data Reduction}{7}{section.4}
-\contentsline {subsection}{\numberline {4.1}\texttt {flame\_diagnostics}}{9}{subsection.4.1}
-\contentsline {subsection}{\numberline {4.2}\texttt {flame\_quickstack}}{10}{subsection.4.2}
-\contentsline {subsection}{\numberline {4.3}\texttt {flame\_calibrations}}{11}{subsection.4.3}
-\contentsline {subsection}{\numberline {4.4}\texttt {flame\_slitid}}{12}{subsection.4.4}
-\contentsline {subsection}{\numberline {4.5}\texttt {flame\_cutouts}}{13}{subsection.4.5}
-\contentsline {subsection}{\numberline {4.6}\texttt {flame\_spatialcal}}{14}{subsection.4.6}
-\contentsline {subsection}{\numberline {4.7}\texttt {flame\_roughwavecal}}{14}{subsection.4.7}
-\contentsline {subsection}{\numberline {4.8}\texttt {flame\_findlines}}{15}{subsection.4.8}
-\contentsline {subsection}{\numberline {4.9}\texttt {flame\_wavecal}}{16}{subsection.4.9}
-\contentsline {subsection}{\numberline {4.10}\texttt {flame\_illumcorr}}{19}{subsection.4.10}
-\contentsline {subsection}{\numberline {4.11}\texttt {flame\_skysub}}{19}{subsection.4.11}
-\contentsline {subsection}{\numberline {4.12}\texttt {flame\_rectify}}{20}{subsection.4.12}
-\contentsline {subsection}{\numberline {4.13}\texttt {flame\_combine}}{21}{subsection.4.13}
-\contentsline {subsection}{\numberline {4.14}\texttt {flame\_checkdata}}{22}{subsection.4.14}
-\contentsline {subsection}{\numberline {4.15}\texttt {flame\_extract}}{23}{subsection.4.15}
-\contentsline {subsection}{\numberline {4.16}Combining different data sets}{24}{subsection.4.16}
-\contentsline {section}{\numberline {5}Supported Instruments}{25}{section.5}
-\contentsline {subsection}{\numberline {5.1}LUCI at LBT}{26}{subsection.5.1}
-\contentsline {subsection}{\numberline {5.2}MOSFIRE at Keck}{26}{subsection.5.2}
-\contentsline {subsection}{\numberline {5.3}LRIS at Keck}{26}{subsection.5.3}
-\contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{27}{subsection.5.4}
-\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{27}{subsection.5.5}
-\contentsline {subsubsection}{\numberline {5.5.1}Information on the instrument}{27}{subsubsection.5.5.1}
-\contentsline {subsubsection}{\numberline {5.5.2}Information on the slits}{27}{subsubsection.5.5.2}
-\contentsline {subsubsection}{\numberline {5.5.3}Set up the line lists}{28}{subsubsection.5.5.3}
-\contentsline {subsubsection}{\numberline {5.5.4}Edit the settings}{28}{subsubsection.5.5.4}
+\contentsline {subsubsection}{\numberline {3.2.2}Slit edge positions}{6}{subsubsection.3.2.2}
+\contentsline {subsubsection}{\numberline {3.2.3}Dithering positions}{7}{subsubsection.3.2.3}
+\contentsline {subsubsection}{\numberline {3.2.4}Alignment Box Identification}{7}{subsubsection.3.2.4}
+\contentsline {subsubsection}{\numberline {3.2.5}Directories}{7}{subsubsection.3.2.5}
+\contentsline {subsection}{\numberline {3.3}Initialization}{7}{subsection.3.3}
+\contentsline {section}{\numberline {4}Running the Data Reduction}{8}{section.4}
+\contentsline {subsection}{\numberline {4.1}\texttt {flame\_diagnostics}}{10}{subsection.4.1}
+\contentsline {subsection}{\numberline {4.2}\texttt {flame\_quickstack}}{11}{subsection.4.2}
+\contentsline {subsection}{\numberline {4.3}\texttt {flame\_calibrations}}{12}{subsection.4.3}
+\contentsline {subsection}{\numberline {4.4}\texttt {flame\_slitid}}{13}{subsection.4.4}
+\contentsline {subsection}{\numberline {4.5}\texttt {flame\_cutouts}}{14}{subsection.4.5}
+\contentsline {subsection}{\numberline {4.6}\texttt {flame\_spatialcal}}{15}{subsection.4.6}
+\contentsline {subsection}{\numberline {4.7}\texttt {flame\_roughwavecal}}{15}{subsection.4.7}
+\contentsline {subsection}{\numberline {4.8}\texttt {flame\_findlines}}{16}{subsection.4.8}
+\contentsline {subsection}{\numberline {4.9}\texttt {flame\_wavecal}}{17}{subsection.4.9}
+\contentsline {subsection}{\numberline {4.10}\texttt {flame\_illumcorr}}{20}{subsection.4.10}
+\contentsline {subsection}{\numberline {4.11}\texttt {flame\_skysub}}{20}{subsection.4.11}
+\contentsline {subsection}{\numberline {4.12}\texttt {flame\_rectify}}{21}{subsection.4.12}
+\contentsline {subsection}{\numberline {4.13}\texttt {flame\_combine}}{22}{subsection.4.13}
+\contentsline {subsection}{\numberline {4.14}\texttt {flame\_checkdata}}{24}{subsection.4.14}
+\contentsline {subsection}{\numberline {4.15}\texttt {flame\_extract}}{24}{subsection.4.15}
+\contentsline {subsection}{\numberline {4.16}Combining different data sets}{25}{subsection.4.16}
+\contentsline {section}{\numberline {5}Supported Instruments}{26}{section.5}
+\contentsline {subsection}{\numberline {5.1}LUCI at LBT}{27}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}MOSFIRE at Keck}{27}{subsection.5.2}
+\contentsline {subsection}{\numberline {5.3}LRIS at Keck}{27}{subsection.5.3}
+\contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{28}{subsection.5.4}
+\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{28}{subsection.5.5}
+\contentsline {subsubsection}{\numberline {5.5.1}Information on the instrument}{28}{subsubsection.5.5.1}
+\contentsline {subsubsection}{\numberline {5.5.2}Information on the slits}{29}{subsubsection.5.5.2}
+\contentsline {subsubsection}{\numberline {5.5.3}Set up the line lists}{29}{subsubsection.5.5.3}
+\contentsline {subsubsection}{\numberline {5.5.4}Edit the settings}{29}{subsubsection.5.5.4}
