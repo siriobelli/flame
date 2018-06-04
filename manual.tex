@@ -447,25 +447,25 @@ The first step produces important diagnostics which will be used by other module
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=0.9\textwidth]{diagnostics}
-\caption{Example of diagnostic plots. From the top: Flux of the star trace, normalized by the median value; FWHM in arcsec; vertical position of the trace in A frames; vertical position of the trace in the B frames; airmass value read from the FITS header.}
+\caption{Example of diagnostic plots. From the top: Flux of the star trace, normalized by the median value; FWHM in arcsec; vertical position of the trace in the A frames; vertical position of the trace in the B frames; airmass value read from the FITS header.}
 \label{fig:diagnostics}
 \end{figure}
 
-Starting with the y coordinates specified by the user in \code{fuel.startrace\_y\_pos}, this module detects the reference star position on each frame, and identifies which frames belong to the $A$ and which to the $B$ position (and assigns an $X$ position when no star trace is found). Then, for each frame a Gaussian profile is fit to the star trace, from which the flux, vertical position and FWHM are measured. In addition, the airmass value is read from the FITS header of each frame.
+Starting with the y coordinates specified by the user in the \inp\ structure, this module detects the reference star position on each frame, and identifies which frames belong to the $A$ and which to the $B$ position (and assigns an $X$ position when no star trace is found). Then, for each frame a Gaussian profile is fit to the star trace, from which the flux, vertical position and FWHM are measured. In addition, the airmass value is read from the FITS header of each frame.
 
-All these quantities are saved in the substructure \code{fuel.diagnostics} and plotted as a function of the frame number in the file \filename{diagnostics.ps}. One example of such file is shown in Figure \ref{fig:diagnostics}. Because of the dithering, the vertical position is shown in different panels for the $A$ and the $B$ frames.
+All these quantities are saved in the substructure \code{fuel.diagnostics} and plotted as a function of the frame number in the file \filename{diagnostics.ps}. One example of such file is shown in Figure \ref{fig:diagnostics}. Because of nodding, the vertical position is shown in different panels for the $A$ and the $B$ frames.
 
 The diagnostic plots can be used to judge the trend of transmission (including the effect of cloud cover), seeing, and drift. In addition to help the user make informed decisions while observing, these measurements are also useful to identify the bad frames that should be excluded from the final data reduction.
 
 \medskip
 \noindent
-\textbf{Outputs.} The main output file is \filename{diagnostics.ps}. The same information is also available in tabular form in \filename{diagnostics.txt}. It is a good idea to check that each frame has been assigned to the correct nodding position, and that the measured seeing, flux variation, and position are reasonable. If one or more frames have unexpected values, additional plots written to \filename{startrace\_identify\_AB.ps} and \filename{startraces.ps} should be checked.
+\textbf{Outputs.} The main output file is \filename{diagnostics.ps}; the same information is also available in tabular form in \filename{diagnostics.txt} (these two files are also saved to the output directory, for reasons explained in Section \ref{sec:final_output}).  It is a good idea to check that each frame has been assigned to the correct nodding position, and that the measured seeing, flux variation, and position are reasonable. If one or more frames have unexpected values, additional plots written to \filename{startrace\_identify\_AB.ps} and \filename{startraces.ps} should be checked.
 
 \medskip
 \noindent
-\textbf{Troubleshooting.} If some of the fits to the stellar trace fail, there are three things that the user can do to improve the fits:
+\textbf{Troubleshooting.} If some of the fits to the stellar trace fail, there are three things that the user can do:
 \begin{enumerate}
-\item The input values (\code{input.star\_y\_A} and \code{input.star\_y\_B}) can be slightly adjusted. Particularly if the first frame was used as a reference, and there is substantial drift among frames, choosing a value that is more representative of all frames can help.
+\item The input values (\code{input.star\_y\_A} and \code{input.star\_y\_B}) can be slightly adjusted. Particularly if the first frame was used as a reference, and there is substantial drift among frames, choosing a value that is more representative of all frames can help. When the trace is tilted with respect to the detector rows, it should be checked that the vertical position of the trace is measured at the correct x position (see next point).
 \item The stellar trace is extracted from a relatively narrow range of $x$ pixels, which can be changed via \texttt{settings.star\_x\_range}. Sometimes the stellar spectrum only covers part of the detector, for example if the slit was placed at the left or right edge of the mask. If sky lines are strong, it is advisable to choose a relatively clear, narrow range; if the star is very faint, it may be better to use a wider range.
 \item The vertical window used to extract the stellar profile can also be changed, via \texttt{settings.star\_y\_window}. The stellar trace should be within this window in all frames, so a wider window should be used when dealing with large drift or dithering. Sometimes fits can fail because the spatial profile is disturbed by the presence of the slit edge; in these cases the size of the window should be decreased.
 \end{enumerate}
@@ -475,7 +475,7 @@ The diagnostic plots can be used to judge the trend of transmission (including t
 \subsection{\texttt{flame\_quickstack}}
 \label{sec:quickstack}
 
-The second step produces a FITS file which is the difference of a stack of the $A$ frames and a stack of the $B$ frames (as defined in the previous module). This step is also useful while observing, since the simple $A-B$ subtraction often yields a decent sky removal which allows the detection of faint continuum traces or emission lines.
+The second step produces a FITS file which is the stack of the A frames or, in the case of $A-B$ nodding, the difference of a stack of the $A$ frames and a stack of the $B$ frames. This step is also useful while observing, since the simple $A-B$ subtraction often yields a decent sky removal which allows the detection of faint continuum traces or emission lines.
 
 The sole goal of this module is to allow a quick look at the data. This step can be skipped with no consequences for the remaining parts of the data reduction.
 
@@ -490,30 +490,30 @@ This step and the previous ones can be run on virtually any data set without any
 \subsection{\texttt{flame\_calibrations}}
 \label{sec:calibrations}
 
-This module applies a number of calibrations to the raw science frames. First, the bad pixel mask is generated from the input dark and/or flat frames. If neither dark nor flat field frames were supplied, then the default bad pixel mask, stored in flame/data/LUCI, is used. The flat field correction and dark subtraction are then performed.
+This module applies a number of calibrations to the raw science frames. First, the bad pixel mask is generated from the input dark and/or flat frames. If neither dark nor flat field frames were supplied, then the default bad pixel mask, stored in \filename{flame/data/}, is used. The flat field correction and dark subtraction are then performed.
 
-In order to offer the maximum flexibility, individual corrections can be turned on or off \emph{even when the corresponding frames have been supplied to \flame}. For example, if the pixel flat field frames are provided, the user can choose whether they should be used for the flat field correction, for the bad pixel identification, or both, via the \code{settings.flatfield\_data} and \code{settings.badpix\_useflat} options. Analogous settings apply to the dark frames.
+In order to offer the maximum flexibility, individual corrections can be turned on or off \emph{even when the corresponding frames have been supplied to \flame}. For example, if the pixel flat field frames are provided, the user can choose whether they should be used for the flat field correction with the \code{settings.flatfield\_data} option, and whether they should be used for the bad pixel identification via the \code{settings.badpix\_useflat} option. Analogous settings apply to the dark frames.
 
-When using the flat field to construct the bad pixel mask, the option \code{settings.badpix\_flatcorrection} controls the threshold used to identify bad pixels. A similar option exists for when the darks are used. If darks and flats are not used then the default bad pixel mask will be used. Users that wish to skip the bad pixel flagging altogether need to additionally set the value of \code{fuel.instrument.default\_badpixel\_mask = 'none'}
+When using the flat field to construct the bad pixel mask, the option \code{settings.badpix\_flatcorrection} controls the threshold used to identify bad pixels. A similar option (\code{settings.badpix\_sigma}) exists for when the darks are used. If darks and flats are not used then the default bad pixel mask will be used. Users that wish to skip the bad pixel flagging altogether need to additionally set \code{fuel.instrument.default\_badpixel\_mask = 'none'}
 
-The user can also choose to clean individual frames of cosmic rays using L.A.Cosmic (this is generally not needed for LUCI data, as long as the number of frames is enough for sigma-clipping).
+It is also possible to clean individual frames of cosmic rays using L.A.Cosmic, but this is generally not needed for LUCI data, as long as the number of frames is enough for an effective sigma-clipping.
 
 \medskip
 \noindent
-\textbf{Outputs.} After all the calibrations have been applied, the corrected science frames are saved in the intermediate/frames/ directory. Each FITS file contains a second extension with the error spectrum, which is calculated as the combination of read-out noise and Poisson noise. The \code{master\_slitflat.fits} file is saved in the intermediate directory. Additional files may be saved, depending on the options used. These include the master flats and darks, the median pixel flat (which is a simple median stack, not normalized, and is used to obtain the master file), the bad pixel mask, and ps files showing the distribution of pixel values in the master flats and/or darks and the threshold used to identify the bad pixels. If present, the master pixel flat and bad pixel mask should be checked to make sure they look reasonable.
+\textbf{Outputs.} After all the calibrations have been applied, the `corrected' science frames are saved in the \filename{intermediate/frames/} directory. Each FITS file contains a second extension with the error spectrum, which is calculated as the combination of read-out noise and Poisson noise; both extensions are in units of electron per second. The \code{master\_slitflat.fits} file is also saved in the intermediate directory. Additional files may be saved, depending on the options used. These include the master flats and darks, the median pixel flat (which is a simple median stack, not normalized, and is used to obtain the master file), the bad pixel mask, and ps files showing the distribution of pixel values in the master flats and/or darks and the threshold used to identify bad pixels. If present, the master pixel flat and bad pixel mask should be checked to make sure they look reasonable.
 
 
 \medskip
 \noindent
 \textbf{Note.} The flat field frames are never dark-subtracted. For a proper dark-subtraction, an additional set of dark frames matching the exposure time of the flat field (which is generally different from the exposure time of the science frames) is needed. In order to have a simple and user-friendly pipeline, \flame\ does not perform this extra step; however users can easily dark-subtract each flat field frame before feeding them to \flame. This is generally not needed because most modern detectors have a low dark current, and as long as the counts in the flat fields are high, this correction is negligible.
 
-In order to allow users to pre-process the calibration frames, the counts in the flat field are normalized and the uncertainty on the observed flux is not calculated nor propagated to the reduced data. Users need to make sure that the counts in the flat field frames are high enough so that the Poisson error in the master flat is negligible compared to the uncertainty in the data.
+In order to allow users to pre-process the calibration frames, the counts in the flat field are normalized and the uncertainty on the observed flux is not calculated nor propagated to the reduced data. Users need to make sure that the counts in the flat field frames are high enough so that the Poisson error in the master flat is negligible compared to the uncertainty in the science data.
 
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.7\textwidth]{slits}
-\caption{An example of LUCI raw frame, with the regions marking the slits identified by \flame\ shown in green. The slits that are not marked are the boxes for the alignment stars, which are ignored by the pipeline.}
+\includegraphics[width=0.9\textwidth]{slits}
+\caption{An example of LUCI raw frame, with the regions marking the slits identified by \flame\ shown in red and green. The slits that are not marked are the boxes for the alignment stars, which are ignored by the pipeline.}
 \label{fig:slits}
 \end{figure}
 
@@ -521,11 +521,11 @@ In order to allow users to pre-process the calibration frames, the counts in the
 \subsection{\texttt{flame\_slitid}}
 \label{sec:slitid}
 
-The module \texttt{flame\_slitid} is responsible for detecting the slits from the multi-object slitmask, using the master slit flat file. The vertical coordinates of the slit edges calculated during the initialization are used. However, the physical position of the mask with respect to the detector is typically difficult to predict and varies slightly from one night to the other. To account for this, a vertical shift is calculated by identifying the slit edges.
+The module \texttt{flame\_slitid} is responsible for identifying the slits in the master slit flat. The vertical coordinates of the slit edges calculated during the initialization are used. However, the physical position of the mask with respect to the detector is typically difficult to predict and varies slightly from one night to the other. To account for this, a vertical shift is calculated by identifying the approximate slit positions.
 
 Once the approximate pixel position of each slit has been calculated, a second, more refined slit edge detection is run. This is based on the identification of individual OH emission lines, which are typically very bright and can be reliably used to trace the edge of a slit. For each slit, a low-order polynomial is fit to the $y$ coordinate of the edge as a function of $x$ position, and the results are saved to the fuel structure. The order of the polynomial can be specified via the settings.
 
-In some cases, particularly in the $K$ band, there are not enough bright OH lines for identifying the slit edges. It is possible to use the continuum emission instead, by specifying \code{settings.trace\_slit\_with\_emlines}$ = 0$. Using lamp flats or arc frames as slit flat field is also an option.
+In some cases, particularly in the $K$ band (and for optical instruments), there are not enough bright OH lines for identifying the slit edges. It is possible to use the continuum emission instead, by specifying \code{settings.trace\_slit\_with\_emlines=0}. Using lamp flats or arc frames as the slit flat field is also an option.
 
 \medskip
 \noindent
@@ -535,11 +535,11 @@ The trace needs to be clearly visible in the slit flat field, which is often not
 
 \medskip
 \noindent
-\textbf{Outputs.} This module creates the file file slits.reg, which is a ds9 region file that can be loaded on top of the slit flat (or any science frame) and will show the slit edges (see Figure \ref{fig:slits}). This can be used to check the slit detection and also to identify which slit on the science frame corresponds to which target. The raw detection (i.e., before the polynomial fit) of the slit edges are saved in slits\_raw.reg.
+\textbf{Outputs.} This module creates the file \filename{slits.reg}, which is a ds9 region file that can be loaded on top of the slit flat (or any science frame) and will show the slit edges (see Figure \ref{fig:slits}). This can be used to check the slit detection and also to identify which slit on the science frame corresponds to which target. The raw detection (i.e., before the polynomial fit) of the slit edges are saved in \filename{slits\_raw.reg}.
 
 \medskip
 \noindent
-\textbf{Troubleshooting.} If the slit identification fails or is not accurate, the user can change the size of the cutout used for the slit identification. If emission lines are used, a cutout is produced around each line, and the horizontal dimension of the cutout can also be changed. In these cases the slits\_raw.reg file is more helpful because it shows the individual detections, and can be used to guide the tweaking of the parameters.
+\textbf{Troubleshooting.} If the slit identification fails or is not accurate, the user can change the vertical size of the cutout used for the slit identification. If emission lines are used, a cutout is produced around each line, and the horizontal dimension of the cutout can also be changed. In these cases the \filename{slits\_raw.reg} file is more helpful because it shows the individual detections, and can be used to guide the tweaking of the parameters.
 
 In very difficult cases, an alternative approach is to use the longslit option to manually select the region within one slit to reduce. By default the longslit option assumes that the slit is \emph{spatially} centered on the mask. If this assumption causes a wildly wrong initial guess for the wavelength range, it is possible to override this value by changing the \texttt{fuel.slits.range\_lambda0} variable, which is a 2-element array containing the minimum and maximum values to be considered for the wavelength of the first pixel.
 
@@ -548,22 +548,22 @@ In very difficult cases, an alternative approach is to use the longslit option t
 \subsection{\texttt{flame\_cutouts}}
 \label{sec:cutouts}
 
-Using the slit definition from the previous step, the slits are extracted from each corrected frame and saved as FITS files. Sometimes it may be useful to reduce only a subset of the observed spectrum, for example to speed up the reduction or to avoid a spectral region for which the wavelength calibration is challenging. In these cases it is possible to specify the range in x pixel coordinates to be considered via the \code{trim\_slit} option (e.g., \code{trim\_slit=[0,1023]} would reduce only the left half of the LUCI detector).
+Using the slit definition from the previous step, the slits are extracted from each corrected frame and saved as FITS files. Sometimes it may be useful to reduce only a subset of the observed spectrum, for example to speed up the reduction or to avoid a spectral region for which the wavelength calibration is challenging. In these cases it is possible to specify the range in x pixel coordinates to be considered via the \code{settings.trim\_slit} option (e.g., setting it to [0, 1023] would mean that only the left half of the LUCI detector will be reduced).
 
 \medskip
 \noindent
-\textbf{Note:} From this step the outputs are saved in each slit directory, e.g. \code{intermediate/slit07} for slit number 7.
+\textbf{Note:} From this step on, the outputs are saved in a subdirectory for each slit, e.g. \code{intermediate/slit07} for slit number 7.
 
 \medskip
 \noindent
-\textbf{Outputs.} For each slit, a cutout is produced for each frame, and saved as a FITS file.
+\textbf{Outputs.} For each slit, a cutout is produced for each frame, and saved as a FITS file. Similarly to the corrected frames, the cutouts are in units or electrons per second and include a second extension with the error spectrum.
 
 
 % ---------------------------------------------------
 \subsection{\texttt{flame\_spatialcal}}
 \label{sec:spatialcal}
 
-The spatial rectification is calculated starting from the slit edges, and is corrected for nodding and dithering using the results of the diagnostics. The coefficients of the coordinate transformation $\gamma(x,y)$ are stored for each cutout in the fuel.slits structure. By default, the spatial side of the rectified pixels is identical to that of the raw, observed pixels: $\Delta \gamma = \Delta y$. However there are rare cases when a user may want to change this: for example when using the N3.75 camera with LUCI the two detectors end up having slightly different spatial scales. In this case it is best to change the spatial scale for the data from one or both eyes so that the output spectra can be easily combined without having to further interpolate the data. This can be done by changing the value of \code{spatial\_resampling}.
+The spatial rectification is calculated starting from the slit edges, and is corrected for nodding and dithering using the results of the diagnostics. The coefficients of the coordinate transformation $\gamma(x,y)$ are stored for each cutout in the \code{fuel.slits} structure. By default, the spatial side of the rectified pixels is identical to that of the raw, observed pixels: $\Delta \gamma = \Delta y$. However there are rare cases when a user may want to change this: for example when using the N3.75 camera with LUCI the two detectors end up having slightly different spatial scales. In this case it is best to change the spatial scale for the data from one or both eyes so that the output spectra can be easily combined without having to further interpolate the data. This can be done by changing the value of \code{settings.spatial\_resampling}.
 
 \medskip
 \noindent
@@ -815,6 +815,13 @@ There are a number of third-party programs that can be used to visualize and ana
 SpecPro\footnote{\url{http://specpro.caltech.edu/}} is written in IDL. It uses both the IDL Astronomy User's Library and the mpfit routines, which are also required by \flame. After downloading and installing the source code, simply launch IDL from the \code{extraction/} directory and run the \code{specpro} command.
 
 SpecViz\footnote{\url{https://github.com/spacetelescope/specviz}} is written in Python. After installing SpecViz, copy the configuration file \code{flame/external/flame.yaml} to the \code{\textasciitilde/.specviz/} directory. This file contains a description of the data format used by \flame. Open SpecViz, click the \emph{Open} button, and in the dropdown menu \emph{Files of type} there should now be an entry called \emph{Flame data reduction pipeline}. Note that it is not necessary to select the file type every time you open a spectrum; SpecViz should be able to automatically recognize the file and correctly read in the \flame\ output.
+
+
+% ---------------------------------------------------
+\subsection{Directory structure and final output}
+\label{sec:final_output}
+
+Explain that you can delete the intermediate directory.
 
 
 % ---------------------------------------------------
