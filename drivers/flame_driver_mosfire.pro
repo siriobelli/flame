@@ -39,6 +39,10 @@
   ; and specify the y-range in pixel that you want to reduce
   input.longslit_edge = [0, 0]
 
+  ; see the Flame manual for additional input fields
+  ; you can also get a complete list with:
+  ; help, input
+
 
   ;****************************************************
   ;****************************************************

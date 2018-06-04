@@ -42,6 +42,10 @@
   ; manual slit positions
   input.slit_position_file = 'slit_edges.reg'
 
+  ; see the Flame manual for additional input fields
+  ; you can also get a complete list with:
+  ; help, input
+
 
   ;****************************************************
   ;****************************************************
