@@ -830,7 +830,7 @@ END
 ;*******************************************************************************
 
 
-PRO flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=slit
+PRO flame_findlines_output_grid, fuel=fuel, wavelength_solution=wavelength_solution, slit=slit
 
 ;
 ; Set the wavelength grid that will be used for the rectified frame,
@@ -854,6 +854,12 @@ PRO flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=s
  	; round this value on a logarithmic scale - the idea here is to try
  	; to have the same value for slightly different datasets
   outlambda_delta = 10.0^( round(alog10(lambda_delta)*20.0d)/20.0d )
+
+  ; however, this value can also be directly specified by the user
+  if fuel.settings.lambda_step GT 0.0 then begin
+    if fuel.settings.lambda_step GT 0.01 then message, 'settings.lambda_step should be specified in units of micron per pixel'
+    outlambda_delta = fuel.settings.lambda_step
+  endif
 
   ; find the median wavelength of the first and last pixel
   lambda_first_pixel = median(wavelength_solution_smooth[0,*])
@@ -956,7 +962,7 @@ PRO flame_findlines, fuel
   		flame_findlines_writeds9, speclines, filename=flame_util_replace_string(arc_filename, '.fits', '_speclines.reg')
 
 			; use the pixel-by-pixel wavelength solution of the arc frame to set the output grid in wavelength
-			flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
+			flame_findlines_output_grid, fuel=fuel, wavelength_solution=wavelength_solution, slit=this_slit
 			fuel.slits[i_slit] = this_slit
 
 
@@ -983,7 +989,7 @@ PRO flame_findlines, fuel
 
   				; use the pixel-by-pixel wavelength solution OF THE FIRST FRAME to set the output grid in wavelength
   				if i_frame eq 0 then begin
-  					flame_findlines_output_grid, wavelength_solution=wavelength_solution, slit=this_slit
+  					flame_findlines_output_grid, fuel=fuel, wavelength_solution=wavelength_solution, slit=this_slit
   					fuel.slits[i_slit] = this_slit
   				endif
 

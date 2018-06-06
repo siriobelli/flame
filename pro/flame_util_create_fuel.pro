@@ -165,6 +165,7 @@ FUNCTION flame_util_create_fuel, input
     sky_emission_filename: data_dir + 'sky_emission_model_nir.dat', $
     linelist_sky_filename: '', $
     linelist_arcs_filename: '', $
+    lambda_step: 0.d, $
     star_x_range: [1000, 1200], $
     star_y_window: 0, $
     clean_individual_frames: 0, $
