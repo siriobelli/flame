@@ -407,7 +407,9 @@ END
 ;*******************************************************************************
 
 
-PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
+PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir
+
+		; note: the A-B of the i_slit is always combined with the B-A of the j_slit
 
 		print, ''
 		print, 'Combining slit ' + strtrim(fuel.slits[i_slit].number, 2) + ' - ' + fuel.slits[i_slit].name + $
@@ -419,14 +421,8 @@ PRO flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, di
 		filename_prefix_j = output_dir + 'slit' + string(fuel.slits[j_slit].number, format='(I02)') + $
 		 	'-' + fuel.slits[j_slit].name
 
-		; make sure that the stacked A-B has positive signal
-		if dithering_length LT 0 then $
-			suffix = ['_A-B.fits', '_B-A.fits'] $
-		else $
-			suffix = ['_B-A.fits', '_A-B.fits']
-
 		; combine the A-B stacks
-		filenames = [filename_prefix_i + suffix[0], filename_prefix_j + suffix[1]]
+		filenames = [filename_prefix_i + '_A-B.fits', filename_prefix_j + '_B-A.fits']
 		outname =  'slit' + string(fuel.slits[i_slit].number, format='(I02)') + '+slit' + $
 			string(fuel.slits[j_slit].number, format='(I02)') + '.fits'
 		flame_util_combine_spectra, filenames, output_filename = output_dir + outname, /nan, /useweights, /rectified_frame
@@ -583,12 +579,12 @@ PRO flame_combine_multislit, fuel=fuel
 
 		; regular
 		output_dir = fuel.util.output_dir + 'spec2d' + path_sep()
-		flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
+		flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir
 
 		; skysub
 		if fuel.settings.skysub then begin
 			output_dir = fuel.util.output_dir + 'spec2d_skysub' + path_sep()
-			flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir, dithering_length=dithering_length
+			flame_combine_twoslits, i_slit, j_slit, fuel=fuel, output_dir=output_dir
 		endif
 
 	endfor
