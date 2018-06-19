@@ -608,8 +608,8 @@ PRO flame_calibrations_oneframe, fuel, filename_raw, filename_corr, $
     master_pixelflat=master_pixelflat, master_dark=master_dark, $
     badpixel_mask=badpixel_mask, lacosmic=lacosmic
 
-  ; read in raw frame
-  frame = readfits(filename_raw, header)
+  ; read in raw frame and convert to double
+  frame = double(readfits(filename_raw, header))
   size_science = size(frame)
 
 
