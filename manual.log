@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  4 JUN 2018 17:59
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  26 JUN 2018 16:19
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -644,7 +644,7 @@ LaTeX Font Info:    Try loading font information for T1+lmtt on input line 71.
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-<cover.pdf, id=191, 458.08812pt x 653.78427pt>
+<cover.pdf, id=208, 458.08812pt x 653.78427pt>
 File: cover.pdf Graphic file (type pdf)
  <use cover.pdf>
 Package pdftex.def Info: cover.pdf used on input line 76.
@@ -660,7 +660,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has
 been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.46 ...dit the settings}{29}{subsubsection.5.5.4}
+l.46 ... for a new instrument}{30}{subsection.5.5}
                                                    [1])
 \tf@toc=\write5
 \openout5 = `manual.toc'.
@@ -697,115 +697,130 @@ ver the
 
 [8] [9]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 442.
- <diagnostics.pdf, id=380, 503.8825pt x 392.46625pt>
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 443.
+ <diagnostics.pdf, id=400, 503.8825pt x 392.46625pt>
 File: diagnostics.pdf Graphic file (type pdf)
 
 <use diagnostics.pdf>
-Package pdftex.def Info: diagnostics.pdf used on input line 449.
+Package pdftex.def Info: diagnostics.pdf used on input line 450.
 (pdftex.def)             Requested size: 310.4979pt x 241.84138pt.
  [10 <./diagnostics.pdf>] [11] [12]
-<slits.png, id=412, 1093.08376pt x 949.5475pt>
+<slits.png, id=433, 1093.08376pt x 949.5475pt>
 File: slits.png Graphic file (type png)
  <use slits.png>
-Package pdftex.def Info: slits.png used on input line 515.
+Package pdftex.def Info: slits.png used on input line 516.
 (pdftex.def)             Requested size: 310.4979pt x 269.72554pt.
  [13 <./slits.png>]
-Underfull \hbox (badness 1248) in paragraph at lines 528--529
+Underfull \hbox (badness 1248) in paragraph at lines 529--530
 []\T1/lmr/m/n/10 In some cases, par-tic-u-larly in the $\OML/lmm/m/it/10 K$ \T1
 /lmr/m/n/10 band (and for op-ti-cal in-stru-
  []
 
 
-Underfull \hbox (badness 1648) in paragraph at lines 528--529
+Underfull \hbox (badness 1648) in paragraph at lines 529--530
 \T1/lmr/m/n/10 ments), there are not enough bright OH lines for iden-ti-fy-ing 
 the slit
  []
 
-[14] [15] <wavecal1.pdf, id=432, 498.86375pt x 422.57875pt>
+[14] <wavecal1.pdf, id=445, 498.86375pt x 422.57875pt>
 File: wavecal1.pdf Graphic file (type pdf)
  <use wavecal1.pdf>
-Package pdftex.def Info: wavecal1.pdf used on input line 602.
-(pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
+Package pdftex.def Info: wavecal1.pdf used on input line 582.
+(pdftex.def)             Requested size: 276.00105pt x 233.7989pt.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <9> on input line 583.
 
-<wavecal2.pdf, id=433, 498.86375pt x 422.57875pt>
-File: wavecal2.pdf Graphic file (type pdf)
- <use wavecal2.pdf>
-Package pdftex.def Info: wavecal2.pdf used on input line 604.
-(pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
+[15] [16 <./wavecal1.pdf>] <row41.pdf, id=471, 473.77pt x 412.54124pt>
+File: row41.pdf Graphic file (type pdf)
 
-<wavecal3.pdf, id=434, 498.86375pt x 422.57875pt>
-File: wavecal3.pdf Graphic file (type pdf)
- <use wavecal3.pdf>
-Package pdftex.def Info: wavecal3.pdf used on input line 606.
-(pdftex.def)             Requested size: 106.94916pt x 90.59473pt.
- [16 <./wavecal1.pdf> <./wavecal2.pdf> <./wavecal3.pdf>] [17]
-<number_lines.pdf, id=468, 471.7625pt x 370.38374pt>
-File: number_lines.pdf Graphic file (type pdf)
- <use number_lines.pdf>
-Package pdftex.def Info: number_lines.pdf used on input line 637.
-(pdftex.def)             Requested size: 241.49895pt x 189.6053pt.
-
-<speclines.png, id=469, 1068.99374pt x 204.765pt>
+<use row41.pdf>
+Package pdftex.def Info: row41.pdf used on input line 619.
+(pdftex.def)             Requested size: 276.00105pt x 240.33792pt.
+ <speclines.png, id=472, 1068.99374pt x 204.765pt>
 File: speclines.png Graphic file (type png)
- <use speclines.png>
-Package pdftex.def Info: speclines.png used on input line 645.
+
+<use speclines.png>
+Package pdftex.def Info: speclines.png used on input line 626.
 (pdftex.def)             Requested size: 345.0pt x 66.0854pt.
 
-Underfull \hbox (badness 2103) in paragraph at lines 658--660
-\T1/lmr/bx/n/10 Outputs. \T1/lmr/m/n/10 In the slit di-rec-to-ries, the files \
-T1/cmtt/m/n/10 summary_wavecal.ps \T1/lmr/m/n/10 and
+Underfull \hbox (badness 3138) in paragraph at lines 636--637
+[]\T1/lmr/m/n/10 When us-ing arcs, the sum-mary files are not gen-er-ated, but 
+the
  []
 
-[18 <./number_lines.pdf> <./speclines.png>]
-<residuals.pdf, id=482, 492.84125pt x 375.4025pt>
+[17] [18 <./row41.pdf> <./speclines.png>]
+<number_lines.pdf, id=494, 471.7625pt x 370.38374pt>
+File: number_lines.pdf Graphic file (type pdf)
+ <use number_lines.pdf>
+Package pdftex.def Info: number_lines.pdf used on input line 649.
+(pdftex.def)             Requested size: 241.49895pt x 189.6053pt.
+
+[19 <./number_lines.pdf>] <residuals.pdf, id=505, 492.84125pt x 375.4025pt>
 File: residuals.pdf Graphic file (type pdf)
- <use residuals.pdf>
-Package pdftex.def Info: residuals.pdf used on input line 667.
+
+<use residuals.pdf>
+Package pdftex.def Info: residuals.pdf used on input line 671.
 (pdftex.def)             Requested size: 241.49895pt x 183.95456pt.
- [19 <./residuals.pdf>]
+ [20 <./residuals.pdf>]
 
-LaTeX Warning: Command \r invalid in math mode on input line 679.
+LaTeX Warning: Command \r invalid in math mode on input line 683.
 
-[20] <oversample.pdf, id=499, 755.82375pt x 712.6625pt>
+[21] <oversample.pdf, id=523, 755.82375pt x 712.6625pt>
 File: oversample.pdf Graphic file (type pdf)
  <use oversample.pdf>
-Package pdftex.def Info: oversample.pdf used on input line 721.
+Package pdftex.def Info: oversample.pdf used on input line 725.
 (pdftex.def)             Requested size: 172.5pt x 162.6475pt.
 
-[21] [22 <./oversample.pdf>] <extensions.pdf, id=535, 590.205pt x 604.2575pt>
+[22] [23 <./oversample.pdf>]
+Underfull \hbox (badness 1107) in paragraph at lines 765--766
+[]\T1/lmr/m/n/10 The FITS files out-put by this step rep-re-sent the main prod-
+ucts of
+ []
+
+
+Underfull \hbox (badness 3049) in paragraph at lines 765--766
+\T1/lmr/m/n/10 the pipeline, and are or-ga-nized into two di-rec-to-ries: \T1/p
+cr/m/n/10 spec2d/ \T1/lmr/m/n/10 and
+ []
+
+[24] <extensions.pdf, id=567, 590.205pt x 604.2575pt>
 File: extensions.pdf Graphic file (type pdf)
-
-<use extensions.pdf>
-Package pdftex.def Info: extensions.pdf used on input line 780.
+ <use extensions.pdf>
+Package pdftex.def Info: extensions.pdf used on input line 785.
 (pdftex.def)             Requested size: 207.0021pt x 211.92664pt.
- [23] [24 <./extensions.pdf>] [25] [26] [27] [28] [29]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1001.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1001.
 
-(./manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1001.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1001.
+[25 <./extensions.pdf>] [26]
+Underfull \hbox (badness 4403) in paragraph at lines 848--849
+\T1/lmr/m/n/10 The files pro-duced by the data re-duc-tion are saved ei-ther in
+ the
+ []
+
+[27] [28] [29] [30] [31] [32]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1032.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1032.
+ (./manual.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1032.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1032.
 
 Package rerunfilecheck Info: File `manual.out' has not changed.
-(rerunfilecheck)             Checksum: 381E2D25318D3D8F5A1D2BC08B0D6227;3234.
+(rerunfilecheck)             Checksum: 341128D9376539176E223242238B0B14;3554.
 
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1001.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1032.
  ) 
 Here is how much of TeX's memory you used:
- 16741 strings out of 494946
- 293276 string characters out of 6177758
- 369751 words of memory out of 5000000
- 19475 multiletter control sequences out of 15000+600000
- 86026 words of font info for 62 fonts, out of 8000000 for 9000
+ 16761 strings out of 494946
+ 293550 string characters out of 6177758
+ 371187 words of memory out of 5000000
+ 19481 multiletter control sequences out of 15000+600000
+ 89632 words of font info for 65 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 63i,10n,92p,1356b,1669s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 63i,10n,92p,1385b,1669s stack positions out of 5000i,500n,10000p,200000b,80000s
  </afs/mpe.mpg.de/home/sirio/.texmf-var/fonts/pk/ljfour/jknappen/ec/ectt0900.
 600pk>{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/en
-c/dvips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/s
+c/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}{/usr/s
 hare/texmf/fonts/enc/dvips/lm/lm-mathsy.enc} </afs/mpe.mpg.de/home/sirio/.texmf
 -var/fonts/pk/ljfour/jknappen/ec/ectt0800.600pk> </afs/mpe.mpg.de/home/sirio/.t
 exmf-var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk>{/usr/share/texlive/texmf-d
@@ -813,22 +828,22 @@ ist/fonts/enc/dvips/base/8r.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx10.
 pfb></usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/
 type1/public/lm/lmbxi10.pfb></usr/share/texmf/fonts/type1/public/lm/lmcsc10.pfb
 ></usr/share/texmf/fonts/type1/public/lm/lmmi10.pfb></usr/share/texmf/fonts/typ
-e1/public/lm/lmmi8.pfb></usr/share/texmf/fonts/type1/public/lm/lmr10.pfb></usr/
-share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts/type1/publi
-c/lm/lmr6.pfb></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb></usr/share/texm
-f/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmr9.p
-fb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/t
-ype1/public/lm/lmri8.pfb></usr/share/texmf/fonts/type1/public/lm/lmri9.pfb></us
-r/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/pu
-blic/lm/lmsy8.pfb></usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/shar
-e/texmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/l
-m/lmtt12.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt8.pfb></usr/share/texm
-f/fonts/type1/public/lm/lmtt9.pfb></usr/share/texlive/texmf-dist/fonts/type1/ur
-w/courier/ucrr8a.pfb>
-Output written on manual.pdf (30 pages, 2457231 bytes).
+e1/public/lm/lmmi8.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi9.pfb></usr/
+share/texmf/fonts/type1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/publi
+c/lm/lmr12.pfb></usr/share/texmf/fonts/type1/public/lm/lmr6.pfb></usr/share/tex
+mf/fonts/type1/public/lm/lmr7.pfb></usr/share/texmf/fonts/type1/public/lm/lmr8.
+pfb></usr/share/texmf/fonts/type1/public/lm/lmr9.pfb></usr/share/texmf/fonts/ty
+pe1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmri8.pfb></us
+r/share/texmf/fonts/type1/public/lm/lmri9.pfb></usr/share/texmf/fonts/type1/pub
+lic/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb></usr/share
+/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/public/lm
+/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.pfb></usr/share/texm
+f/fonts/type1/public/lm/lmtt8.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt9
+.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb>
+Output written on manual.pdf (33 pages, 2429556 bytes).
 PDF statistics:
- 821 PDF objects out of 1000 (max. 8388607)
- 654 compressed objects within 7 object streams
- 167 named destinations out of 1000 (max. 500000)
- 436 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 856 PDF objects out of 1000 (max. 8388607)
+ 695 compressed objects within 7 object streams
+ 179 named destinations out of 1000 (max. 500000)
+ 463 words of extra memory for PDF output out of 10000 (max. 10000000)
 

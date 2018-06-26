@@ -25,22 +25,26 @@
 \contentsline {subsection}{\numberline {4.6}\texttt {flame\_spatialcal}}{15}{subsection.4.6}
 \contentsline {subsection}{\numberline {4.7}\texttt {flame\_roughwavecal}}{15}{subsection.4.7}
 \contentsline {subsection}{\numberline {4.8}\texttt {flame\_findlines}}{17}{subsection.4.8}
-\contentsline {subsection}{\numberline {4.9}\texttt {flame\_wavecal}}{18}{subsection.4.9}
-\contentsline {subsection}{\numberline {4.10}\texttt {flame\_illumcorr}}{20}{subsection.4.10}
-\contentsline {subsection}{\numberline {4.11}\texttt {flame\_skysub}}{20}{subsection.4.11}
-\contentsline {subsection}{\numberline {4.12}\texttt {flame\_rectify}}{21}{subsection.4.12}
-\contentsline {subsection}{\numberline {4.13}\texttt {flame\_combine}}{22}{subsection.4.13}
-\contentsline {subsection}{\numberline {4.14}\texttt {flame\_checkdata}}{23}{subsection.4.14}
-\contentsline {subsection}{\numberline {4.15}\texttt {flame\_extract}}{24}{subsection.4.15}
-\contentsline {subsection}{\numberline {4.16}Directory structure and final output}{25}{subsection.4.16}
-\contentsline {subsection}{\numberline {4.17}Combining different data sets}{25}{subsection.4.17}
-\contentsline {section}{\numberline {5}Supported Instruments}{26}{section.5}
-\contentsline {subsection}{\numberline {5.1}LUCI at LBT}{27}{subsection.5.1}
-\contentsline {subsection}{\numberline {5.2}MOSFIRE at Keck}{27}{subsection.5.2}
-\contentsline {subsection}{\numberline {5.3}LRIS at Keck}{27}{subsection.5.3}
-\contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{28}{subsection.5.4}
-\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{28}{subsection.5.5}
-\contentsline {subsubsection}{\numberline {5.5.1}Information on the instrument}{28}{subsubsection.5.5.1}
-\contentsline {subsubsection}{\numberline {5.5.2}Information on the slits}{29}{subsubsection.5.5.2}
-\contentsline {subsubsection}{\numberline {5.5.3}Set up the line lists}{29}{subsubsection.5.5.3}
-\contentsline {subsubsection}{\numberline {5.5.4}Edit the settings}{29}{subsubsection.5.5.4}
+\contentsline {subsection}{\numberline {4.9}\texttt {flame\_wavecal}}{19}{subsection.4.9}
+\contentsline {subsection}{\numberline {4.10}\texttt {flame\_illumcorr}}{21}{subsection.4.10}
+\contentsline {subsection}{\numberline {4.11}\texttt {flame\_skysub}}{21}{subsection.4.11}
+\contentsline {subsection}{\numberline {4.12}\texttt {flame\_rectify}}{22}{subsection.4.12}
+\contentsline {subsection}{\numberline {4.13}\texttt {flame\_combine}}{23}{subsection.4.13}
+\contentsline {subsection}{\numberline {4.14}\texttt {flame\_checkdata}}{25}{subsection.4.14}
+\contentsline {subsection}{\numberline {4.15}\texttt {flame\_extract}}{26}{subsection.4.15}
+\contentsline {subsection}{\numberline {4.16}Combining different data sets}{27}{subsection.4.16}
+\contentsline {subsection}{\numberline {4.17}Tips and tricks}{27}{subsection.4.17}
+\contentsline {subsubsection}{\numberline {4.17.1}Directory structure and final output}{27}{subsubsection.4.17.1}
+\contentsline {subsubsection}{\numberline {4.17.2}Reduce any number of slits}{28}{subsubsection.4.17.2}
+\contentsline {subsubsection}{\numberline {4.17.3}Boxcar extraction}{28}{subsubsection.4.17.3}
+\contentsline {subsubsection}{\numberline {4.17.4}Error handling}{28}{subsubsection.4.17.4}
+\contentsline {section}{\numberline {5}Supported Instruments}{28}{section.5}
+\contentsline {subsection}{\numberline {5.1}LUCI at LBT}{29}{subsection.5.1}
+\contentsline {subsection}{\numberline {5.2}MOSFIRE at Keck}{29}{subsection.5.2}
+\contentsline {subsection}{\numberline {5.3}LRIS at Keck}{30}{subsection.5.3}
+\contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{30}{subsection.5.4}
+\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{30}{subsection.5.5}
+\contentsline {subsubsection}{\numberline {5.5.1}Information on the instrument}{31}{subsubsection.5.5.1}
+\contentsline {subsubsection}{\numberline {5.5.2}Information on the slits}{31}{subsubsection.5.5.2}
+\contentsline {subsubsection}{\numberline {5.5.3}Set up the line lists}{32}{subsubsection.5.5.3}
+\contentsline {subsubsection}{\numberline {5.5.4}Edit the settings}{32}{subsubsection.5.5.4}

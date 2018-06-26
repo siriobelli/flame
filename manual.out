@@ -32,15 +32,19 @@
 \BOOKMARK [2][-]{subsection.4.13}{flame\137combine}{section.4}% 32
 \BOOKMARK [2][-]{subsection.4.14}{flame\137checkdata}{section.4}% 33
 \BOOKMARK [2][-]{subsection.4.15}{flame\137extract}{section.4}% 34
-\BOOKMARK [2][-]{subsection.4.16}{Directory structure and final output}{section.4}% 35
-\BOOKMARK [2][-]{subsection.4.17}{Combining different data sets}{section.4}% 36
-\BOOKMARK [1][-]{section.5}{Supported Instruments}{}% 37
-\BOOKMARK [2][-]{subsection.5.1}{LUCI at LBT}{section.5}% 38
-\BOOKMARK [2][-]{subsection.5.2}{MOSFIRE at Keck}{section.5}% 39
-\BOOKMARK [2][-]{subsection.5.3}{LRIS at Keck}{section.5}% 40
-\BOOKMARK [2][-]{subsection.5.4}{Diagnostics for unsupported instruments}{section.5}% 41
-\BOOKMARK [2][-]{subsection.5.5}{How to add support for a new instrument}{section.5}% 42
-\BOOKMARK [3][-]{subsubsection.5.5.1}{Information on the instrument}{subsection.5.5}% 43
-\BOOKMARK [3][-]{subsubsection.5.5.2}{Information on the slits}{subsection.5.5}% 44
-\BOOKMARK [3][-]{subsubsection.5.5.3}{Set up the line lists}{subsection.5.5}% 45
-\BOOKMARK [3][-]{subsubsection.5.5.4}{Edit the settings}{subsection.5.5}% 46
+\BOOKMARK [2][-]{subsection.4.16}{Combining different data sets}{section.4}% 35
+\BOOKMARK [2][-]{subsection.4.17}{Tips and tricks}{section.4}% 36
+\BOOKMARK [3][-]{subsubsection.4.17.1}{Directory structure and final output}{subsection.4.17}% 37
+\BOOKMARK [3][-]{subsubsection.4.17.2}{Reduce any number of slits}{subsection.4.17}% 38
+\BOOKMARK [3][-]{subsubsection.4.17.3}{Boxcar extraction}{subsection.4.17}% 39
+\BOOKMARK [3][-]{subsubsection.4.17.4}{Error handling}{subsection.4.17}% 40
+\BOOKMARK [1][-]{section.5}{Supported Instruments}{}% 41
+\BOOKMARK [2][-]{subsection.5.1}{LUCI at LBT}{section.5}% 42
+\BOOKMARK [2][-]{subsection.5.2}{MOSFIRE at Keck}{section.5}% 43
+\BOOKMARK [2][-]{subsection.5.3}{LRIS at Keck}{section.5}% 44
+\BOOKMARK [2][-]{subsection.5.4}{Diagnostics for unsupported instruments}{section.5}% 45
+\BOOKMARK [2][-]{subsection.5.5}{How to add support for a new instrument}{section.5}% 46
+\BOOKMARK [3][-]{subsubsection.5.5.1}{Information on the instrument}{subsection.5.5}% 47
+\BOOKMARK [3][-]{subsubsection.5.5.2}{Information on the slits}{subsection.5.5}% 48
+\BOOKMARK [3][-]{subsubsection.5.5.3}{Set up the line lists}{subsection.5.5}% 49
+\BOOKMARK [3][-]{subsubsection.5.5.4}{Edit the settings}{subsection.5.5}% 50
