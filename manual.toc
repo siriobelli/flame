@@ -37,13 +37,14 @@
 \contentsline {subsubsection}{\numberline {4.17.1}Directory structure and final output}{27}{subsubsection.4.17.1}
 \contentsline {subsubsection}{\numberline {4.17.2}Reduce any number of slits}{28}{subsubsection.4.17.2}
 \contentsline {subsubsection}{\numberline {4.17.3}Boxcar extraction}{28}{subsubsection.4.17.3}
-\contentsline {subsubsection}{\numberline {4.17.4}Error handling}{28}{subsubsection.4.17.4}
-\contentsline {section}{\numberline {5}Supported Instruments}{28}{section.5}
+\contentsline {subsubsection}{\numberline {4.17.4}Output wavelength grid}{28}{subsubsection.4.17.4}
+\contentsline {subsubsection}{\numberline {4.17.5}Error handling}{28}{subsubsection.4.17.5}
+\contentsline {section}{\numberline {5}Supported Instruments}{29}{section.5}
 \contentsline {subsection}{\numberline {5.1}LUCI at LBT}{29}{subsection.5.1}
 \contentsline {subsection}{\numberline {5.2}MOSFIRE at Keck}{29}{subsection.5.2}
 \contentsline {subsection}{\numberline {5.3}LRIS at Keck}{30}{subsection.5.3}
 \contentsline {subsection}{\numberline {5.4}Diagnostics for unsupported instruments}{30}{subsection.5.4}
-\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{30}{subsection.5.5}
+\contentsline {subsection}{\numberline {5.5}How to add support for a new instrument}{31}{subsection.5.5}
 \contentsline {subsubsection}{\numberline {5.5.1}Information on the instrument}{31}{subsubsection.5.5.1}
 \contentsline {subsubsection}{\numberline {5.5.2}Information on the slits}{31}{subsubsection.5.5.2}
 \contentsline {subsubsection}{\numberline {5.5.3}Set up the line lists}{32}{subsubsection.5.5.3}

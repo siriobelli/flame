@@ -92,7 +92,7 @@
 \section{Introduction}
 \label{sec:introduction}
 
-\flame\ is a pipeline for reducing near-infrared and optical multi-object spectroscopic data, written in IDL. The pipeline design and the algorithms used are described in Belli, Contursi \& Davies (2018, arXiv:1710.05924); users should read that paper before reading the present manual.
+\flame\ is a pipeline for reducing near-infrared and optical multi-object spectroscopic data, written in IDL. The pipeline design and the algorithms used are described in Belli, Contursi \& Davies (2018, MNRAS, 478, 2097); users should read that paper before reading the present manual.
 
 Although created specifically for the LUCI instrument at the Large Binocular Telescope, \flame\ has been designed in a modular way and can be easily adapted to work with the data produced by different instruments. For simplicity, the present document describes in detail the reduction of LUCI data. Section \ref{sec:instruments} explains how to use \flame\ with other supported instruments, and how it is possible to implement support for new instruments. There is also a minimal version of \flame\ (see Section \ref{sec:minimal}) that can be used to run simple diagnostics on data from virtually any instrument, which is particularly useful while observing.
 
@@ -125,7 +125,7 @@ The following three external IDL libraries must be installed before running \fla
 \end{enumerate}
 Make sure to have the most recent versions of these libraries (at least more recent than the January 2016 release).
 
-Other third-party routines used by \flame\ are included in the distribution, in the \filename{flame/lib/} directory. These are the B-spline routines from the \texttt{idlutils} library, the L.A.Cosmic routine written by Joshua Bloom and Pieter van Dokkum, and the readmhdufits routine written by Marc Kassis.
+Other third-party routines used by \flame\ are included in the distribution, in the \filename{flame/lib/} directory. These are the B-spline routines from the \texttt{idlutils} library, the L.A.Cosmic routine written by Joshua Bloom and Pieter van Dokkum, and the \code{readmhdufits} routine written by Marc Kassis.
 
 
 \subsection{Download}
@@ -345,7 +345,7 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     sky\_emission\_filename       &               & (many)           & file with model spectrum of sky emission \\
     linelist\_sky\_filename       &               & (many)           & file with list of sky emission lines \\
     linelist\_arcs\_filename      &               & (many)           & file with list of arcs emission lines \\
-    lambda\_step                  &               & (many)           & size of the wavelength pixel for the rectified spectra \\
+    lambda\_step                  &               & (many)           & size of the wavelength pixel for the rectified spectra, in micron per pixel \\
     star\_x\_range 			          & [1000, 1200]  & diagnostics   	 & range of pixel x-coordinate to consider for the reference star trace \\
     star\_y\_window               & $\simeq$4 arcsec & diagnostics   & range of pixel y-coordinate to consider for the reference star trace \\
     clean\_individual\_frames     & 0             & calibrations     & identify and mask cosmic rays in each frame \\
@@ -873,6 +873,11 @@ A simple boxcar extraction can be performed manually on a 2D spectrum output by 
 Here, \code{yrange} is an integer array specifying the first and last pixel rows (in detector coordinates) to be considered for the extraction. The 1D spectrum is then saved as a FITS file in the same format as for the files output by \code{flame\_extract}.
 
 
+\subsubsection{Output wavelength grid}
+
+When the cutouts are rectified, the output wavelength grid is chosen automatically. The spectral pixel scale, i.e., the wavelenght size of each pixel in the output spectra, is fairly close to the pixel scale of the raw data, but is also stable to small perturbations of the wavelength solution so that all cutouts and all slits in a given data set should end up with the same output wavelength grid. There are occasions when the automatic pixel scale is not ideal: for example when the observations of the same object taken in slightly different conditions end up having different pixel scales. In these cases the user can specify the value of the output pixel scale via the option \code{settings.lambda\_step}, which is specified in units of micron per pixel.
+
+
 \subsubsection{Error handling}
 
 By default, when \flame\ encounters an error the execution stops. This makes it easier to diagnose the problem. Users can change this behavior by setting \code{fuel.settings.stop\_on\_error = 0}. In this case when an error is encountered during the reduction of a slit, that slit is excluded by further processing by setting \code{skip = 1} (as explained above), and the execution continues with the other slits.
@@ -896,12 +901,12 @@ All the \flame\ modules described in Section \ref{sec:data_reduction} are writte
   \item The data reduction modules are called. This part is identical for all drivers.
 \end{enumerate}
 
-The list of files in the \texttt{flame/drivers/} directory shows what instruments are supported. Currently, this directory contains the following files:
+The list of files in the \filename{flame/drivers/} directory shows what instruments are supported. Currently, this directory contains the following files:
 \begin{itemize}
-  \item[] \texttt{flame\_driver\_luci.pro}: driver for reducing data from the LUCI1 and LUCI2 instruments at the Large Binocular Telescope.
-  \item[] \texttt{flame\_driver\_mosfire.pro}: driver for reducing data from the MOSFIRE near-infrared instrument at the Keck telescope.
-  \item[] \texttt{flame\_driver\_lris.pro}: driver for reducing data from the blue and red channel of LRIS at the Keck telescope.
-  \item[] \texttt{flame\_driver\_minimal.pro}: minimalistic driver that can be used to run the first two modules (diagnostics and quick stack) on any data set, including instruments that are not supported.
+  \item[] \filename{flame\_driver\_luci.pro}: driver for reducing data from the LUCI1 and LUCI2 instruments at the Large Binocular Telescope.
+  \item[] \filename{flame\_driver\_mosfire.pro}: driver for reducing data from the MOSFIRE near-infrared instrument at the Keck telescope.
+  \item[] \filename{flame\_driver\_lris.pro}: driver for reducing data from the blue and red channel of LRIS at the Keck telescope.
+  \item[] \filename{flame\_driver\_minimal.pro}: minimalistic driver that can be used to run the first two modules (diagnostics and quick stack) on any data set, including instruments that are not supported.
 \end{itemize}
 
 In the remainder of this section, we quickly describe each supported instrument and give indications on how to implement support for new instruments.
@@ -909,7 +914,7 @@ In the remainder of this section, we quickly describe each supported instrument 
 
 \subsection{LUCI at LBT}
 
-The reduction of LUCI data is described throughout Section \ref{sec:setup} and \ref{sec:data_reduction}, and no further discussion for this instrument is needed.
+The reduction of LUCI data is described throughout Sections \ref{sec:setup} and \ref{sec:data_reduction}, and no further discussion for this instrument is needed.
 
 
 \subsection{MOSFIRE at Keck}
@@ -923,11 +928,11 @@ Note that MOSFIRE has an official data reduction pipeline\footnote{\url{http://k
 
 \subsection{LRIS at Keck}
 
-LRIS is an optical multi-object spectrograph at Keck equipped with a blue and a red arm. The initialization module included with the Flame distribution will change the settings according to which arm has been used.
+LRIS is an optical multi-object spectrograph at Keck equipped with a blue and a red arm. The initialization module included with the \flame\ distribution will change the settings according to which arm has been used.
 
-Data reduction for the red arm is not very different from what described above for near-infrared data: the data are dominated by sky lines, that can be used to derive the wavelength calibration. Usually A-B nodding is not performed, because the model sky subtraction is sufficient given that the sky emission is not as strong as in the near-infrared.
+Data reduction for the red arm is not very different from what described above for near-infrared data: the data are dominated by sky lines, that can be used to derive the wavelength calibration. Usually A-B nodding is not performed, because the model sky subtraction is sufficient since the sky emission is not as strong as in the near-infrared.
 
-Data taken with the blue arm look significantly different given the almost complete absence of sky emission lines, and the presence of a very faint sky continuum. This means that the sky subtraction is not very problematic, and nodding is almost never necessary. However, the lack of sky lines introduces an additional difficulty: the wavelength calibration cannot be obtained directly from the data, and has to be derived using dedicated observations of lamp arcs. These calibrations should be taken as close as possible to the science data in terms of time and elevation, to avoid spectral and spatial shifts (see Section \ref{sec:wavecal} for details).
+Data taken with the blue arm look significantly different, given the almost complete absence of sky emission lines and the presence of a very faint sky continuum. This means that the sky subtraction is not very problematic, and nodding is almost never necessary. However, the lack of sky lines introduces an additional difficulty: the wavelength calibration cannot be obtained directly from the data, and has to be derived using dedicated observations of lamp arcs. These calibrations should be taken as close as possible to the science data in terms of time and elevation, to avoid spectral and spatial shifts (see Section \ref{sec:wavecal} for details).
 
 Given the weaker sky emission, individual frames taken in the optical have generally longer exposure times compared to near-infrared observations. This means that cosmic rays can be very numerous (especially in the red arm), and there may not be sufficient frames for an effective sigma-clipping. In these cases it is recommended to apply L.A.Cosmic to individual frames to mask out bad pixels and cosmic rays.
 
@@ -935,15 +940,17 @@ Given the weaker sky emission, individual frames taken in the optical have gener
 \subsection{Diagnostics for unsupported instruments}
 \label{sec:minimal}
 
-The diagnostics plots produced by \flame\ are particularly useful for monitoring the conditions (seeing, transmission, and drift) while observing. In order to make these products available to the wider community of users, \flame\ contains an initialization module that can be used with almost any type of spectroscopic data. This "minimal" module has basic assumptions on the data format: each frame must be a FITS file with a single HDU, and the wavelength runs along the horizontal direction. The only parameter required is the spatial pixel scale of the instrument. The associated driver file \texttt{flame\_driver\_minimal.pro} performs only the first two steps of the data reduction, producing the diagnostics plots and the quick stack. In order to proceed further, a fully functional initialization module is needed.
+The diagnostics plots produced by \flame\ are particularly useful for monitoring the conditions (seeing, transmission, and drift) while observing. In order to make these products available to the wider community of users, \flame\ contains an initialization module that can be used with almost any type of spectroscopic data. This ``minimal'' makes some basic assumptions on the data format: each frame must be a FITS file with a single HDU, and the wavelength runs along the horizontal direction. The only parameter required is the spatial pixel scale of the instrument. The associated driver file \filename{flame\_driver\_minimal.pro} performs only the first two steps of the data reduction, producing the diagnostics plots and the quick stack. In order to proceed further, a fully functional initialization module is needed.
 
 \subsection{How to add support for a new instrument}
 
-In order to use \flame\ with an instrumnt beyond those officially supported, it is necessary to write an initialization module. This can be built easily starting with the provided template \texttt{flame\_initialize\_template.pro}. The initialization module takes the \inp\ structure and as its only argument, and outputs a complete \fuel\ structure. The first step is always to create a default \fuel\ structure using the provided utility function. Then the initialization module must perform the following operations.
+In order to use \flame\ with an instrument beyond those officially supported, it is necessary to write an initialization module. This can be built easily starting with the provided template \filename{flame\_initialize\_template.pro}. The initialization module takes the \inp\ structure as its only argument, and outputs a complete \fuel\ structure.
+
+The first step of the initialization is always to create a default \fuel\ structure using the provided utility function. Then the initialization module must perform the following operations.
 
 \subsubsection{Information on the instrument}
 
-The appropriate \code{fuel.instrument} structure, containing a set of parameters such as the spectral resolution, spatial pixel scale, etc, must be created. The required parameters are listed in Table \ref{tab:instrument}. Nearly all instruments have one or more parameters that can be changed; in these cases it is important that the \code{instrument} structure contains the values that are correct for the specific data set. Typically these parameters can be derived from the FITS header of the first science frame. Note that the instrument structure can include any number of extra parameters that are not listed in the Table, such as the instrument name, the filters, the configuration of the dispersing element, etc. This is encouraged for two reasons: first, it makes it easier to write a clean initialization module, where the instrument structure is passed to different function to calculate additional quantities (see following points); secondly, it constitutes important archival information that can be easily read from the \fuel\ structure, which is always saved together with the main output of the pipeline.
+The appropriate \code{fuel.instrument} structure, containing a set of parameters such as the spectral resolution, spatial pixel scale, etc, must be created. The required parameters are listed in Table \ref{tab:instrument}. Nearly all instruments have one or more settings that can be changed; in these cases it is important that the \code{instrument} structure contains the values that are correct for the specific data set being reduced. Typically these settings can be derived from the FITS header of the first science frame. Note that the instrument structure can include any number of extra parameters that are not listed in the Table, such as the instrument name, the filters, the configuration of the dispersing element, etc. This is encouraged for two reasons: first, it makes it easier to write a clean initialization module, where the instrument structure is passed to different functions to calculate additional quantities (see following points); secondly, it constitutes important archival information that can be easily read from the \fuel\ structure, which is always saved together with the main output of the pipeline.
 
 
  % ******************************************************************************
@@ -963,9 +970,9 @@ resolution\_slit1arcsec     & approximate spectral resolution R for a slit width
 gain                        & detector gain, in units of electrons per ADU \\
 readnoise                   & detector readnoise, in units of electrons \\
 linearity\_correction       & array with the polynomial coefficients describing the linearity correction \\
-default\_badpixel           & string with the name of the FITS file with the default bad pixel mask (can be 'none') \\
-default\_dark               & string with the name of the FITS file with the default dark (can be 'none') \\
-%%% CHECK THESE! \\
+default\_badpixel\_mask     & string with the name of the FITS file with the default bad pixel mask (can be set to \code{'none'}) \\
+default\_dark               & string with the name of the FITS file with the default dark frame (can be set to \code{'none'}) \\
+default\_pixelflat          & string with the name of the FITS file with the default pixel flat (can be set to \code{'none'}) \\
 trim\_edges                 & (optional) integer indicating how many pixels must be discarded from each side of the detector \\
  \hline
  \end{tabular}
@@ -996,7 +1003,7 @@ The \code{fuel.slits} structure, containing information on each of the slits suc
  name                  & 'galaxy-4385'  & string with target name (does not have to be unique) \\
  skip                  & 0              & should always be zero; it can be later changed to one to skip this slit \\
  PA                    & 0.0            & position angle (in deg, can be NaN) \\
- approx\_bottom        & 680            & approximate $y$ pixel coordinate for the bottom of the slit (e.g., )  \\
+ approx\_bottom        & 680            & approximate $y$ pixel coordinate for the bottom of the slit  \\
  approx\_top           & 740            & approximate $y$ pixel coordinate for the top of the slit  \\
  approx\_target        & 710            & approximate $y$ pixel coordinate for the target in this slit \\
  width\_arcsec         & 0.75           & slit width in arcsec (can be NaN)  \\
@@ -1012,7 +1019,7 @@ The \code{fuel.slits} structure, containing information on each of the slits suc
 
 \subsubsection{Set up the line lists}
 
-The initialization module must also select the appropriate line list (for sky and/or arcs) and make local copies in the \code{intermediate} directory. The \code{data/} directory in the \flame\ distribution contains three sky line lists for low, medium, and high spectral resolutions (respectively $R\sim$1000, 3000, and 6000), covering from the optical to the $K$ band.
+The initialization module must also select the appropriate line list (for sky and/or arcs) and make local copies in the \filename{intermediate/} directory. The \filename{data/} directory in the \flame\ distribution contains three sky line lists for low, medium, and high spectral resolutions (respectively $R\sim$1000, 3000, and 6000), covering from the optical to the $K$ band.
 
 
 \subsubsection{Edit the settings}

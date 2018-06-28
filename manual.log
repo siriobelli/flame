@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  26 JUN 2018 16:19
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  28 JUN 2018 10:44
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -644,7 +644,7 @@ LaTeX Font Info:    Try loading font information for T1+lmtt on input line 71.
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-<cover.pdf, id=208, 458.08812pt x 653.78427pt>
+<cover.pdf, id=212, 458.08812pt x 653.78427pt>
 File: cover.pdf Graphic file (type pdf)
  <use cover.pdf>
 Package pdftex.def Info: cover.pdf used on input line 76.
@@ -660,7 +660,7 @@ pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has
 been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.46 ... for a new instrument}{30}{subsection.5.5}
+l.46 ...supported instruments}{30}{subsection.5.4}
                                                    [1])
 \tf@toc=\write5
 \openout5 = `manual.toc'.
@@ -674,6 +674,12 @@ LaTeX Font Info:    Try loading font information for T1+pcr on input line 128.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/t1pcr.fd
 File: t1pcr.fd 2001/06/04 font definitions for T1/pcr.
+)
+LaTeX Font Info:    Try loading font information for T1+cmtt on input line 128.
+
+
+(/usr/share/texlive/texmf-dist/tex/latex/base/t1cmtt.fd
+File: t1cmtt.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 ) [3]
 LaTeX Font Info:    Try loading font information for OMS+lmr on input line 155.
 
@@ -683,13 +689,7 @@ File: omslmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `OMS/lmr/m/n' in size <10> not available
 (Font)              Font shape `OMS/lmsy/m/n' tried instead on input line 155.
- [4]
-LaTeX Font Info:    Try loading font information for T1+cmtt on input line 205.
-
-
-(/usr/share/texlive/texmf-dist/tex/latex/base/t1cmtt.fd
-File: t1cmtt.fd 1999/05/25 v2.5h Standard LaTeX font definitions
-) [5] [6] [7]
+ [4] [5] [6] [7]
 Underfull \hbox (badness 5345) in paragraph at lines 331--332
 []\T1/lmr/m/n/10 After the ini-tial-iza-tion, the user has com-plete con-trol o
 ver the
@@ -698,14 +698,14 @@ ver the
 [8] [9]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
 (Font)              Font shape `T1/lmtt/b/n' tried instead on input line 443.
- <diagnostics.pdf, id=400, 503.8825pt x 392.46625pt>
+ <diagnostics.pdf, id=405, 503.8825pt x 392.46625pt>
 File: diagnostics.pdf Graphic file (type pdf)
 
 <use diagnostics.pdf>
 Package pdftex.def Info: diagnostics.pdf used on input line 450.
 (pdftex.def)             Requested size: 310.4979pt x 241.84138pt.
  [10 <./diagnostics.pdf>] [11] [12]
-<slits.png, id=433, 1093.08376pt x 949.5475pt>
+<slits.png, id=438, 1093.08376pt x 949.5475pt>
 File: slits.png Graphic file (type png)
  <use slits.png>
 Package pdftex.def Info: slits.png used on input line 516.
@@ -722,7 +722,7 @@ Underfull \hbox (badness 1648) in paragraph at lines 529--530
 the slit
  []
 
-[14] <wavecal1.pdf, id=445, 498.86375pt x 422.57875pt>
+[14] <wavecal1.pdf, id=450, 498.86375pt x 422.57875pt>
 File: wavecal1.pdf Graphic file (type pdf)
  <use wavecal1.pdf>
 Package pdftex.def Info: wavecal1.pdf used on input line 582.
@@ -730,13 +730,13 @@ Package pdftex.def Info: wavecal1.pdf used on input line 582.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <9> on input line 583.
 
-[15] [16 <./wavecal1.pdf>] <row41.pdf, id=471, 473.77pt x 412.54124pt>
+[15] [16 <./wavecal1.pdf>] <row41.pdf, id=476, 473.77pt x 412.54124pt>
 File: row41.pdf Graphic file (type pdf)
 
 <use row41.pdf>
 Package pdftex.def Info: row41.pdf used on input line 619.
 (pdftex.def)             Requested size: 276.00105pt x 240.33792pt.
- <speclines.png, id=472, 1068.99374pt x 204.765pt>
+ <speclines.png, id=477, 1068.99374pt x 204.765pt>
 File: speclines.png Graphic file (type png)
 
 <use speclines.png>
@@ -749,13 +749,13 @@ the
  []
 
 [17] [18 <./row41.pdf> <./speclines.png>]
-<number_lines.pdf, id=494, 471.7625pt x 370.38374pt>
+<number_lines.pdf, id=499, 471.7625pt x 370.38374pt>
 File: number_lines.pdf Graphic file (type pdf)
  <use number_lines.pdf>
 Package pdftex.def Info: number_lines.pdf used on input line 649.
 (pdftex.def)             Requested size: 241.49895pt x 189.6053pt.
 
-[19 <./number_lines.pdf>] <residuals.pdf, id=505, 492.84125pt x 375.4025pt>
+[19 <./number_lines.pdf>] <residuals.pdf, id=510, 492.84125pt x 375.4025pt>
 File: residuals.pdf Graphic file (type pdf)
 
 <use residuals.pdf>
@@ -765,7 +765,7 @@ Package pdftex.def Info: residuals.pdf used on input line 671.
 
 LaTeX Warning: Command \r invalid in math mode on input line 683.
 
-[21] <oversample.pdf, id=523, 755.82375pt x 712.6625pt>
+[21] <oversample.pdf, id=528, 755.82375pt x 712.6625pt>
 File: oversample.pdf Graphic file (type pdf)
  <use oversample.pdf>
 Package pdftex.def Info: oversample.pdf used on input line 725.
@@ -783,7 +783,7 @@ Underfull \hbox (badness 3049) in paragraph at lines 765--766
 cr/m/n/10 spec2d/ \T1/lmr/m/n/10 and
  []
 
-[24] <extensions.pdf, id=567, 590.205pt x 604.2575pt>
+[24] <extensions.pdf, id=572, 590.205pt x 604.2575pt>
 File: extensions.pdf Graphic file (type pdf)
  <use extensions.pdf>
 Package pdftex.def Info: extensions.pdf used on input line 785.
@@ -796,25 +796,25 @@ Underfull \hbox (badness 4403) in paragraph at lines 848--849
  []
 
 [27] [28] [29] [30] [31] [32]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1032.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1032.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1039.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1039.
  (./manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1032.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1032.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1039.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1039.
 
 Package rerunfilecheck Info: File `manual.out' has not changed.
-(rerunfilecheck)             Checksum: 341128D9376539176E223242238B0B14;3554.
+(rerunfilecheck)             Checksum: 8DD81A773372D7B44A4D3E245C120215;3638.
 
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1032.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1039.
  ) 
 Here is how much of TeX's memory you used:
- 16761 strings out of 494946
- 293550 string characters out of 6177758
+ 16763 strings out of 494946
+ 293592 string characters out of 6177758
  371187 words of memory out of 5000000
- 19481 multiletter control sequences out of 15000+600000
+ 19482 multiletter control sequences out of 15000+600000
  89632 words of font info for 65 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  63i,10n,92p,1385b,1669s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -840,10 +840,10 @@ lic/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb></usr/share
 /lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.pfb></usr/share/texm
 f/fonts/type1/public/lm/lmtt8.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt9
 .pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb>
-Output written on manual.pdf (33 pages, 2429556 bytes).
+Output written on manual.pdf (33 pages, 2431859 bytes).
 PDF statistics:
- 856 PDF objects out of 1000 (max. 8388607)
- 695 compressed objects within 7 object streams
- 179 named destinations out of 1000 (max. 500000)
- 463 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 863 PDF objects out of 1000 (max. 8388607)
+ 700 compressed objects within 7 object streams
+ 180 named destinations out of 1000 (max. 500000)
+ 471 words of extra memory for PDF output out of 10000 (max. 10000000)
 
