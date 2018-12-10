@@ -172,10 +172,10 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
     diagnostics = { $
       frame_num: frame_num, $
       offset_pos:offset_pos, $
-      seeing: !values.f_NaN, $
-      flux: !values.f_NaN, $
-      position: 0.0, $
-      airmass: airmass}
+      seeing: !values.d_NaN, $
+      flux: !values.d_NaN, $
+      position: double(0.0), $
+      airmass: double(airmass)}
     return, diagnostics
   endif
 
@@ -217,10 +217,10 @@ FUNCTION flame_diagnostics_fit, frame_filename, sky_filename, offset_pos=offset_
   diagnostics = { $
     frame_num: frame_num, $
     offset_pos: offset_pos, $
-    seeing: 2.355 * fit_result.width * fuel.instrument.pixel_scale, $
-    flux: sqrt(2.0*3.14) * fit_result.width * fit_result.peak, $
-    position: fit_result.center, $
-    airmass: airmass}
+    seeing: double(2.355 * fit_result.width * fuel.instrument.pixel_scale), $
+    flux: double(sqrt(2.0*3.14) * fit_result.width * fit_result.peak), $
+    position: double(fit_result.center), $
+    airmass: double(airmass)}
 
     return, diagnostics
 
