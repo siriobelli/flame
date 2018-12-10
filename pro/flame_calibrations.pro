@@ -36,7 +36,7 @@ FUNCTION flame_calibrations_median_filter, im, radius
 
       ; x and y sizes of chunks
       chunk_size_x = Nx / N_chunks_x
-      chunk_size_y = Nx / N_chunks_y
+      chunk_size_y = Ny / N_chunks_y
 
       ; empty array that will contain the local median values
       median_im = im*0.0
