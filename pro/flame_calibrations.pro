@@ -47,7 +47,7 @@ FUNCTION flame_calibrations_median_filter, im, radius
       for ix=0, N_chunks_x-1 do $
         for iy=0, N_chunks_y-1 do begin
 
-          print, 'working on chunk ' + strtrim(2*ix + iy + 1, 2) + ' of ' + strtrim(N_chunks_x*N_chunks_y, 2)
+          print, 'working on chunk ' + strtrim(N_chunks_y*ix + iy + 1, 2) + ' of ' + strtrim(N_chunks_x*N_chunks_y, 2)
 
           ; calculate limits of this chunk
           x1 = ix*chunk_size_x
