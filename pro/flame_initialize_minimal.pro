@@ -31,13 +31,17 @@ FUNCTION flame_initialize_minimal, input, pixel_scale=pixel_scale
     ; read FITS header of first science frame
     science_header = headfits(fuel.util.science.raw_files[0])
 
-    ; read instrument name
+    ; read instrument name and detector parameters
     instrument_name = strtrim(fxpar(science_header, 'INSTRUME'), 2)
+    gain = strtrim(fxpar(science_header, 'GAIN'), 2)
+    rdnoise = strtrim(fxpar(science_header, 'RDNOISE'), 2)
 
     ; create the instrument structure
     instrument = { $
       instrument_name: instrument_name, $
       pixel_scale: pixel_scale, $
+      gain: gain, $
+      readnoise: rdnoise, $
       resolution_slit1arcsec: 3000.0, $
       linearity_correction: [0.0d, 1.0d], $   ; no linearity correction
       trim_edges: 4, $
