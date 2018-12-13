@@ -204,6 +204,8 @@ FUNCTION flame_util_create_fuel, input
     skysub_reject_window: 2.0, $
     interpolation_method: 'NaturalNeighbor', $
     frame_weights: 'None', $
+    combine_ccdreject : 0, $
+    combine_ccdreject_sigma : [3., 3.], $
     combine_sigma_clip : 2.0, $
     combine_min_framefrac : combine_min_framefrac, $
     extract_optimal : 1, $
