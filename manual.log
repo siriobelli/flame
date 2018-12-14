@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  28 JUN 2018 10:44
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.9.22)  14 DEC 2018 15:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -697,27 +697,27 @@ ver the
 
 [8] [9]
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <12> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 443.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 445.
  <diagnostics.pdf, id=405, 503.8825pt x 392.46625pt>
 File: diagnostics.pdf Graphic file (type pdf)
 
 <use diagnostics.pdf>
-Package pdftex.def Info: diagnostics.pdf used on input line 450.
+Package pdftex.def Info: diagnostics.pdf used on input line 452.
 (pdftex.def)             Requested size: 310.4979pt x 241.84138pt.
  [10 <./diagnostics.pdf>] [11] [12]
 <slits.png, id=438, 1093.08376pt x 949.5475pt>
 File: slits.png Graphic file (type png)
  <use slits.png>
-Package pdftex.def Info: slits.png used on input line 516.
+Package pdftex.def Info: slits.png used on input line 518.
 (pdftex.def)             Requested size: 310.4979pt x 269.72554pt.
  [13 <./slits.png>]
-Underfull \hbox (badness 1248) in paragraph at lines 529--530
+Underfull \hbox (badness 1248) in paragraph at lines 531--532
 []\T1/lmr/m/n/10 In some cases, par-tic-u-larly in the $\OML/lmm/m/it/10 K$ \T1
 /lmr/m/n/10 band (and for op-ti-cal in-stru-
  []
 
 
-Underfull \hbox (badness 1648) in paragraph at lines 529--530
+Underfull \hbox (badness 1648) in paragraph at lines 531--532
 \T1/lmr/m/n/10 ments), there are not enough bright OH lines for iden-ti-fy-ing 
 the slit
  []
@@ -725,25 +725,25 @@ the slit
 [14] <wavecal1.pdf, id=450, 498.86375pt x 422.57875pt>
 File: wavecal1.pdf Graphic file (type pdf)
  <use wavecal1.pdf>
-Package pdftex.def Info: wavecal1.pdf used on input line 582.
+Package pdftex.def Info: wavecal1.pdf used on input line 584.
 (pdftex.def)             Requested size: 276.00105pt x 233.7989pt.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <9> on input line 583.
+(Font)              <9> on input line 585.
 
 [15] [16 <./wavecal1.pdf>] <row41.pdf, id=476, 473.77pt x 412.54124pt>
 File: row41.pdf Graphic file (type pdf)
 
 <use row41.pdf>
-Package pdftex.def Info: row41.pdf used on input line 619.
+Package pdftex.def Info: row41.pdf used on input line 621.
 (pdftex.def)             Requested size: 276.00105pt x 240.33792pt.
  <speclines.png, id=477, 1068.99374pt x 204.765pt>
 File: speclines.png Graphic file (type png)
 
 <use speclines.png>
-Package pdftex.def Info: speclines.png used on input line 626.
+Package pdftex.def Info: speclines.png used on input line 628.
 (pdftex.def)             Requested size: 345.0pt x 66.0854pt.
 
-Underfull \hbox (badness 3138) in paragraph at lines 636--637
+Underfull \hbox (badness 3138) in paragraph at lines 638--639
 []\T1/lmr/m/n/10 When us-ing arcs, the sum-mary files are not gen-er-ated, but 
 the
  []
@@ -752,55 +752,55 @@ the
 <number_lines.pdf, id=499, 471.7625pt x 370.38374pt>
 File: number_lines.pdf Graphic file (type pdf)
  <use number_lines.pdf>
-Package pdftex.def Info: number_lines.pdf used on input line 649.
+Package pdftex.def Info: number_lines.pdf used on input line 651.
 (pdftex.def)             Requested size: 241.49895pt x 189.6053pt.
 
 [19 <./number_lines.pdf>] <residuals.pdf, id=510, 492.84125pt x 375.4025pt>
 File: residuals.pdf Graphic file (type pdf)
 
 <use residuals.pdf>
-Package pdftex.def Info: residuals.pdf used on input line 671.
+Package pdftex.def Info: residuals.pdf used on input line 673.
 (pdftex.def)             Requested size: 241.49895pt x 183.95456pt.
  [20 <./residuals.pdf>]
 
-LaTeX Warning: Command \r invalid in math mode on input line 683.
+LaTeX Warning: Command \r invalid in math mode on input line 685.
 
 [21] <oversample.pdf, id=528, 755.82375pt x 712.6625pt>
 File: oversample.pdf Graphic file (type pdf)
  <use oversample.pdf>
-Package pdftex.def Info: oversample.pdf used on input line 725.
+Package pdftex.def Info: oversample.pdf used on input line 727.
 (pdftex.def)             Requested size: 172.5pt x 162.6475pt.
 
 [22] [23 <./oversample.pdf>]
-Underfull \hbox (badness 1107) in paragraph at lines 765--766
+Underfull \hbox (badness 1107) in paragraph at lines 769--770
 []\T1/lmr/m/n/10 The FITS files out-put by this step rep-re-sent the main prod-
 ucts of
  []
 
 
-Underfull \hbox (badness 3049) in paragraph at lines 765--766
+Underfull \hbox (badness 3049) in paragraph at lines 769--770
 \T1/lmr/m/n/10 the pipeline, and are or-ga-nized into two di-rec-to-ries: \T1/p
 cr/m/n/10 spec2d/ \T1/lmr/m/n/10 and
  []
 
-[24] <extensions.pdf, id=572, 590.205pt x 604.2575pt>
+[24] <extensions.pdf, id=570, 590.205pt x 604.2575pt>
 File: extensions.pdf Graphic file (type pdf)
  <use extensions.pdf>
-Package pdftex.def Info: extensions.pdf used on input line 785.
+Package pdftex.def Info: extensions.pdf used on input line 789.
 (pdftex.def)             Requested size: 207.0021pt x 211.92664pt.
 
 [25 <./extensions.pdf>] [26]
-Underfull \hbox (badness 4403) in paragraph at lines 848--849
+Underfull \hbox (badness 4403) in paragraph at lines 852--853
 \T1/lmr/m/n/10 The files pro-duced by the data re-duc-tion are saved ei-ther in
  the
  []
 
 [27] [28] [29] [30] [31] [32]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1039.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1039.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1043.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1043.
  (./manual.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1039.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1039.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1043.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1043.
 
 Package rerunfilecheck Info: File `manual.out' has not changed.
 (rerunfilecheck)             Checksum: 8DD81A773372D7B44A4D3E245C120215;3638.
@@ -808,7 +808,7 @@ Package rerunfilecheck Info: File `manual.out' has not changed.
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1039.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1043.
  ) 
 Here is how much of TeX's memory you used:
  16763 strings out of 494946
@@ -840,9 +840,9 @@ lic/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pfb></usr/share
 /lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt12.pfb></usr/share/texm
 f/fonts/type1/public/lm/lmtt8.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt9
 .pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb>
-Output written on manual.pdf (33 pages, 2431859 bytes).
+Output written on manual.pdf (33 pages, 2433000 bytes).
 PDF statistics:
- 863 PDF objects out of 1000 (max. 8388607)
+ 864 PDF objects out of 1000 (max. 8388607)
  700 compressed objects within 7 object streams
  180 named destinations out of 1000 (max. 500000)
  471 words of extra memory for PDF output out of 10000 (max. 10000000)

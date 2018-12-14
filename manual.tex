@@ -384,6 +384,8 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     skysub\_reject\_window        & 2.0           & skysub           & window for outlier rejection, in units of breakpoint separation \\
     interpolation\_method         & 'NaturalNeighbor'  & rectify     & method used to resample frames during rectification \\
     frame\_weights                & 'None'        & combine          & weights to use for the final frame stacking \\
+    combine\_ccdreject            & 0             & combine          & reject bad pixels using algorithm similar to IRAF's ccdreject \\
+    combine\_ccdreject\_sigma     & [3.0, 3.0]    & combine          & sigma threshold for negative and positive fluctuations \\
     combine\_sigma\_clip          & 2.0           & combine          & sigma-clipping to use when combining frames \\
     combine\_min\_framefrac       & 0.49          & combine          & minimum fraction of frames that must contribute to a pixel \\
     extract\_optimal              & 1             & extract          & use optimal extraction instead of boxcar extraction \\
@@ -750,7 +752,9 @@ Using the 2D rectification coefficients calculated by \texttt{flame\_wavecal}, t
 
 This step consists in the stacking of all the A and B frames. The individual A and B stacks, and the difference A-B, are output as FITS file for each slit. Non-skysubtracted versions of the stacks are also output.
 
-When stacking all the A or B frames, sigma-clipping is performed to remove cosmic rays and bad pixels. The threshold value is 2-sigma by default but this can be changed with \code{settings.combine\_sigma\_clip}. Moreover, pixels that are not valid in a large numbe of frames are discarded from the final stack (i.e., set to NaNs). The \code{settings.combine\_min\_framefrac} option specifies the fraction of frames that must have a valid (non-NaN) value in order for that pixel to be considered valid in the final stack. The default value of this parameter is 0.49, which means that if half or more of the frames contribute to a pixel, than that pixel is considered valid.
+When stacking all the A or B frames, sigma-clipping is performed to remove cosmic rays and bad pixels. The threshold value is 2-sigma by default but this can be changed with \code{settings.combine\_sigma\_clip}. Moreover, pixels that are not valid in a large number of frames are discarded from the final stack (i.e., set to NaNs). The \code{settings.combine\_min\_framefrac} option specifies the fraction of frames that must have a valid (non-NaN) value in order for that pixel to be considered valid in the final stack. The default value of this parameter is 0.49, which means that if half or more of the frames contribute to a pixel, than that pixel is considered valid.
+
+It is also possible to select an alternative algorithm to reject bad pixels, based on IRAF's ccdreject. The idea is to use the known CCD noise parameters to estimate which pixels are outliers: this is particularly useful for optical observations, but not for near-infrared detectors or sky-subtracted frames. This algorithm can be switched on with \code{settings.combine\_ccdreject = 1}.
 
 When stacking frames, it is possible to specify the type of weighting to be applied, by setting \code{frame\_weights} to 'None', 'Flux', 'Seeing', or 'Peak'. The default is to not use weights, meaning that all frames are weighted equally.
 
