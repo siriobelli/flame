@@ -135,16 +135,23 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 	; settings.combine_ccdreject_sigma are equivalent to lsigma and hsigma.
 	; ----------------------------------------------------------------------------
 	if fuel.settings.combine_ccdreject then begin
+		print,'Cleaning with ccdreject, ',strtrim(N_frames, 2),' frames'
 		; iterate up to Nframes-2 times (so that at least two frames remain)
 		; each iteration can mask pixels in im_cube, which are ignored by
 		; median()
+		unmasked_start = long(total(finite(im_cube)))
 		for i_iter=0, N_frames-2 do begin
 			; get median at each pixel in electrons
 			median_im_e = median(im_cube*exptime_cube, dimension=1)
 			median_cube_e = im_cube
 			for i_frame=0,N_frames-1 do median_cube_e[i_frame, *, *] = median_im_e
-			; get noise level for each pixel in electrons (readnoise + poisson)
-			ccdnoise_cube_e = sqrt(fuel.instrument.readnoise^2 + median_cube_e)
+			; get noise level for each pixel in electrons
+			; (readnoise + poisson, including sky)
+			if n_elements(sky_filenames) GE 1 then begin
+				ccdnoise_cube_e = sqrt(fuel.instrument.readnoise^2 + median_cube_e+sky_cube*exptime_cube)
+			endif else begin
+				ccdnoise_cube_e = sqrt(fuel.instrument.readnoise^2 + median_cube_e)
+			endelse
 			deviation = (im_cube*exptime_cube - median_cube_e)/ccdnoise_cube_e
 			; mask values larger than the upper ccdreject limit
 			im_cube[where(deviation GT fuel.settings.combine_ccdreject_sigma[1], /null)] = !values.d_nan
@@ -152,6 +159,9 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 			im_cube[where(-deviation GT fuel.settings.combine_ccdreject_sigma[0], /null)] = !values.d_nan
 
 		endfor
+		unmasked_finish = long(total(finite(im_cube)))
+		nmasked = unmasked_start - unmasked_finish
+		print,strtrim(nmasked, 2),' pixels (', strtrim(100*nmasked/n_elements(im_cube), 2),'%) rejected by ccdreject'
 	endif
 
 	; sigma-clipping
