@@ -61,10 +61,16 @@ PRO flame_rectify_one, fuel, filename, lambda_coeff=lambda_coeff, gamma_coeff=ga
 
 	; add the wavelength calibration to the FITS header
 	SXADDPAR, Header, 'CTYPE1', 'AWAV    '
-	SXADDPAR, Header, 'CUNIT1', 'MICRON'
 	SXADDPAR, Header, 'CRPIX1', 1
-	SXADDPAR, Header, 'CRVAL1', lambda_0
-	SXADDPAR, Header, 'CDELT1', delta_lambda
+	if fuel.settings.angstroms then begin
+		SXADDPAR, Header, 'CRVAL1', lambda_0*1e4
+		SXADDPAR, Header, 'CDELT1', delta_lambda*1e4
+		SXADDPAR, Header, 'CUNIT1', 'ANGSTROM'
+	endif else begin
+		SXADDPAR, Header, 'CRVAL1', lambda_0
+		SXADDPAR, Header, 'CDELT1', delta_lambda
+		SXADDPAR, Header, 'CUNIT1', 'MICRON'
+	endelse
 
 	; add the spatial position to the FITS header
 	SXADDPAR, Header, 'CUNIT2', 'PIXEL'
