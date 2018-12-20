@@ -41,7 +41,7 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 
 	; read header of first frame and get the grid of (lambda,gamma)
 	header0 = headfits(filenames[0])
-	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
+	lambda_unit = strlowcase( strtrim(sxpar(header0, 'CUNIT1'), 2) )
 	lambda_min = sxpar(header0, 'CRVAL1')
 	lambda_step = sxpar(header0, 'CDELT1')
 	N_x = sxpar(header0, 'NAXIS1')
