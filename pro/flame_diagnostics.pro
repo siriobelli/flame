@@ -97,7 +97,8 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
     ; check if the A fit makes sense
     if fit_A.width LT 5.0*est_width and fit_A.peak GT 0.0 and $
       fit_A.center GE A_yrange[0] and fit_A.center LE A_yrange[1] and $
-      fit_A.peak/fit_A.peak_err GT 5.0 $
+      fit_A.peak/fit_A.peak_err GT 5.0 and $
+      fit_A.width/fit_A.width_err GT 5.0 $
       then A_ok = 1 else A_ok = 0
 
   endif else A_ok = 0
@@ -116,11 +117,11 @@ FUNCTION flame_diagnostics_AorB, frame_filename, fuel=fuel
     ; check if the B fit makes sense
     if fit_B.width LT 5.0*est_width and fit_B.peak GT 0.0 and $
      fit_B.center GE B_yrange[0] and fit_B.center LE B_yrange[1] and $
-     fit_B.peak/fit_B.peak_err GT 5.0 $
+     fit_B.peak/fit_B.peak_err GT 5.0 and $
+     fit_B.width/fit_B.width_err GT 5.0 $
      then B_ok = 1 else B_ok = 0
 
   endif else B_ok = 0
-
 
   ; new page for the next plots
   erase
