@@ -153,8 +153,10 @@ PRO flame_checkdata_sky, fuel, i_slit=i_slit
 	lambda_axis = sxpar(header, 'CRVAL1') + sxpar(header,'CDELT1') * $
 		( findgen(sxpar(header,'NAXIS1')) )
 
-	; for now we only support micron
-	if lambda_unit ne 'micron' then message, lambda_unit + ' not supported!'
+	; if angstroms, convert lambda_axis to microns
+	if lambda_unit eq 'angstrom' then $
+		lambda_axis /= 1e4 $
+	else if lambda_unit ne 'micron' then message, lambda_unit + ' not supported!'
 
 
 	; fit the OH lines

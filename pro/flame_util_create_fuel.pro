@@ -208,6 +208,7 @@ FUNCTION flame_util_create_fuel, input
     combine_ccdreject_sigma : [3., 3.], $
     combine_sigma_clip : 2.0, $
     combine_min_framefrac : combine_min_framefrac, $
+		angstroms : 0, $
     extract_optimal : 1, $
     extract_gaussian_profile : 1, $
     stop_on_error:1 $

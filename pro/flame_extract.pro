@@ -50,7 +50,13 @@ PRO flame_extract_slit, fuel, slit, skysub=skysub
 	ivar2d_emp = 1d/sig2d^2
 
   ; read in wavelength axis
+	lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
 	lambda_1d = sxpar(header,'CRVAL1') + (findgen(sxpar(header,'NAXIS1')) - sxpar(header,'CRPIX1') + 1d) * sxpar(header,'CDELT1')
+
+	; if angstroms, convert lambda_axis to microns
+	if lambda_unit eq 'angstrom' then $
+		lambda_1d /= 1e4 $
+	else if lambda_unit ne 'micron' then message, lambda_unit + ' not supported!'
 
   ; spatial axis
   y_1d = findgen(sxpar(header,'NAXIS2'))
