@@ -388,6 +388,7 @@ After the initialization, the user has complete control over the \texttt{fuel.se
     combine\_ccdreject\_sigma     & [3.0, 3.0]    & combine          & sigma threshold for negative and positive fluctuations \\
     combine\_sigma\_clip          & 2.0           & combine          & sigma-clipping to use when combining frames \\
     combine\_min\_framefrac       & 0.49          & combine          & minimum fraction of frames that must contribute to a pixel \\
+    angstroms                     & 0             & combine          & use angstroms instead of microns in the output spectra \\
     extract\_optimal              & 1             & extract          & use optimal extraction instead of boxcar extraction \\
     extract\_gaussian\_profile    & 1             & extract          & use Gaussian fit to determine weights for optimal extraction \\
     stop\_on\_error               & 1             & (all)            & halt execution when an error occurs \\
@@ -436,7 +437,7 @@ In this section we describe the goal, output products, and potential issues for 
 
 \medskip
 \noindent
-\textbf{Note:} All wavelengths used in \flame\ are measured in vacuum and in units of micron, except for the 1D extracted spectra which are in units of angstrom to preserve compatibility with third-party software.
+\textbf{Note:} All wavelengths used in \flame\ are measured in vacuum and in units of micron, except for the 1D extracted spectra which are in units of angstrom to preserve compatibility with third-party software. It is possible to specify the use of angstroms for the 2D spectra via \code{settings.angstroms}, however microns will still be used internally during the data reduction.
 
 
 
