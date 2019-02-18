@@ -241,7 +241,10 @@ PRO flame_util_combine_spectra, filenames, output_filename=output_filename, diff
   lambda_axis = lambda_min + (dindgen(Nx) - lambda_min + 1d) * cdelt1[0]
 
   ; update the header
-  sxaddpar, header, 'CRVAL1', lambda_min
+  case lambda_unit of
+    'angstrom': sxaddpar, header, 'CRVAL1', lambda_min*1e4
+    'micron': sxaddpar, header, 'CRVAL1', lambda_min
+  endcase
 
   ; define the x-pixel range that will be occupied by each frame in the common wavelength grid
   x0 = round(pixel_padding)
