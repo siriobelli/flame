@@ -190,12 +190,22 @@ PRO flame_util_combine_spectra, filenames, output_filename=output_filename, diff
     header = headfits(filenames[i])
     naxis1[i] = sxpar(header, 'NAXIS1')
     naxis2[i] = sxpar(header, 'NAXIS2')
-    crval1[i] = sxpar(header, 'CRVAL1')
-    crval2[i] = sxpar(header, 'CRVAL2')
+		lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
+		case lambda_unit of
+			'angstrom': begin ; if angstroms, convert lambda_axis to microns
+				crval1[i] = sxpar(header, 'CRVAL1')/1e4
+				cdelt1[i] = sxpar(header, 'CDELT1')/1e4
+			end
+			'micron': begin
+				crval1[i] = sxpar(header, 'CRVAL1')
+				cdelt1[i] = sxpar(header, 'CDELT1')
+			end
+			else: message, lambda_unit + ' not supported!'
+		endcase
     crpix1[i] = sxpar(header, 'CRPIX1')
-    crpix2[i] = sxpar(header, 'CRPIX2')
-    cdelt1[i] = sxpar(header, 'CDELT1')
+    crval2[i] = sxpar(header, 'CRVAL2')
     cdelt2[i] = sxpar(header, 'CDELT2')
+    crpix2[i] = sxpar(header, 'CRPIX2')
     ycutout[i] = sxpar(header, 'YCUTOUT')
     print, 'reading header for ', filenames[i], $
       '  -  size: ', strtrim( naxis1[i], 2), ' x ', strtrim(naxis2[i], 2)
@@ -231,7 +241,10 @@ PRO flame_util_combine_spectra, filenames, output_filename=output_filename, diff
   lambda_axis = lambda_min + (dindgen(Nx) - lambda_min + 1d) * cdelt1[0]
 
   ; update the header
-  sxaddpar, header, 'CRVAL1', lambda_min
+  case lambda_unit of
+    'angstrom': sxaddpar, header, 'CRVAL1', lambda_min*1e4
+    'micron': sxaddpar, header, 'CRVAL1', lambda_min
+  endcase
 
   ; define the x-pixel range that will be occupied by each frame in the common wavelength grid
   x0 = round(pixel_padding)

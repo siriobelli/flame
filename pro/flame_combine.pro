@@ -41,12 +41,19 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 
 	; read header of first frame and get the grid of (lambda,gamma)
 	header0 = headfits(filenames[0])
+	lambda_unit = strlowcase( strtrim(sxpar(header0, 'CUNIT1'), 2) )
 	lambda_min = sxpar(header0, 'CRVAL1')
 	lambda_step = sxpar(header0, 'CDELT1')
 	N_x = sxpar(header0, 'NAXIS1')
 	N_y = sxpar(header0, 'NAXIS2')
 	gamma_min = sxpar(header0, 'CRVAL2')
 	gamma_max = gamma_min + N_y - 1
+
+	; if angstroms, convert lambda_axis to microns
+	if lambda_unit eq 'angstrom' then begin
+		lambda_min /= 1e4
+		lambda_step /= 1e4
+	endif else if lambda_unit ne 'micron' then message, lambda_unit + ' not supported!'
 
 	; make big cube containing all images
 	im_cube = dblarr( N_frames, N_x, N_y )
@@ -72,8 +79,18 @@ PRO flame_combine_stack, fuel=fuel, filenames=filenames, sky_filenames=sky_filen
 		im = mrdfits(filenames[i_frame], 0, header, /silent)
 
 		; check that the lambda axis is the same as for the first file
-		if (sxpar(header, 'CRVAL1')-lambda_min)/lambda_min GT 0.001 then message, 'wavelength axes not identical'
-		if (sxpar(header, 'CDELT1')-lambda_step)/lambda_step GT 0.001 then message, 'wavelength axes not identical'
+		lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
+		case lambda_unit of
+			'angstrom': begin
+				if (sxpar(header, 'CRVAL1')/1e4-lambda_min)/lambda_min GT 0.001 then message, 'wavelength axes not identical'
+				if (sxpar(header, 'CDELT1')/1e4-lambda_step)/lambda_step GT 0.001 then message, 'wavelength axes not identical'
+			end
+			'micron': begin
+				if (sxpar(header, 'CRVAL1')-lambda_min)/lambda_min GT 0.001 then message, 'wavelength axes not identical'
+				if (sxpar(header, 'CDELT1')-lambda_step)/lambda_step GT 0.001 then message, 'wavelength axes not identical'
+			end
+			else: message, lambda_unit + ' not supported!'
+		endcase
 
 		; read in the spatial grid
 		N_y_i = sxpar(header, 'NAXIS2')
@@ -657,8 +674,19 @@ PRO flame_combine_mosaic, fuel, skysub=skysub
 	; read all headers and get the wavelength scales
 	for i_slit=0, n_elements(slits)-1 do begin
 		header = headfits(filenames[i_slit])
-		lambda_min = [lambda_min, sxpar(header, 'CRVAL1')]
-		lambda_step = [lambda_step, sxpar(header, 'CDELT1')]
+		lambda_unit = strlowcase( strtrim(sxpar(header, 'CUNIT1'), 2) )
+		; if angstroms, convert to microns
+		case lambda_unit of
+			'angstrom': begin
+				lambda_min = [lambda_min, sxpar(header, 'CRVAL1')/1e4]
+				lambda_step = [lambda_step, sxpar(header, 'CDELT1')/1e4]
+			end
+			'micron': begin
+				lambda_min = [lambda_min, sxpar(header, 'CRVAL1')]
+				lambda_step = [lambda_step, sxpar(header, 'CDELT1')]
+			end
+			else: message, lambda_unit + ' not supported!'
+		endcase
 		N_x = [N_x, sxpar(header, 'NAXIS1')]
 	endfor
 
@@ -711,8 +739,13 @@ PRO flame_combine_mosaic, fuel, skysub=skysub
 
 	; add wavelength calibration to the header
 	SXADDPAR, header, 'CRPIX1', 1
-	SXADDPAR, header, 'CRVAL1', lambda_0
-	SXADDPAR, header, 'CDELT1', lambda_delta
+	if fuel.settings.angstroms then begin
+		SXADDPAR, header, 'CRVAL1', lambda_0*1e4
+		SXADDPAR, header, 'CDELT1', lambda_delta*1e4
+	endif else begin
+		SXADDPAR, header, 'CRVAL1', lambda_0
+		SXADDPAR, header, 'CDELT1', lambda_delta
+	endelse
 
 	; output flux map
 	output_filename = output_dir + 'mosaic_flux.fits'
