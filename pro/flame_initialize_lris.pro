@@ -464,6 +464,9 @@ FUNCTION flame_initialize_lris, input
   ; split the spectrum into two when doing the rough wavecal
   fuel.settings.roughwavecal_split = 0
 
+  ; use angstroms instead of microns for the output spectra
+  fuel.settings.angstroms = 1
+
 
   ; ---------------------   ARC LINE LIST    -----------------------------------
 
