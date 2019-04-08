@@ -814,11 +814,11 @@ These diagnostics are based on the measurement of sky emission lines. When arcs 
 \subsection{\texttt{flame\_extract}}
 \label{sec:extract}
 
-This is the last module, in which the brightest object in each slit is identified and its 1D spectrum is extracted. Optimal extraction is used, but setting \code{extract\_optimal=0} forces boxcar extraction. When using optimal extraction, the weights are determined by fitting a Gaussian function to the observed profile (i.e., the 2D spectrum collapsed along the wavelength direction). However, for bright targets it may be better to derive the weights directly from the observed profile; this can be achieved setting \code{extract\_gaussian\_profile=0}.
+This is the last module, in which the brightest object in each slit is identified and its 1D spectrum is extracted. Optimal extraction is used, but setting \code{extract\_optimal=0} forces boxcar extraction. When using optimal extraction, the weights are determined by fitting a Gaussian function to the observed profile (i.e., the 2D spectrum collapsed along the wavelength direction). However, for bright or extended targets it may be better to derive the weights directly from the observed profile; this can be achieved setting \code{extract\_gaussian\_profile=0}.
 
 \medskip
 \noindent
-\textbf{Outputs.} Similarly to what done for the 2D spectra, the extracted 1D spectra are saved into two directories: \filename{spec1d/} and \filename{spec1d\_skysub/}, respectively without and with model-based sky-subtraction (but the $A-B$ subtraction is always applied, if possible). These directories include, for each slit, a ps file showing the spatial profile with its Gaussian fit, the extracted spectrum, and the SNR for both the boxcar extraction and the optimal extraction; and a FITS file containing the extracted spectrum. This is stored as a structure containing the fields \code{lambda} (wavelength in units of angstrom), \code{flux} (in electron per second), \code{ivar} (inverse variance), \code{ivar\_emprical} (inverse variance calculated from the empirical error spectrum), and \code{sky} (sky spectrum extracted from the 2D model). The error spectrum can be easily obtained as $\mathrm{err} = 1/\sqrt{\mathrm{ivar}}$. Note that the FITS file is not produced if the automatic identification of the target in the 2D spectrum fails, which can happen if the emission is faint or concentrated in a few emission lines, or if the slit is very tall and the trace of the target is lost in the noise or in the large-scale detector systematics.
+\textbf{Outputs.} Similarly to what done for the 2D spectra, the extracted 1D spectra are saved into two directories: \filename{spec1d/} and \filename{spec1d\_skysub/}, respectively without and with model-based sky-subtraction (but the $A-B$ subtraction is always applied, if possible). These directories include, for each slit, a ps file showing the spatial profile with its Gaussian fit, the extracted spectrum, and the SNR; and a FITS file containing the extracted spectrum. This is stored as a structure containing the fields \code{lambda} (wavelength in units of angstrom), \code{flux} (in electron per second), \code{ivar} (inverse variance), \code{ivar\_empirical} (inverse variance calculated from the empirical error spectrum), and \code{sky} (sky spectrum extracted from the 2D model). The error spectrum can be easily obtained as $\mathrm{err} = 1/\sqrt{\mathrm{ivar}}$. Note that the FITS file is not produced if the automatic identification of the target in the 2D spectrum fails, which can happen if the emission is faint or concentrated in a few emission lines, or if the slit is very tall and the trace of the target is lost in the noise or in the large-scale detector systematics. In these cases, it is possible to obtain a better result by manually extracting the spectra from each slit using the provided \code{flame\_util\_extract\_spectrum} routine (Section \ref{sec:util_extract}).
 
 There are a number of third-party programs that can be used to visualize and analyze the extracted 1D spectra. In particular, the FITS files output by \flame\ are compatible with the interactive programs SpecPro and SpecViz.
 
@@ -841,6 +841,8 @@ The output 2D spectrum has the same format as those output by \flame.
 Different options exist for the weights to be used when combining the data (in the example above, the sigma image is used in order to optimize the SNR) and for the type of spatial alignment. In most cases the alignment should be done on the rectified frame, assuming that the same reference star was used for all observations. However, sometimes this is not possible, for example when no reference star was observed. If a spectral features such as an emission line is detected in each individual spectrum, this can be used to align the frames, by providing the pixel coordinates for an 'alignment box' in which the spectral feature is located.
 
 The utility \code{flame\_util\_combine\_spectra} can also be used to combine parallel observations of the same target obtained with LUCI1 and LUCI2. Note that for some configurations the two instruments have a slightly different spatial scale. Spatial resampling is needed before the data from the two eyes can be properly combined. This resampling should be done during the data reduction, as explained in Section \ref{sec:spatialcal}.
+
+Once the combined 2D spectrum is obtained, the 1D spectrum can be extracted using \code{flame\_util\_extract\_spectrum}, as explained in Section \ref{sec:util_extract}.
 
 
 % ---------------------------------------------------
@@ -868,14 +870,17 @@ The input option \code{input.reduce\_only\_oneslit} can be used to select only o
 The first line sets the \code{skip} parameter to 1 for all slits, and the successive two lines set it back to zero only for the first two slits.
 
 
-\subsubsection{Boxcar extraction}
+\subsubsection{Standalone extraction}
+\label{sec:util_extract}
 
-A simple boxcar extraction can be performed manually on a 2D spectrum output by \flame\ using the provided IDL routine \code{slame\_util\_extract\_spectrum}, for example like this:
+The IDL routine \code{flame\_util\_extract\_spectrum} can be used to extract the 1D spectrum from any 2D spectrum that follows the \flame\ format. This can be useful, for example, to extract additional objects from a slit after the data reduction is completed, or to extract the spectrum after having combined observations from multiple nights.
+The output files are in the same format as the files output by \code{flame\_extract}, which in fact is only a wrapper for \code{flame\_util\_extract\_spectrum}.
+
+The documentation about this routine can be found in its source file. It has four available extraction methods: boxcar from fixed aperture; boxcar from automatic aperture; optimal using the profile of the observed trace; optimal using a Gaussian fit to the observed profile. It is also possible to restrict the extraction to a range of y-pixel coordinates, which can be useful if more than one traces are present in the 2D spectrum. Here is an example:
 \begin{lstlisting}
   flame_util_extract_spectrum, 'slit07.fits', $
-    yrange=[52,58]
+    /optimal_gaussian, ycrop=[50,90]
 \end{lstlisting}
-Here, \code{yrange} is an integer array specifying the first and last pixel rows (in detector coordinates) to be considered for the extraction. The 1D spectrum is then saved as a FITS file in the same format as for the files output by \code{flame\_extract}.
 
 
 \subsubsection{Output wavelength grid}
