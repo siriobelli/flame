@@ -666,7 +666,7 @@ PRO flame_slitid_writeds9, fuel=fuel, raw=raw
   slits = fuel.slits
 
   ; number of horizontal pixel in one frame
-  N_pix_x = (size( readfits((fuel.util.science.corr_files)[0]) ) )[1]
+  N_pix_x = (size( readfits(fuel.util.slitflat.master_file) ) )[1]
 
   ; y coordinate of the center of the top edge
   top_edges = dblarr(n_elements(slits))
